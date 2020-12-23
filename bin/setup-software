@@ -13,15 +13,23 @@ printUsage()
 Guided wizard to install various common software that I use.
 HELPTEXT
     echo
-    printf 'Usage: %q %s\n' "$(basename "$1")" '-a|--all|DEFINITION-NAME|FILESPEC [...] [-?|-h|--help]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[-v|--verbose] -a|--all|DEFINITION-NAME|FILESPEC [...] [-?|-h|--help]'
 }
-case "$1" in
-    --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
-    --all|-a)		shift
+isVerbose=
+while [ $# -ne 0 ]
+do
+    case "$1" in
+	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+	--verbose|-v)	shift; isVerbose=t;;
+	--all|-a)	shift
 			IFS=$'\n'
 			set -- $(find "$definitionDirspec" -type f -print | sort) "$@"
 			;;
-esac
+	--)		shift; break;;
+	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
+	*)		break;;
+    esac
+done
 if [ $# -eq 0 ]; then
     printUsage "$0" >&2
     exit 2
@@ -66,7 +74,7 @@ debInstall()
 	done
 
 	if [ ${#packages[@]} -eq 0 ]; then
-	    printf >&2 'Already installed: %s\n' "$definition"
+	    [ "$isVerbose" ] && printf >&2 'Already installed: %s\n' "$definition"
 	else
 	    local what=
 	    if [ $# -gt $((${#commands[@]} + ${#packages[@]})) ]; then
