@@ -50,9 +50,11 @@ debInstall()
 	installedPpaRepositories["$repo"]=t
     done < <(apt-list-repositories --ppa-only)
 
+
     local definition; for definition in "${debDefinitions[@]}"
     do
-	set -- ${definition%% #*}
+	[[ "$definition" =~ ^[[:space:]]*# ]] && continue
+	set -- ${definition%%[	 ]#*}
 	typeset -a commands=()
 	typeset -a packages=()
 	local package; for package
