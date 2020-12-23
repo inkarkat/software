@@ -78,6 +78,11 @@ debInstall()
     [ ${#toBeInstalledPackages[@]} -gt 0 ] && toBeInstalledCommands+=("${SUDO}${SUDO:+ }apt install ${toBeInstalledPackages[*]}")
 }
 
+debBuildDependencyInstall()
+{
+    :
+}
+
 pip3Install()
 {
     :
@@ -106,17 +111,20 @@ done
 [ ${#definitions[@]} -eq 0 ] && exit 1
 
 typeset -a debDefinitions=()
+typeset -a debBuildDependencyDefinitions=()
 typeset -a pip3Definitions=()
 typeset -a npmDefinitions=()
 for definition in "${definitions[@]}"
 do
     case "$definition" in
-	pip3:*)	pip3Definitions+=("$definition");;
-	npm:*)	npmDefinitions+=("$definition");;
-	*)	debDefinitions+=("$definition");;
+	build-dep:*)	debBuildDependencyDefinitions+=("$definition");;
+	pip3:*)		pip3Definitions+=("$definition");;
+	npm:*)		npmDefinitions+=("$definition");;
+	*)	        debDefinitions+=("$definition");;
     esac
 done
 [ ${#debDefinitions[@]} -gt 0 ] && debInstall
+[ ${#debBuildDependencyDefinitions[@]} -gt 0 ] && debBuildDependencyInstall
 [ ${#pip3Definitions[@]} -gt 0 ] && pip3Install
 [ ${#npmDefinitions[@]} -gt 0 ] && npmInstall
 
