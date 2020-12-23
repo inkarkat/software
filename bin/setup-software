@@ -68,7 +68,14 @@ debInstall()
 	if [ ${#packages[@]} -eq 0 ]; then
 	    printf >&2 'Already installed: %s\n' "$definition"
 	else
-	    if offerTo --keep-prompt "Install ${definition}?"; then
+	    local what=
+	    if [ $# -gt $((${#commands[@]} + ${#packages[@]})) ]; then
+		what="missing: ${packages[*]}"
+	    elif [ $# -gt 1 ]; then
+		what='all are missing'
+	    fi
+
+	    if offerTo --keep-prompt "Install ${definition}${what:+ (}${what}${what:+)}?"; then
 		toBeInstalledCommands+=("${commands[@]}")
 		toBeInstalledPackages+=("${packages[@]}")
 	    fi
@@ -120,7 +127,7 @@ do
 	build-dep:*)	debBuildDependencyDefinitions+=("$definition");;
 	pip3:*)		pip3Definitions+=("$definition");;
 	npm:*)		npmDefinitions+=("$definition");;
-	*)	        debDefinitions+=("$definition");;
+	*)		debDefinitions+=("$definition");;
     esac
 done
 [ ${#debDefinitions[@]} -gt 0 ] && debInstall
