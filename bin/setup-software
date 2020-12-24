@@ -170,17 +170,15 @@ typeset -a addedPpaRepositories=()
 typeset -a addedDebBuildDependencies=()
 typeset -a addedPip3Packages=()
 typeset -a addedNpmPackages=()
-typeset -A available=()
 isAvailable()
 {
     local packageManager="${1:?}"; shift
-    if [ "${available["$packageManager"]}" ] || { exists "$packageManager" && available["$packageManager"]=t; }; then
+    if [ "${installedPackages["$packageManager"]}" ] || [ "${addedPackages["$packageManager"]}" ] || exists "$packageManager"; then
 	return
     fi
 
     if offerTo "$packageManager is not yet installed; install it?"; then
 	addedPackages+=("$packageManager")
-	available["$packageManager"]=t
     else
 	return 1
     fi
