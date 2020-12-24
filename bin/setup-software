@@ -155,6 +155,9 @@ customCheck()
     if [ -z "$customAction" -o -z "$customFile" ]; then
 	printf >&2 'ERROR: Invalid custom definition: "custom:%s"\n' "$1"
 	exit 3
+    elif [ ! -x "${customActionsDirspec}/${customAction}" ]; then
+	printf >&2 'ERROR: Custom action %q does not exist.\n' "$customAction"
+	exit 3
     fi
 
     [ -e "$customFile" ]
@@ -264,18 +267,11 @@ customInstall()
 {
     [ ${#addedCustomActions[@]} -gt 0 ] || return
 
-    local status=0
     local customAction; for customAction in "${addedCustomActions[@]}"
     do
 	customAction="${customActionsDirspec}/${customAction}"
-	if [ ! -x "$customAction" ]; then
-	    printf >&2 'ERROR: Custom action %q does not exist.\n' "$customAction"
-	    status=1
-	fi
-
 	toBeInstalledCommands+=("${SUDO}${SUDO:+ }${customAction}")
     done
-    return $status
 }
 
 
