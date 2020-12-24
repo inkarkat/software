@@ -71,6 +71,7 @@ getInstalledDebPackages()
 	installedDebPackages["$package"]=t
 	case ",${DEBUG:-}," in *,setup-software:deb,*) echo >&2 "${PS4}setup-software (deb): Found installed ${package}";; esac
     done < <(dpkg-package-list)
+
     if [ ${#installedDebPackages[@]} -eq 0 ]; then
 	echo >&2 'ERROR: Failed to obtain installed deb package list.'
 	exit 3
@@ -101,6 +102,7 @@ getInstalledDebBuildDependencies()
     [ "$isInstalledDebBuildDependenciesAvailable" ] && return
 
     eval "$(database debBuildDependencies --get-as-dictionary installedDebBuildDependencies)" || exit 3
+
     [ ${#installedDebBuildDependencies[@]} -gt 0 ] &&
 	case ",${DEBUG:-}," in *,setup-software:deb-build,*) echo >&2 "${PS4}setup-software (deb-build): Found installed ${!installedDebBuildDependencies[@]}";; esac
 
@@ -152,11 +154,13 @@ hasItem()
     local prefix="${item%$name}"
 
     case "$prefix" in
-	'')		getInstalledDebPackages;	    [ "${installedDebPackages["$name"]}" ];;
-	ppa:)		getInstalledPpaRepositories;	    [ "${installedPpaRepositories["$name"]}" ];;
-	build-dep:)	getInstalledDebBuildDependencies;   [ "${installedDebBuildDependencies["$name"]}" ];;
-	pip3:)		getInstalledPip3Packages;	    [ "${installedPip3Packages["$name"]}" ];;
-	npm:)		getInstalledNpmPackages;	    [ "${installedNpmPackages["$name"]}" ];;
+	# If a package retrieval fails, treat this as an existing item, so that
+	# these are effectively skipped.
+	'')		! getInstalledDebPackages		|| [ "${installedDebPackages["$name"]}" ];;
+	ppa:)		! getInstalledPpaRepositories		|| [ "${installedPpaRepositories["$name"]}" ];;
+	build-dep:)	! getInstalledDebBuildDependencies	|| [ "${installedDebBuildDependencies["$name"]}" ];;
+	pip3:)		! getInstalledPip3Packages		|| [ "${installedPip3Packages["$name"]}" ];;
+	npm:)		! getInstalledNpmPackages		|| [ "${installedNpmPackages["$name"]}" ];;
 	*)		printf >&2 'ERROR: Invalid type: %s\n' "$prefix"; exit 3;;
     esac
 }
