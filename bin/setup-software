@@ -70,7 +70,7 @@ getInstalledPpaRepositories()
 
     local repo; while IFS=$'\n' read -r repo
     do
-	installedPpaRepositories["$repo"]=t
+	installedPpaRepositories["${repo#ppa:}"]=t
     done < <(apt-list-repositories --ppa-only)
 
     isInstalledPpaRepositoriesAvailable=t
@@ -113,13 +113,16 @@ getInstalledNpmPackages()
 hasItem()
 {
     local item="${1:?}"; shift
+    local name="${item#*:}"
+    local prefix="${item%$name}"
 
-    case "$item" in
-	ppa:*)		getInstalledPpaRepositories;	    [ "${installedPpaRepositories["$item"]}" ];;
-	build-dep:*)	getInstalledDebBuildDependencies;   [ "${installedDebBuildDependencies["$item"]}" ];;
-	pip3:*)		getInstalledPip3Packages;	    [ "${installedPip3Packages["$item"]}" ];;
-	npm:*)		getInstalledNpmPackages;	    [ "${installedNpmPackages["$item"]}" ];;
-	*)		getInstalledDebPackages;	    [ "${installedDebPackages["$item"]}" ];;
+    case "$prefix" in
+	'')		getInstalledDebPackages;	    [ "${installedDebPackages["$name"]}" ];;
+	ppa:)		getInstalledPpaRepositories;	    [ "${installedPpaRepositories["$name"]}" ];;
+	build-dep:)	getInstalledDebBuildDependencies;   [ "${installedDebBuildDependencies["$name"]}" ];;
+	pip3:)		getInstalledPip3Packages;	    [ "${installedPip3Packages["$name"]}" ];;
+	npm:)		getInstalledNpmPackages;	    [ "${installedNpmPackages["$name"]}" ];;
+	*)		printf >&2 'ERROR: Invalid type: %s\n' "$prefix"; exit 3;;
     esac
 }
 
@@ -132,12 +135,15 @@ addItems()
 {
     local item; for item
     do
-	case "$item" in
-	    ppa:*)	    addedPpaRepositories+=("$item");;
-	    build-dep:*)    addedDebBuildDependencies+=("$item");;
-	    pip3:*)	    addedPip3Packages+=("$item");;
-	    npm:*)	    addedNpmPackages+=("$item");;
-	    *)		    addedDebPackages+=("$item");;
+	local name="${item#*:}"
+	local prefix="${item%$name}"
+	case "$prefix" in
+	    '')		    addedDebPackages+=("$name");;
+	    ppa:)	    addedPpaRepositories+=("$name");;
+	    build-dep:)	    addedDebBuildDependencies+=("$name");;
+	    pip3:)	    addedPip3Packages+=("$name");;
+	    npm:)	    addedNpmPackages+=("$name");;
+	    *)		    printf >&2 'ERROR: Invalid type: %s\n' "$prefix"; exit 3;;
 	esac
     done
 }
@@ -155,7 +161,7 @@ ppaInstall()
     [ ${#addedPpaRepositories[@]} -gt 0 ] || return
     local repo; for repo in "${addedPpaRepositories[@]}"
     do
-	toBeInstalledCommands+=("${SUDO}${SUDO:+ }add-apt-repository $repo")
+	toBeInstalledCommands+=("${SUDO}${SUDO:+ }add-apt-repository ppa:$repo")
     done
     toBeInstalledCommands+=("${SUDO}${SUDO:+ }apt update")
 }
