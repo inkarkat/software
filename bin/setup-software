@@ -1,8 +1,9 @@
 #!/bin/bash
 set -o noglob
 
-readonly scriptDir="$([ "${BASH_SOURCE[0]}" ] && dirname -- "${BASH_SOURCE[0]}" || exit 3)"
+readonly scriptDir="$([ "${BASH_SOURCE[0]}" ] && absoluteScriptFile="$(readlink -nf -- "${BASH_SOURCE[0]}")" && dirname -- "$absoluteScriptFile" || exit 3)"
 [ -d "$scriptDir" ] || { echo >&2 "ERROR: Cannot determine script directory!"; exit 3; }
+readonly scriptName="$(basename -- "${BASH_SOURCE[0]}")"
 definitionDirspec="${scriptDir}/../etc"
 
 SUDO=sudo; [ $EUID -eq 0 ] && SUDO=
@@ -15,6 +16,11 @@ HELPTEXT
     echo
     printf 'Usage: %q %s\n' "$(basename "$1")" '[-v|--verbose] -a|--all|DEFINITION-NAME|FILESPEC [...] [-?|-h|--help]'
 }
+database()
+{
+    picoDB --base-type data --namespace setup-software --table "$@"
+}
+
 isVerbose=
 while [ $# -ne 0 ]
 do
@@ -25,6 +31,7 @@ do
 			IFS=$'\n'
 			set -- $(find "$definitionDirspec" -type f -print | sort) "$@"
 			;;
+	--database)	shift; database "$@"; exit $?;;
 	--)		shift; break;;
 	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
 	*)		break;;
@@ -36,77 +43,148 @@ if [ $# -eq 0 ]; then
 fi
 
 IFS=' '
-typeset -a toBeInstalledCommands=()
 
-debInstall()
+typeset -A installedDebPackages=()
+isInstalledDebPackagesAvailable=
+getInstalledDebPackages()
 {
-    typeset -a toBeInstalledPackages=()
+    [ "$isInstalledDebPackagesAvailable" ] && return
 
-    typeset -A installedPackages=()
     local package; while IFS=$'\n' read -r package
     do
-	installedPackages["$package"]=t
+	installedDebPackages["$package"]=t
     done < <(dpkg-package-list)
-    if [ ${#installedPackages[@]} -eq 0 ]; then
+    if [ ${#installedDebPackages[@]} -eq 0 ]; then
 	echo >&2 'ERROR: Failed to obtain installed deb package list.'
 	exit 3
     fi
 
-    typeset -A installedPpaRepositories=()
+    isInstalledDebPackagesAvailable=t
+}
+
+typeset -A installedPpaRepositories=()
+isInstalledPpaRepositoriesAvailable=
+getInstalledPpaRepositories()
+{
+    [ "$isInstalledPpaRepositoriesAvailable" ] && return
+
     local repo; while IFS=$'\n' read -r repo
     do
 	installedPpaRepositories["$repo"]=t
     done < <(apt-list-repositories --ppa-only)
 
+    isInstalledPpaRepositoriesAvailable=t
+}
 
-    local definition; for definition in "${debDefinitions[@]}"
+typeset -A installedDebBuildDependencies=()
+isInstalledDebBuildDependenciesAvailable=
+getInstalledDebBuildDependencies()
+{
+    [ "$isInstalledDebBuildDependenciesAvailable" ] && return
+
+    eval "$(database debBuildDependencies --get-as-dictionary installedDebBuildDependencies)" || exit 3
+
+    isInstalledDebBuildDependenciesAvailable=t
+}
+
+typeset -A installedPip3Packages=()
+isInstalledPip3PackagesAvailable=
+getInstalledPip3Packages()
+{
+    [ "$isInstalledPip3PackagesAvailable" ] && return
+
+    #eval "$(database debBuildDependencies --get-as-dictionary installedPip3Packages)" || exit 3
+
+    isInstalledPip3PackagesAvailable=t
+}
+
+typeset -A installedNpmPackages=()
+isInstalledNpmPackagesAvailable=
+getInstalledNpmPackages()
+{
+    [ "$isInstalledNpmPackagesAvailable" ] && return
+
+    #eval "$(database debBuildDependencies --get-as-dictionary installedNpmPackages)" || exit 3
+
+    isInstalledNpmPackagesAvailable=t
+}
+
+
+hasItem()
+{
+    local item="${1:?}"; shift
+
+    case "$item" in
+	ppa:*)		getInstalledPpaRepositories;	    [ "${installedPpaRepositories["$item"]}" ];;
+	build-dep:*)	getInstalledDebBuildDependencies;   [ "${installedDebBuildDependencies["$item"]}" ];;
+	pip3:*)		getInstalledPip3Packages;	    [ "${installedPip3Packages["$item"]}" ];;
+	npm:*)		getInstalledNpmPackages;	    [ "${installedNpmPackages["$item"]}" ];;
+	*)		getInstalledDebPackages;	    [ "${installedDebPackages["$item"]}" ];;
+    esac
+}
+
+typeset -a addedDebPackages=()
+typeset -a addedPpaRepositories=()
+typeset -a addedDebBuildDependencies=()
+typeset -a addedPip3Packages=()
+typeset -a addedNpmPackages=()
+addItems()
+{
+    local item; for item
     do
-	[[ "$definition" =~ ^[[:space:]]*# ]] && continue
-	set -- ${definition%%[	 ]#*}
-	typeset -a commands=()
-	typeset -a packages=()
-	local package; for package
-	do
-	    case "$package" in
-		ppa:*)	[ "${installedPpaRepositories["$package"]}" ] || commands+=("${SUDO}${SUDO:+ }add-apt-repository $package");;
-		*)	[ "${installedPackages["$package"]}" ] || packages+=("$package");;
-	    esac
-	done
-
-	if [ ${#packages[@]} -eq 0 ]; then
-	    [ "$isVerbose" ] && printf >&2 'Already installed: %s\n' "$definition"
-	else
-	    local what=
-	    if [ $# -gt $((${#commands[@]} + ${#packages[@]})) ]; then
-		what="missing: ${packages[*]}"
-	    elif [ $# -gt 1 ]; then
-		what='all are missing'
-	    fi
-
-	    if offerTo --keep-prompt "Install ${definition}${what:+ (}${what}${what:+)}?"; then
-		toBeInstalledCommands+=("${commands[@]}")
-		toBeInstalledPackages+=("${packages[@]}")
-	    fi
-	fi
+	case "$item" in
+	    ppa:*)	    addedPpaRepositories+=("$item");;
+	    build-dep:*)    addedDebBuildDependencies+=("$item");;
+	    pip3:*)	    addedPip3Packages+=("$item");;
+	    npm:*)	    addedNpmPackages+=("$item");;
+	    *)		    addedDebPackages+=("$item");;
+	esac
     done
+}
 
-    [ ${#toBeInstalledPackages[@]} -gt 0 ] && toBeInstalledCommands+=("${SUDO}${SUDO:+ }apt install ${toBeInstalledPackages[*]}")
+
+debInstall()
+{
+    [ ${#addedDebPackages[@]} -gt 0 ] || return
+    local IFS=' '
+    toBeInstalledCommands+=("${SUDO}${SUDO:+ }apt install ${addedDebPackages[*]}")
+}
+
+ppaInstall()
+{
+    [ ${#addedPpaRepositories[@]} -gt 0 ] || return
+    local repo; for repo in "${addedPpaRepositories[@]}"
+    do
+	toBeInstalledCommands+=("${SUDO}${SUDO:+ }add-apt-repository $repo")
+    done
+    toBeInstalledCommands+=("${SUDO}${SUDO:+ }apt update")
 }
 
 debBuildDependencyInstall()
 {
-    :
+    [ ${#addedDebBuildDependencies[@]} -gt 0 ] || return
+
+    local databaseUpdate; printf -v databaseUpdate %q "${scriptDir}/${scriptName}"
+    local buildDep; for buildDep in "${addedDebBuildDependencies[@]}"
+    do
+	toBeInstalledCommands+=("${SUDO}${SUDO:+ }apt-get build-dep $buildDep && $databaseUpdate --database debBuildDependencies --add $buildDep")
+    done
 }
 
 pip3Install()
 {
-    :
+    [ ${#addedPip3Packages[@]} -gt 0 ] || return
+    local IFS=' '
+    toBeInstalledCommands+=("${SUDO}${SUDO:+ }pip3 install ${addedPip3Packages[*]}")
 }
 
 npmInstall()
 {
-    :
+    [ ${#addedNpmPackages[@]} -gt 0 ] || return
+    local IFS=' '
+    toBeInstalledCommands+=("${SUDO}${SUDO:+ }npm install ${addedNpmPackages[*]}")
 }
+
 
 
 typeset -a definitions=()
@@ -125,23 +203,42 @@ do
 done
 [ ${#definitions[@]} -eq 0 ] && exit 1
 
-typeset -a debDefinitions=()
-typeset -a debBuildDependencyDefinitions=()
-typeset -a pip3Definitions=()
-typeset -a npmDefinitions=()
+
+
 for definition in "${definitions[@]}"
 do
-    case "$definition" in
-	build-dep:*)	debBuildDependencyDefinitions+=("$definition");;
-	pip3:*)		pip3Definitions+=("$definition");;
-	npm:*)		npmDefinitions+=("$definition");;
-	*)		debDefinitions+=("$definition");;
-    esac
+    [[ "$definition" =~ ^[[:space:]]*# ]] && continue
+    set -- ${definition%%[	 ]#*}
+
+    typeset -a missingItems=()
+    for item
+    do
+	hasItem "$item" || missingItems+=("$item")
+    done
+
+    if [ ${#missingItems[@]} -eq 0 ]; then
+	[ "$isVerbose" ] && printf >&2 'Already installed: %s\n' "$definition"
+    else
+	what=
+	if [ $# -gt ${#missingItems[@]} ]; then
+	    what="missing: ${missingItems[*]}"
+	elif [ $# -gt 1 ]; then
+	    what='all are missing'
+	fi
+
+	if offerTo --keep-prompt "Install ${definition}${what:+ (}${what}${what:+)}?"; then
+	    addItems "${missingItems[@]}"
+	fi
+    fi
 done
-[ ${#debDefinitions[@]} -gt 0 ] && debInstall
-[ ${#debBuildDependencyDefinitions[@]} -gt 0 ] && debBuildDependencyInstall
-[ ${#pip3Definitions[@]} -gt 0 ] && pip3Install
-[ ${#npmDefinitions[@]} -gt 0 ] && npmInstall
+
+
+
+ppaInstall
+debInstall
+debBuildDependencyInstall
+pip3Install
+npmInstall
 
 [ ${#toBeInstalledCommands[@]} -gt 0 ] && \
     printf '%s\n' "${toBeInstalledCommands[@]}"
