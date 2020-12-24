@@ -5,6 +5,7 @@ shopt -qs extglob
 readonly scriptDir="$([ "${BASH_SOURCE[0]}" ] && absoluteScriptFile="$(readlink -nf -- "${BASH_SOURCE[0]}")" && dirname -- "$absoluteScriptFile" || exit 3)"
 [ -d "$scriptDir" ] || { echo >&2 "ERROR: Cannot determine script directory!"; exit 3; }
 readonly scriptName="$(basename -- "${BASH_SOURCE[0]}")"
+customActionsDirspec="${scriptDir}/../etc/custom"
 definitionDirspec="${scriptDir}/../etc/definitions"
 
 SUDO='sudo --set-home'; [ $EUID -eq 0 ] && SUDO=''  # Use root's home; especially pip3 writes to ~/.cache/pip and complains if the files belong to another user.
@@ -146,6 +147,19 @@ getInstalledNpmPackages()
     isInstalledNpmPackagesAvailable=t
 }
 
+customCheck()
+{
+    local customAction="${1#*:}"
+    local customFile="${1%$customAction}"
+
+    if [ -z "$customAction" -o -z "$customFile" ]; then
+	printf >&2 'ERROR: Invalid custom definition: "custom:%s"\n' "$1"
+	exit 3
+    fi
+
+    [ -e "$customFile" ]
+}
+
 
 hasItem()
 {
@@ -161,6 +175,7 @@ hasItem()
 	build-dep:)	! getInstalledDebBuildDependencies	|| [ "${installedDebBuildDependencies["$name"]}" ];;
 	pip3:)		! getInstalledPip3Packages		|| [ "${installedPip3Packages["$name"]}" ];;
 	npm:)		! getInstalledNpmPackages		|| [ "${installedNpmPackages["$name"]}" ];;
+	custom:)	customCheck "$name";;
 	*)		printf >&2 'ERROR: Invalid type: %s\n' "$prefix"; exit 3;;
     esac
 }
@@ -170,6 +185,7 @@ typeset -a addedPpaRepositories=()
 typeset -a addedDebBuildDependencies=()
 typeset -a addedPip3Packages=()
 typeset -a addedNpmPackages=()
+typeset -a addedCustomActions=()
 isAvailable()
 {
     local packageManager="${1:?}"; shift
@@ -195,6 +211,7 @@ addItems()
 	    build-dep:)	    addedDebBuildDependencies+=("$name");;
 	    pip3:)	    isAvailable pip3 && addedPip3Packages+=("$name");;
 	    npm:)	    isAvailable npm  && addedNpmPackages+=("$name");;
+	    custom:)	    addedCustomActions+=("${name#*:}");;
 	    *)		    printf >&2 'ERROR: Invalid type: %s\n' "$prefix"; exit 3;;
 	esac
     done
@@ -243,6 +260,23 @@ npmInstall()
     toBeInstalledCommands+=("${SUDO}${SUDO:+ }npm install --global ${addedNpmPackages[*]}")
 }
 
+customInstall()
+{
+    [ ${#addedCustomActions[@]} -gt 0 ] || return
+
+    local status=0
+    local customAction; for customAction in "${addedCustomActions[@]}"
+    do
+	customAction="${customActionsDirspec}/${customAction}"
+	if [ ! -x "$customAction" ]; then
+	    printf >&2 'ERROR: Custom action %q does not exist.\n' "$customAction"
+	    status=1
+	fi
+
+	toBeInstalledCommands+=("${SUDO}${SUDO:+ }${customAction}")
+    done
+    return $status
+}
 
 
 typeset -a definitions=()
@@ -297,6 +331,7 @@ pkgInstall
 debBuildDependencyInstall
 pip3Install
 npmInstall
+customInstall
 
 [ ${#toBeInstalledCommands[@]} -gt 0 ] && \
     printf '%s\n' "${toBeInstalledCommands[@]}"
