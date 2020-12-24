@@ -7,7 +7,7 @@ readonly scriptDir="$([ "${BASH_SOURCE[0]}" ] && absoluteScriptFile="$(readlink 
 readonly scriptName="$(basename -- "${BASH_SOURCE[0]}")"
 definitionDirspec="${scriptDir}/../etc"
 
-SUDO=sudo; [ $EUID -eq 0 ] && SUDO=
+SUDO='sudo --set-home'; [ $EUID -eq 0 ] && SUDO=''  # Use root's home; especially pip3 writes to ~/.cache/pip and complains if the files belong to another user.
 
 printUsage()
 {
