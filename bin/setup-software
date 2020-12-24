@@ -147,12 +147,19 @@ getInstalledNpmPackages()
     isInstalledNpmPackagesAvailable=t
 }
 
+# Custom definitions consist of a CHECK:ACTION pair.
+# CHECK can be an executable name (located through $PATH) or filespec, and
+# succeeds if it's there. Alternatively, it can be an executable command in the
+# ./etc/custom directory tree that is called and should succeed if the
+# application already exists, and fail if it is missing.
+# ACTION is an executable command in the ./etc/custom directory tree that is
+# invoked (as root) and should then install the application.
 customCheck()
 {
     local customAction="${1#*:}"
-    local customFile="${1%$customAction}"
+    local customCheck="${1%:$customAction}"
 
-    if [ -z "$customAction" -o -z "$customFile" ]; then
+    if [ -z "$customAction" -o -z "$customCheck" ]; then
 	printf >&2 'ERROR: Invalid custom definition: "custom:%s"\n' "$1"
 	exit 3
     elif [ ! -x "${customActionsDirspec}/${customAction}" ]; then
@@ -160,7 +167,11 @@ customCheck()
 	exit 3
     fi
 
-    [ -e "$customFile" ]
+    if [ -x "${customActionsDirspec}/${customCheck}" ]; then
+	"${customActionsDirspec}/${customCheck}"
+    else
+	which "$customCheck" >/dev/null 2>&1
+    fi
 }
 
 
