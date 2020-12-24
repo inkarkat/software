@@ -113,7 +113,6 @@ getInstalledPip3Packages()
 {
     [ "$isInstalledPip3PackagesAvailable" ] && return
 
-    typeset -A installedPip3Packages=()
     local packageName remainder; while IFS=' ' read -r packageName remainder
     do
 	case "$packageName" in
