@@ -170,6 +170,21 @@ typeset -a addedPpaRepositories=()
 typeset -a addedDebBuildDependencies=()
 typeset -a addedPip3Packages=()
 typeset -a addedNpmPackages=()
+typeset -A available=()
+isAvailable()
+{
+    local packageManager="${1:?}"; shift
+    if [ "${available["$packageManager"]}" ] || { exists "$packageManager" && available["$packageManager"]=t; }; then
+	return
+    fi
+
+    if offerTo --keep-prompt "$packageManager is not yet installed; install it?"; then
+	addedPackages+=("$packageManager")
+	available["$packageManager"]=t
+    else
+	return 1
+    fi
+}
 addItems()
 {
     local item; for item
@@ -180,8 +195,8 @@ addItems()
 	    '')		    addedPackages+=("$name");;
 	    ppa:)	    addedPpaRepositories+=("$name");;
 	    build-dep:)	    addedDebBuildDependencies+=("$name");;
-	    pip3:)	    addedPip3Packages+=("$name");;
-	    npm:)	    addedNpmPackages+=("$name");;
+	    pip3:)	    isAvailable pip3 && addedPip3Packages+=("$name");;
+	    npm:)	    isAvailable npm  && addedNpmPackages+=("$name");;
 	    *)		    printf >&2 'ERROR: Invalid type: %s\n' "$prefix"; exit 3;;
 	esac
     done
