@@ -69,6 +69,7 @@ getInstalledDebPackages()
     local package; while IFS=$'\n' read -r package
     do
 	installedDebPackages["$package"]=t
+	case ",${DEBUG:-}," in *,setup-software:deb,*) echo >&2 "${PS4}setup-software (deb): Found installed ${package}";; esac
     done < <(dpkg-package-list)
     if [ ${#installedDebPackages[@]} -eq 0 ]; then
 	echo >&2 'ERROR: Failed to obtain installed deb package list.'
@@ -87,6 +88,7 @@ getInstalledPpaRepositories()
     local repo; while IFS=$'\n' read -r repo
     do
 	installedPpaRepositories["${repo#ppa:}"]=t
+	case ",${DEBUG:-}," in *,setup-software:ppa,*) echo >&2 "${PS4}setup-software (ppa): Found installed ppa:${repo}";; esac
     done < <(apt-list-repositories --ppa-only)
 
     isInstalledPpaRepositoriesAvailable=t
@@ -99,6 +101,8 @@ getInstalledDebBuildDependencies()
     [ "$isInstalledDebBuildDependenciesAvailable" ] && return
 
     eval "$(database debBuildDependencies --get-as-dictionary installedDebBuildDependencies)" || exit 3
+    [ ${#installedDebBuildDependencies[@]} -gt 0 ] &&
+	case ",${DEBUG:-}," in *,setup-software:deb-build,*) echo >&2 "${PS4}setup-software (deb-build): Found installed ${!installedDebBuildDependencies[@]}";; esac
 
     isInstalledDebBuildDependenciesAvailable=t
 }
@@ -114,7 +118,9 @@ getInstalledPip3Packages()
     do
 	case "$packageName" in
 	    Package|+(-))   continue;;	# Skip 2-line header
-	    *)		    installedPip3Packages["$packageName"]=t;;
+	    *)		    installedPip3Packages["$packageName"]=t
+			    case ",${DEBUG:-}," in *,setup-software:pip3,*) echo >&2 "${PS4}setup-software (pip3): Found installed ${packageName}";; esac
+			    ;;
 	esac
     done < <(pip3 list 2>/dev/null)
 
@@ -130,7 +136,10 @@ getInstalledNpmPackages()
     local packageDirspec; while IFS=$'\n' read -r packageDirspec
     do
 	local packageName; packageName="${packageDirspec##*/}"
-	[ -n "$packageName" ] && installedNpmPackages["$packageName"]=t
+	if [ -n "$packageName" ]; then
+	    installedNpmPackages["$packageName"]=t
+	    case ",${DEBUG:-}," in *,setup-software:npm,*) echo >&2 "${PS4}setup-software (npm): Found installed ${packageName}";; esac
+	fi
     done < <(npm --global --parseable --depth 0 2>/dev/null)
 
     isInstalledNpmPackagesAvailable=t
