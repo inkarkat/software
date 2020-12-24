@@ -17,6 +17,17 @@ HELPTEXT
     echo
     printf 'Usage: %q %s\n' "$(basename "$1")" '[-v|--verbose] -a|--all|DEFINITION-NAME|FILESPEC [...] [-?|-h|--help]'
 }
+
+typeset -a acceptedDefinitions=()
+addAllAcceptedDefinitions()
+{
+    local definition; while IFS=$'\n' read -r definition
+    do
+	definition="${definition#./}"
+	offerTo --keep-prompt "Consider ${definition}?" && acceptedDefinitions+=("$definition")
+    done < <(cd "$definitionDirspec" && find . -type f -print | sort)
+}
+
 database()
 {
     picoDB --base-type data --namespace setup-software --table "$@"
@@ -29,8 +40,12 @@ do
 	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
 	--verbose|-v)	shift; isVerbose=t;;
 	--all|-a)	shift
-			IFS=$'\n'
-			set -- $(find "$definitionDirspec" -type f -print | sort) "$@"
+			addAllAcceptedDefinitions
+			if [ ${#acceptedDefinitions[@]} -eq 0 ]; then
+			    exit 1
+			else
+			    set -- "${acceptedDefinitions[@]}" "$@"
+			fi
 			;;
 	--database)	shift; database "$@"; exit $?;;
 	--)		shift; break;;
