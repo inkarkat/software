@@ -24,7 +24,7 @@ addAllAcceptedDefinitions()
     local definition; while IFS=$'\n' read -r definition
     do
 	definition="${definition#./}"
-	offerTo --keep-prompt "Consider ${definition}?" && acceptedDefinitions+=("$definition")
+	offerTo "Consider ${definition}?" && acceptedDefinitions+=("$definition")
     done < <(cd "$definitionDirspec" && find . -type f -print | sort)
 }
 
@@ -178,7 +178,7 @@ isAvailable()
 	return
     fi
 
-    if offerTo --keep-prompt "$packageManager is not yet installed; install it?"; then
+    if offerTo "$packageManager is not yet installed; install it?"; then
 	addedPackages+=("$packageManager")
 	available["$packageManager"]=t
     else
@@ -286,7 +286,7 @@ do
 	    what='all are missing'
 	fi
 
-	if offerTo --keep-prompt "Install ${definition}${what:+ (}${what}${what:+)}?"; then
+	if offerTo "Install ${definition}${what:+ (}${what}${what:+)}?"; then
 	    addItems "${missingItems[@]}"
 	fi
     fi
