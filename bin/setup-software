@@ -60,24 +60,24 @@ fi
 
 IFS=' '
 
-typeset -A installedDebPackages=()
-isInstalledDebPackagesAvailable=
-getInstalledDebPackages()
+typeset -A installedPackages=()
+isInstalledPackagesAvailable=
+getInstalledPackages()
 {
-    [ "$isInstalledDebPackagesAvailable" ] && return
+    [ "$isInstalledPackagesAvailable" ] && return
 
     local package; while IFS=$'\n' read -r package
     do
-	installedDebPackages["$package"]=t
-	case ",${DEBUG:-}," in *,setup-software:deb,*) echo >&2 "${PS4}setup-software (deb): Found installed ${package}";; esac
+	installedPackages["$package"]=t
+	case ",${DEBUG:-}," in *,setup-software:pkg,*) echo >&2 "${PS4}setup-software (pkg): Found installed ${package}";; esac
     done < <(dpkg-package-list)
 
-    if [ ${#installedDebPackages[@]} -eq 0 ]; then
-	echo >&2 'ERROR: Failed to obtain installed deb package list.'
+    if [ ${#installedPackages[@]} -eq 0 ]; then
+	echo >&2 'ERROR: Failed to obtain installed package list.'
 	exit 3
     fi
 
-    isInstalledDebPackagesAvailable=t
+    isInstalledPackagesAvailable=t
 }
 
 typeset -A installedPpaRepositories=()
@@ -156,7 +156,7 @@ hasItem()
     case "$prefix" in
 	# If a package retrieval fails, treat this as an existing item, so that
 	# these are effectively skipped.
-	'')		! getInstalledDebPackages		|| [ "${installedDebPackages["$name"]}" ];;
+	'')		! getInstalledPackages			|| [ "${installedPackages["$name"]}" ];;
 	ppa:)		! getInstalledPpaRepositories		|| [ "${installedPpaRepositories["$name"]}" ];;
 	build-dep:)	! getInstalledDebBuildDependencies	|| [ "${installedDebBuildDependencies["$name"]}" ];;
 	pip3:)		! getInstalledPip3Packages		|| [ "${installedPip3Packages["$name"]}" ];;
@@ -165,7 +165,7 @@ hasItem()
     esac
 }
 
-typeset -a addedDebPackages=()
+typeset -a addedPackages=()
 typeset -a addedPpaRepositories=()
 typeset -a addedDebBuildDependencies=()
 typeset -a addedPip3Packages=()
@@ -177,7 +177,7 @@ addItems()
 	local name="${item#*:}"
 	local prefix="${item%$name}"
 	case "$prefix" in
-	    '')		    addedDebPackages+=("$name");;
+	    '')		    addedPackages+=("$name");;
 	    ppa:)	    addedPpaRepositories+=("$name");;
 	    build-dep:)	    addedDebBuildDependencies+=("$name");;
 	    pip3:)	    addedPip3Packages+=("$name");;
@@ -188,11 +188,11 @@ addItems()
 }
 
 
-debInstall()
+pkgInstall()
 {
-    [ ${#addedDebPackages[@]} -gt 0 ] || return
+    [ ${#addedPackages[@]} -gt 0 ] || return
     local IFS=' '
-    toBeInstalledCommands+=("${SUDO}${SUDO:+ }apt install ${addedDebPackages[*]}")
+    toBeInstalledCommands+=("${SUDO}${SUDO:+ }apt install ${addedPackages[*]}")
 }
 
 ppaInstall()
@@ -280,7 +280,7 @@ done
 
 
 ppaInstall
-debInstall
+pkgInstall
 debBuildDependencyInstall
 pip3Install
 npmInstall
