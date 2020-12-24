@@ -112,7 +112,11 @@ getInstalledNpmPackages()
 {
     [ "$isInstalledNpmPackagesAvailable" ] && return
 
-    #eval "$(database debBuildDependencies --get-as-dictionary installedNpmPackages)" || exit 3
+    local packageDirspec; while IFS=$'\n' read -r packageDirspec
+    do
+	local packageName; packageName="${packageDirspec##*/}"
+	[ -n "$packageName" ] && installedNpmPackages["$packageName"]=t
+    done < <(npm --global --parseable --depth 0 2>/dev/null)
 
     isInstalledNpmPackagesAvailable=t
 }
@@ -196,7 +200,7 @@ npmInstall()
 {
     [ ${#addedNpmPackages[@]} -gt 0 ] || return
     local IFS=' '
-    toBeInstalledCommands+=("${SUDO}${SUDO:+ }npm install ${addedNpmPackages[*]}")
+    toBeInstalledCommands+=("${SUDO}${SUDO:+ }npm install --global ${addedNpmPackages[*]}")
 }
 
 
