@@ -25,7 +25,8 @@ addAllAcceptedDefinitions()
     local definition; while IFS=$'\n' read -r definition
     do
 	definition="${definition#./}"
-	offerTo "Consider ${definition}?" && acceptedDefinitions+=("$definition")
+	memoizeDecision --memoize-group setup-software-definitions --subject "$definition" --verb 'is not' --state 'chosen' --action 'consider it' && \
+	    acceptedDefinitions+=("$definition")
     done < <(cd "$definitionDirspec" && find . -type f -print | sort)
 }
 
@@ -194,6 +195,11 @@ hasItem()
     esac
 }
 
+askTo()
+{
+    memoizeDecision --memoize-group setup-software "$@"
+}
+
 typeset -a addedPackages=()
 typeset -a addedPpaRepositories=()
 typeset -a addedDebBuildDependencies=()
@@ -207,7 +213,7 @@ isAvailable()
 	return
     fi
 
-    if offerTo "$packageManager is not yet installed; install it?"; then
+    if askTo --subject "$packageManager" --verb 'is not yet' --state installed --action 'install it'; then
 	addedPackages+=("$packageManager")
     else
 	return 1
@@ -307,7 +313,12 @@ done
 for definition in "${definitions[@]}"
 do
     [[ "$definition" =~ ^[[:space:]]*# ]] && continue
-    set -- ${definition%%[	 ]#*}
+    items="${definition%%[	 ]#*}"
+    comment="${definition#$items}"
+    comment="${comment#[	 ]#}"
+    comment="${comment##[	 ]}"
+    set -- $items
+    itemVerb=are; [ $# -eq 1 ] && itemVerb=is
 
     typeset -a missingItems=()
     for item
@@ -325,7 +336,7 @@ do
 	    what='all are missing'
 	fi
 
-	if offerTo "Install ${definition}${what:+ (}${what}${what:+)}?"; then
+	if askTo --subject "$items" --verb "${comment:+(}${comment}${comment:+) }$itemVerb not yet" --state "installed${what:+ (}${what}${what:+)}" --action 'install it'; then
 	    addItems "${missingItems[@]}"
 	fi
     fi
