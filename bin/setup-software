@@ -111,6 +111,10 @@ getInstalledDebBuildDependencies()
     isInstalledDebBuildDependenciesAvailable=t
 }
 
+# deb+url definitions consist of a [[SUBDIR/]NAME/]PACKAGE-GLOB:URL pair.
+# If ~/install/(SUBDIR|*)/(NAME|*)/PACKAGE-GLOB already exists, it will be used; else, the *.deb
+# from URL will be downloaded (and put into ~/install/* if it exists).
+
 typeset -A installedSnapPackages=()
 isInstalledSnapPackagesAvailable=
 getInstalledSnapPackages()
@@ -207,6 +211,7 @@ hasItem()
 	'')		! getInstalledPackages			|| [ "${installedPackages["$name"]}" ];;
 	ppa:)		! getInstalledPpaRepositories		|| [ "${installedPpaRepositories["$name"]}" ];;
 	build-dep:)	! getInstalledDebBuildDependencies	|| [ "${installedDebBuildDependencies["$name"]}" ];;
+	deb+url:)	! getInstalledPackages			|| [ "${installedPackages["${name%%:*}"]}" ];;
 	snap:)		! getInstalledSnapPackages		|| [ "${installedSnapPackages["$name"]}" ];;
 	pip3:)		! getInstalledPip3Packages		|| [ "${installedPip3Packages["$name"]}" ];;
 	npm:)		! getInstalledNpmPackages		|| [ "${installedNpmPackages["$name"]}" ];;
@@ -223,6 +228,7 @@ askTo()
 typeset -a addedPackages=()
 typeset -a addedPpaRepositories=()
 typeset -a addedDebBuildDependencies=()
+typeset -a addedDebUrlPackages=()
 typeset -a addedSnapPackages=()
 typeset -a addedPip3Packages=()
 typeset -a addedNpmPackages=()
@@ -252,6 +258,7 @@ addItems()
 	    '')		    addedPackages+=("$name");;
 	    ppa:)	    addedPpaRepositories+=("$name");;
 	    build-dep:)	    addedDebBuildDependencies+=("$name");;
+	    deb+url:)	    addedDebUrlPackages+=("$name");;
 	    snap:)	    isAvailable snap snapd && addedSnapPackages+=("$name");;
 	    pip3:)	    isAvailable pip3 && addedPip3Packages+=("$name");;
 	    npm:)	    isAvailable npm  && addedNpmPackages+=("$name");;
@@ -287,6 +294,23 @@ debBuildDependencyInstall()
     local buildDep; for buildDep in "${addedDebBuildDependencies[@]}"
     do
 	toBeInstalledCommands+=("${SUDO}${SUDO:+ }apt-get build-dep $buildDep && $databaseUpdate --database debBuildDependencies --add $buildDep")
+    done
+}
+
+debUrlInstall()
+{
+    [ ${#addedDebUrlPackages[@]} -gt 0 ] || return
+    local debUrlRecord; for debUrlRecord in "${addedDebUrlPackages[@]}"
+    do
+	local packageUrl="${debUrlRecord#*:}"
+	local packageNameAndGlob="${debUrlRecord%:$packageUrl}"
+	local packageGlob="${packageNameAndGlob##*/}"
+	local packageName="${packageNameAndGlob%$packageGlob}"
+	packageName="${packageName%/}"
+
+	# Note: No sudo here, as the downloading will happen as the current user
+	# and only the installation itself will be done through sudo.
+	toBeInstalledCommands+=("deb-download-installer${packageName:+ --application-name "'"}${packageName}${packageName:+"'"} --expression '$packageGlob' --url '$packageUrl'")
     done
 }
 
@@ -378,6 +402,7 @@ done
 ppaInstall
 pkgInstall
 debBuildDependencyInstall
+debUrlInstall
 snapInstall
 pip3Install
 npmInstall
