@@ -7,6 +7,7 @@ readonly scriptDir="$([ "${BASH_SOURCE[0]}" ] && absoluteScriptFile="$(readlink 
 readonly projectDir="${scriptDir}/.."
 readonly scriptName="$(basename -- "${BASH_SOURCE[0]}")"
 customActionsDirspec="${projectDir}/etc/custom"
+postinstallActionsDirspec="${projectDir}/etc/postinstall"
 definitionDirspec="${projectDir}/etc/definitions"
 
 SUDO='sudo --set-home'; [ $EUID -eq 0 ] && SUDO=''  # Use root's home; especially pip3 writes to ~/.cache/pip and complains if the files belong to another user.
@@ -193,6 +194,16 @@ customCheck()
     fi
 }
 
+# Postinstall items consist of an ACTION that is one of the following:
+# - an executable command in the ./etc/postinstall directory tree that is
+#   invoked (prepend $SUDO if it needs to be invoked as root) and should then
+#   perform the postinstallation steps
+# - a POSTINSTALL-EXPRESSION that is eval'd (prepend $SUDO if it needs to be
+#   invoked as root)
+# A postinstall item runs if the non-postinstall item preceding it in the
+# current definition was missing, but has been successfully installed by the
+# installation commands.
+
 
 hasItem()
 {
@@ -360,6 +371,7 @@ postInstall()
     toBeInstalledCommands+=("${quotedPostInstallCommand% }")
 }
 
+checkStatus=
 isVerbose=
 while [ $# -ne 0 ]
 do
@@ -375,11 +387,31 @@ do
 			fi
 			;;
 	--database)	shift; database "$@"; exit $?;;
+	--check)	shift; item="$1"; shift
+			if [ "$1" != '--action' ]; then
+			    printf >&2 'ASSERT: No --action following after --check %q.\n' "$item"; exit 3
+			fi
+			shift; action="$1"; shift
+			actionWithoutSudo="${action#\$SUDO }"
+			: ${checkStatus:=0}
+			if hasItem "$item"; then
+			    if [ -x "${postinstallActionsDirspec}/${action}" ]; then
+				"${postinstallActionsDirspec}/${action}"
+			    elif [ -x "${postinstallActionsDirspec}/${actionWithoutSudo}" ]; then
+				$SUDO "${postinstallActionsDirspec}/${actionWithoutSudo}"
+			    else
+				eval "$action"
+			    fi || checkStatus=1
+			else
+			    printf >&2 'Skipping postinstall action, because installation of %s was not successful.\n' "$item"
+			fi
+			;;
 	--)		shift; break;;
 	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
 	*)		break;;
     esac
 done
+[ -n "$checkStatus" ] && exit $checkStatus
 if [ $# -eq 0 ]; then
     printUsage "$0" >&2
     exit 2
