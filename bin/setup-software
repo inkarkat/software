@@ -85,7 +85,7 @@ getInstalledDebBuildDependencies()
     isInstalledDebBuildDependenciesAvailable=t
 }
 
-# deb+url definitions consist of a [[SUBDIR/]NAME/]PACKAGE-GLOB:URL pair.
+# deb+url items consist of a [[SUBDIR/]NAME/]PACKAGE-GLOB:URL pair.
 # If ~/install/(SUBDIR|*)/(NAME|*)/PACKAGE-GLOB already exists, it will be used; else, the *.deb
 # from URL will be downloaded (and put into ~/install/* if it exists).
 
@@ -145,7 +145,7 @@ getInstalledNpmPackages()
     isInstalledNpmPackagesAvailable=t
 }
 
-# Custom definitions consist of a CHECK:ACTION pair.
+# Custom items consist of a CHECK:ACTION pair.
 # CHECK can be one of the following (in decreasing precedence):
 # - an EXECUTABLE-COMMAND in the ./etc/custom directory tree that is called and
 #   should succeed if the application already exists, and fail if it is missing;
@@ -174,7 +174,7 @@ customCheck()
     local customActionWithoutSudo="${customAction#\$SUDO }"
 
     if [ -z "$customAction" -o -z "$customCheck" ]; then
-	printf >&2 'ERROR: Invalid custom definition: "custom:%s"\n' "$1"
+	printf >&2 'ERROR: Invalid custom item: "custom:%s"\n' "$1"
 	exit 3
     fi
 
