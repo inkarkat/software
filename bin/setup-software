@@ -293,7 +293,7 @@ debBuildDependencyInstall()
     local databaseUpdate; printf -v databaseUpdate %q "${scriptDir}/${scriptName}"
     local buildDep; for buildDep in "${addedDebBuildDependencies[@]}"
     do
-	toBeInstalledCommands+=("${SUDO}${SUDO:+ }apt-get build-dep $buildDep && $databaseUpdate --database debBuildDependencies --add $buildDep")
+	toBeInstalledCommands+=("${SUDO}${SUDO:+ }apt-get build-dep $buildDep && ${databaseUpdate}${isVerbose:+ --verbose} --database debBuildDependencies --add $buildDep")
     done
 }
 
@@ -356,7 +356,7 @@ postInstall()
     [ ${#addedPostinstallArgs[@]} -gt 0 ] || return
 
     local quotedPostInstallCommand
-    printf -v quotedPostInstallCommand '%q ' "${scriptName}" "${addedPostinstallArgs[@]}"
+    printf -v quotedPostInstallCommand '%q ' "${scriptDir}/${scriptName}" ${isVerbose:+--verbose} "${addedPostinstallArgs[@]}"
     toBeInstalledCommands+=("${quotedPostInstallCommand% }")
 }
 
