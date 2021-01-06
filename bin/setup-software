@@ -255,6 +255,7 @@ typeset -a addedSnapPackages=()
 typeset -a addedPip3Packages=()
 typeset -a addedNpmPackages=()
 typeset -a addedCustomActions=()
+typeset -a addedPostinstallArgs=()
 isAvailable()
 {
     local packageManager="${1:?}"; shift
@@ -285,6 +286,10 @@ addItems()
 	    pip3:)	    isAvailable pip3 && addedPip3Packages+=("$name");;
 	    npm:)	    isAvailable npm  && addedNpmPackages+=("$name");;
 	    custom:)	    addedCustomActions+=("${name#*:}");;
+	    postinstall:)   # Convert the "postinstall:ACTION\nITEM" to
+			    # --check "$ITEM" --action "$ACTION".
+			    addedPostinstallArgs+=(--check "${name#*$'\n'}" --action "${name%%$'\n'*}")
+			    ;;
 	    *)		    printf >&2 'ERROR: Invalid type: %s\n' "$prefix"; exit 3;;
 	esac
     done
@@ -373,6 +378,14 @@ customInstall()
     done
 }
 
+postInstall()
+{
+    [ ${#addedPostinstallArgs[@]} -gt 0 ] || return
+
+    local quotedPostInstallCommand
+    printf -v quotedPostInstallCommand '%q ' "${scriptName}" "${addedPostinstallArgs[@]}"
+    toBeInstalledCommands+=("${quotedPostInstallCommand% }")
+}
 
 typeset -a definitions=()
 for definitionFile
@@ -403,9 +416,27 @@ do
     itemVerb=are; [ $# -eq 1 ] && itemVerb=is
 
     typeset -a missingItems=()
+    lastMissingItem=
     for item
     do
-	hasItem "$item" || missingItems+=("$item")
+	case "$item" in
+	    postinstall:*)
+		if [ -n "$lastMissingItem" ]; then
+		    # The postinstall action will run when the installation of
+		    # the previous item was successful. To be able to check
+		    # that, we need that item as well, so append it on a new
+		    # line.
+		    missingItems+=("$item"$'\n'"$lastMissingItem")
+		fi
+		;;
+	    *)	if hasItem "$item"; then
+		    lastMissingItem=
+		else
+		    missingItems+=("$item")
+		    lastMissingItem="$item"
+		fi
+		;;
+	esac
     done
 
     if [ ${#missingItems[@]} -eq 0 ]; then
@@ -434,6 +465,7 @@ snapInstall
 pip3Install
 npmInstall
 customInstall
+postInstall
 
 [ ${#toBeInstalledCommands[@]} -gt 0 ] && \
     printf '%s\n' "${toBeInstalledCommands[@]}"
