@@ -36,33 +36,6 @@ database()
     picoDB --base-type data --namespace setup-software --table "$@"
 }
 
-isVerbose=
-while [ $# -ne 0 ]
-do
-    case "$1" in
-	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
-	--verbose|-v)	shift; isVerbose=t;;
-	--all|-a)	shift
-			addAllAcceptedDefinitions
-			if [ ${#acceptedDefinitions[@]} -eq 0 ]; then
-			    exit 1
-			else
-			    set -- "${acceptedDefinitions[@]}" "$@"
-			fi
-			;;
-	--database)	shift; database "$@"; exit $?;;
-	--)		shift; break;;
-	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
-	*)		break;;
-    esac
-done
-if [ $# -eq 0 ]; then
-    printUsage "$0" >&2
-    exit 2
-fi
-
-IFS=' '
-
 typeset -A installedPackages=()
 isInstalledPackagesAvailable=
 getInstalledPackages()
@@ -386,6 +359,33 @@ postInstall()
     printf -v quotedPostInstallCommand '%q ' "${scriptName}" "${addedPostinstallArgs[@]}"
     toBeInstalledCommands+=("${quotedPostInstallCommand% }")
 }
+
+isVerbose=
+while [ $# -ne 0 ]
+do
+    case "$1" in
+	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+	--verbose|-v)	shift; isVerbose=t;;
+	--all|-a)	shift
+			addAllAcceptedDefinitions
+			if [ ${#acceptedDefinitions[@]} -eq 0 ]; then
+			    exit 1
+			else
+			    set -- "${acceptedDefinitions[@]}" "$@"
+			fi
+			;;
+	--database)	shift; database "$@"; exit $?;;
+	--)		shift; break;;
+	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
+	*)		break;;
+    esac
+done
+if [ $# -eq 0 ]; then
+    printUsage "$0" >&2
+    exit 2
+fi
+
+IFS=' '
 
 typeset -a definitions=()
 for definitionFile
