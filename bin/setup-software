@@ -55,6 +55,9 @@ CHECK can be one of the following (in decreasing precedence):
 	custom:&-check:foo-installer
 - an EXECUTABLE-NAME? (located through $PATH) or FILESPEC?, and succeeds if
   it's there
+- the special expression "false"; then, no check is performed and whether the
+  installation action will happen depends solely on the (potentially recalled or
+  derived from the whole definition) user's answer
 - a TEST-EXPRESSION (whitespace must be escaped or the entire expression
   quoted!) that is eval'd and should succeed if the application already
   exists, and fail if it is missing; if TEST-EXPRESSION starts with a &, this
@@ -495,6 +498,7 @@ do
     comment="${comment##[	 ]}"
     eval "set -- $items"
     itemVerb=are; [ $# -eq 1 ] && itemVerb=is
+    itemAuxVerb=
 
     typeset -a missingItems=()
     lastMissingItem=
@@ -530,7 +534,12 @@ do
 	    what='all are missing'
 	fi
 
-	if askTo --subject "$items" --verb "${comment:+(}${comment}${comment:+) }$itemVerb not yet" --state "installed${what:+ (}${what}${what:+)}" --action 'install it'; then
+	if [ ${#missingItems[@]} -eq 1 ] && [[ "${missingItems[0]}" =~ 'custom:false:' ]]; then
+	    itemVerb='may or may'
+	    itemAuxVerb=be
+	fi
+
+	if askTo --subject "$items" --verb "${comment:+(}${comment}${comment:+) }$itemVerb not yet${itemAuxVerb:+ }$itemAuxVerb" --state "installed${what:+ (}${what}${what:+)}" --action 'install it'; then
 	    addItems "${missingItems[@]}"
 	fi
     fi
