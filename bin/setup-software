@@ -86,7 +86,7 @@ getInstalledDebBuildDependencies()
     isInstalledDebBuildDependenciesAvailable=t
 }
 
-# deb+url items consist of a [[SUBDIR/]NAME/]PACKAGE-GLOB:URL pair.
+# deb+url items consist of a PACKAGE:[[SUBDIR/]NAME/]PACKAGE-GLOB:URL triplet.
 # If ~/install/(SUBDIR|*)/(NAME|*)/PACKAGE-GLOB already exists, it will be used; else, the *.deb
 # from URL will be downloaded (and put into ~/install/* if it exists).
 
@@ -317,8 +317,9 @@ debUrlInstall()
     [ ${#addedDebUrlPackages[@]} -gt 0 ] || return
     local debUrlRecord; for debUrlRecord in "${addedDebUrlPackages[@]}"
     do
-	local packageUrl="${debUrlRecord#*:}"
-	local packageNameAndGlob="${debUrlRecord%:$packageUrl}"
+	local packageNameGlobUrl="${debUrlRecord#*:}"
+	local packageUrl="${packageNameGlobUrl#*:}"
+	local packageNameAndGlob="${packageNameGlobUrl%:$packageUrl}"
 	local packageGlob="${packageNameAndGlob##*/}"
 	local packageName="${packageNameAndGlob%$packageGlob}"
 	packageName="${packageName%/}"
