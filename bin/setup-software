@@ -370,6 +370,23 @@ postInstall()
     printf -v quotedPostInstallCommand '%q ' "${scriptDir}/${scriptName}" ${isVerbose:+--verbose} "${addedPostinstallArgs[@]}"
     toBeInstalledCommands+=("${quotedPostInstallCommand% }")
 }
+runPostInstallCheck()
+{
+    local item="${1:?}"; shift
+    local action="${1:?}"; shift
+    local actionWithoutSudo="${action#\$SUDO }"
+    if hasItem "$item"; then
+	if [ -x "${postinstallActionsDirspec}/${action}" ]; then
+	    "${postinstallActionsDirspec}/${action}"
+	elif [ -x "${postinstallActionsDirspec}/${actionWithoutSudo}" ]; then
+	    $SUDO "${postinstallActionsDirspec}/${actionWithoutSudo}"
+	else
+	    eval "$action"
+	fi || return 1
+    else
+	printf >&2 'Skipping postinstall action, because installation of %s was not successful.\n' "$item"
+    fi
+}
 
 checkStatus=
 isVerbose=
@@ -392,19 +409,8 @@ do
 			    printf >&2 'ASSERT: No --action following after --check %q.\n' "$item"; exit 3
 			fi
 			shift; action="$1"; shift
-			actionWithoutSudo="${action#\$SUDO }"
 			: ${checkStatus:=0}
-			if hasItem "$item"; then
-			    if [ -x "${postinstallActionsDirspec}/${action}" ]; then
-				"${postinstallActionsDirspec}/${action}"
-			    elif [ -x "${postinstallActionsDirspec}/${actionWithoutSudo}" ]; then
-				$SUDO "${postinstallActionsDirspec}/${actionWithoutSudo}"
-			    else
-				eval "$action"
-			    fi || checkStatus=1
-			else
-			    printf >&2 'Skipping postinstall action, because installation of %s was not successful.\n' "$item"
-			fi
+			runPostInstallCheck "$item" "$action" || checkStatus=1
 			;;
 	--)		shift; break;;
 	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
