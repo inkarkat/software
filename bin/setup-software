@@ -18,7 +18,72 @@ printUsage()
 Guided wizard to install various common software that I use.
 HELPTEXT
     echo
-    printf 'Usage: %q %s\n' "$(basename "$1")" '[-v|--verbose] -a|--all|DEFINITION-NAME|FILESPEC [...] [-?|-h|--help]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[-v|--verbose] -a|--all|DEFINITION-NAME|FILESPEC [...] [-?|-h|--help|-H|--config-help]'
+}
+
+printConfigUsage()
+{
+    cat <<'HELPTEXT'
+Items without a prefix refer to packages installed via the distribution's
+package manager (apt).
+
+ppa: items refer to Ubuntu personal package archives that enable additional
+packages (or other versions) to be installed through apt.
+
+deb-build: items refer to packages that satisfy the build dependencies for a
+source package.
+
+deb+url: items consist of a
+PACKAGE[:MAX-AGE[SUFFIX]]:[[SUBDIR/]NAME/]PACKAGE-GLOB:URL triplet / quadruplet.
+If ~/install/(SUBDIR|*)/(NAME|*)/PACKAGE-GLOB already exists [and if it is
+younger than MAX-AGE[SUFFIX]], it will be used; else, the *.deb from URL will
+be downloaded (and put into ~/install/* if it exists).
+
+snap: items refer to packages from the Snap store that work across many
+different Linux distributions, are segregated and update automatically.
+
+pip3: items refer to the Python package installer.
+
+npm: items refer to the Node.js package (or "Node modules") installer.
+
+custom: items consist of a CHECK:ACTION pair.
+CHECK can be one of the following (in decreasing precedence):
+- an EXECUTABLE-COMMAND in the ./etc/custom directory tree that is called and
+  should succeed if the application already exists, and fail if it is missing;
+  if EXECUTABLE-COMMAND starts with a &, this is replaced by the following
+  ACTION (without a $SUDO prefix), allowing you to save repeated typing:
+	custom:&-check:foo-installer
+- an EXECUTABLE-NAME? (located through $PATH) or FILESPEC?, and succeeds if
+  it's there
+- a TEST-EXPRESSION (whitespace must be escaped or the entire expression
+  quoted!) that is eval'd and should succeed if the application already
+  exists, and fail if it is missing; if TEST-EXPRESSION starts with a &, this
+  is replaced by the following ACTION (without a $SUDO prefix), allowing you
+  to re-use the same script for checking and installing:
+	custom:'& --check':foo-installer
+  or save repeated typing:
+	custom:&-check:foo-installer
+ACTION is one of the following:
+- an executable command in the ./etc/custom directory tree that is invoked
+  (prepend $SUDO if it needs to be invoked as root) and should then install
+  the application
+- an INSTALL-EXPRESSION (whitespace must be escaped or the entire expression
+  quoted!) that is eval'd (prepend $SUDO if it needs to be invoked as root)
+
+postinstall: items consist of an ACTION that is one of the following:
+- an executable command in the ./etc/postinstall directory tree that is invoked
+  (prepend $SUDO if it needs to be invoked as root) and should then perform the
+  postinstallation steps
+- a text file in the ./etc/postinstall directory tree whose file name (without
+  extension) is taken as a notification title and contents as notification to be
+  displayed (presumably with instructions for manual post-installation steps)
+  immediately and on each login until the user acknowledges it
+- a POSTINSTALL-EXPRESSION (whitespace must be escaped or the entire expression
+  quoted!) that is eval'd (prepend $SUDO if it needs to be invoked as root)
+A postinstall item runs if the non-postinstall item preceding it in the current
+definition was missing, but has been successfully installed by the installation
+commands.
+HELPTEXT
 }
 
 typeset -a acceptedDefinitions=()
@@ -86,11 +151,6 @@ getInstalledDebBuildDependencies()
     isInstalledDebBuildDependenciesAvailable=t
 }
 
-# deb+url items consist of a PACKAGE[:MAX-AGE[SUFFIX]]:[[SUBDIR/]NAME/]PACKAGE-GLOB:URL triplet / quadruplet.
-# If ~/install/(SUBDIR|*)/(NAME|*)/PACKAGE-GLOB already exists [and if it is
-# younger than MAX-AGE[SUFFIX]], it will be used; else, the *.deb from URL will
-# be downloaded (and put into ~/install/* if it exists).
-
 typeset -A installedSnapPackages=()
 isInstalledSnapPackagesAvailable=
 getInstalledSnapPackages()
@@ -147,29 +207,6 @@ getInstalledNpmPackages()
     isInstalledNpmPackagesAvailable=t
 }
 
-# Custom items consist of a CHECK:ACTION pair.
-# CHECK can be one of the following (in decreasing precedence):
-# - an EXECUTABLE-COMMAND in the ./etc/custom directory tree that is called and
-#   should succeed if the application already exists, and fail if it is missing;
-#   if EXECUTABLE-COMMAND starts with a &, this is replaced by the following
-#   ACTION (without a $SUDO prefix), allowing you to save repeated typing:
-#	custom:&-check:foo-installer
-# - an EXECUTABLE-NAME? (located through $PATH) or FILESPEC?, and succeeds if
-#   it's there
-# - a TEST-EXPRESSION (whitespace must be escaped or the entire expression
-#   quoted!) that is eval'd and should succeed if the application already
-#   exists, and fail if it is missing; if TEST-EXPRESSION starts with a &, this
-#   is replaced by the following ACTION (without a $SUDO prefix), allowing you
-#   to re-use the same script for checking and installing:
-#	custom:'& --check':foo-installer
-#   or save repeated typing:
-#	custom:&-check:foo-installer
-# ACTION is one of the following:
-# - an executable command in the ./etc/custom directory tree that is invoked
-#   (prepend $SUDO if it needs to be invoked as root) and should then install
-#   the application
-# - an INSTALL-EXPRESSION (whitespace must be escaped or the entire expression
-#   quoted!) that is eval'd (prepend $SUDO if it needs to be invoked as root)
 customCheck()
 {
     local customAction="${1#*:}"
@@ -195,21 +232,6 @@ customCheck()
 	eval "$customCheck"
     fi
 }
-
-# Postinstall items consist of an ACTION that is one of the following:
-# - an executable command in the ./etc/postinstall directory tree that is
-#   invoked (prepend $SUDO if it needs to be invoked as root) and should then
-#   perform the postinstallation steps
-# - a text file in the ./etc/postinstall directory tree whose file name (without
-#   extension) is taken as a notification title and contents as notification to
-#   be displayed (presumably with instructions for manual post-installation
-#   steps) immediately and on each login until the user acknowledges it
-# - a POSTINSTALL-EXPRESSION (whitespace must be escaped or the entire
-#   expression quoted!) that is eval'd (prepend $SUDO if it needs to be invoked
-#   as root)
-# A postinstall item runs if the non-postinstall item preceding it in the
-# current definition was missing, but has been successfully installed by the
-# installation commands.
 
 
 hasItem()
@@ -409,6 +431,12 @@ while [ $# -ne 0 ]
 do
     case "$1" in
 	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+	--config-help|-H)
+			shift
+			typeset -a pager=("${PAGER:-less}" --RAW-CONTROL-CHARS); [ -t 1 ] || pager=()
+			eval 'printConfigUsage "$@"' "${pager:+|}" '"${pager[@]}"'
+			exit 0
+			;;
 	--verbose|-v)	shift; isVerbose=t;;
 	--all|-a)	shift
 			addAllAcceptedDefinitions
