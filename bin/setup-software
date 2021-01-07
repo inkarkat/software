@@ -198,6 +198,10 @@ customCheck()
 # - an executable command in the ./etc/postinstall directory tree that is
 #   invoked (prepend $SUDO if it needs to be invoked as root) and should then
 #   perform the postinstallation steps
+# - a text file in the ./etc/postinstall directory tree whose file name (without
+#   extension) is taken as a notification title and contents as notification to
+#   be displayed (presumably with instructions for manual post-installation
+#   steps) immediately and on each login until the user acknowledges it
 # - a POSTINSTALL-EXPRESSION that is eval'd (prepend $SUDO if it needs to be
 #   invoked as root)
 # A postinstall item runs if the non-postinstall item preceding it in the
@@ -380,6 +384,8 @@ runPostInstallCheck()
 	    "${postinstallActionsDirspec}/${action}"
 	elif [ -x "${postinstallActionsDirspec}/${actionWithoutSudo}" ]; then
 	    $SUDO "${postinstallActionsDirspec}/${actionWithoutSudo}"
+	elif [ -e "${postinstallActionsDirspec}/${action}" ]; then
+	    addLoginNotification --file "${postinstallActionsDirspec}/${action}" --immediate
 	else
 	    eval "$action"
 	fi || return 1
