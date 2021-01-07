@@ -156,19 +156,20 @@ getInstalledNpmPackages()
 #	custom:&-check:foo-installer
 # - an EXECUTABLE-NAME? (located through $PATH) or FILESPEC?, and succeeds if
 #   it's there
-# - a TEST-EXPRESSION that is eval'd and should succeed if the application
-#   already exists, and fail if it is missing; if TEST-EXPRESSION starts with a
-#   &, this is replaced by the following ACTION (without a $SUDO prefix),
-#   allowing you to re-use the same script for checking and installing:
-#	custom:& --check:foo-installer
+# - a TEST-EXPRESSION (whitespace must be escaped or the entire expression
+#   quoted!) that is eval'd and should succeed if the application already
+#   exists, and fail if it is missing; if TEST-EXPRESSION starts with a &, this
+#   is replaced by the following ACTION (without a $SUDO prefix), allowing you
+#   to re-use the same script for checking and installing:
+#	custom:'& --check':foo-installer
 #   or save repeated typing:
 #	custom:&-check:foo-installer
 # ACTION is one of the following:
 # - an executable command in the ./etc/custom directory tree that is invoked
 #   (prepend $SUDO if it needs to be invoked as root) and should then install
 #   the application
-# - an INSTALL-EXPRESSION that is eval'd (prepend $SUDO if it needs to be
-#   invoked as root)
+# - an INSTALL-EXPRESSION (whitespace must be escaped or the entire expression
+#   quoted!) that is eval'd (prepend $SUDO if it needs to be invoked as root)
 customCheck()
 {
     local customAction="${1#*:}"
@@ -203,8 +204,9 @@ customCheck()
 #   extension) is taken as a notification title and contents as notification to
 #   be displayed (presumably with instructions for manual post-installation
 #   steps) immediately and on each login until the user acknowledges it
-# - a POSTINSTALL-EXPRESSION that is eval'd (prepend $SUDO if it needs to be
-#   invoked as root)
+# - a POSTINSTALL-EXPRESSION (whitespace must be escaped or the entire
+#   expression quoted!) that is eval'd (prepend $SUDO if it needs to be invoked
+#   as root)
 # A postinstall item runs if the non-postinstall item preceding it in the
 # current definition was missing, but has been successfully installed by the
 # installation commands.
@@ -214,7 +216,7 @@ hasItem()
 {
     local item="${1:?}"; shift
     local name="${item#*:}"
-    local prefix="${item%$name}"
+    local prefix="${item%"$name"}"
 
     case "$prefix" in
 	# If a package retrieval fails, treat this as an existing item, so that
@@ -265,7 +267,7 @@ addItems()
     local item; for item
     do
 	local name="${item#*:}"
-	local prefix="${item%$name}"
+	local prefix="${item%"$name"}"
 	case "$prefix" in
 	    '')		    addedPackages+=("$name");;
 	    ppa:)	    addedPpaRepositories+=("$name");;
@@ -322,12 +324,12 @@ debUrlInstall()
 	local packageNameGlobUrl="${debUrlRecord#*:}"
 	if [[ "$packageNameGlobUrl" =~ ^[0-9]+([smhdwyg]|mo): ]]; then
 	    maxAge="${BASH_REMATCH[0]%:}"
-	    packageNameGlobUrl="${packageNameGlobUrl#${BASH_REMATCH[0]}}"
+	    packageNameGlobUrl="${packageNameGlobUrl#"${BASH_REMATCH[0]}"}"
 	fi
 	local packageUrl="${packageNameGlobUrl#*:}"
 	local packageNameAndGlob="${packageNameGlobUrl%:$packageUrl}"
 	local packageGlob="${packageNameAndGlob##*/}"
-	local packageName="${packageNameAndGlob%$packageGlob}"
+	local packageName="${packageNameAndGlob%"$packageGlob"}"
 	packageName="${packageName%/}"
 
 	# Note: No sudo here, as the downloading will happen as the current user
@@ -364,7 +366,7 @@ customInstall()
     local customAction; for customAction in "${addedCustomActions[@]}"
     do
 	local customActionWithoutSudo="${customAction#\$SUDO }"
-	local sudoPrefix="${customAction%$customActionWithoutSudo}"
+	local sudoPrefix="${customAction%"$customActionWithoutSudo"}"
 
 	if [ -x "${customActionsDirspec}/${customActionWithoutSudo}" ]; then
 	    customActionWithoutSudo="${customActionsDirspec}/${customActionWithoutSudo}"
@@ -460,10 +462,10 @@ for definition in "${definitions[@]}"
 do
     [[ "$definition" =~ ^[[:space:]]*# ]] && continue
     items="${definition%%[	 ]#*}"
-    comment="${definition#$items}"
+    comment="${definition#"$items"}"
     comment="${comment#[	 ]#}"
     comment="${comment##[	 ]}"
-    set -- $items
+    eval "set -- $items"
     itemVerb=are; [ $# -eq 1 ] && itemVerb=is
 
     typeset -a missingItems=()
