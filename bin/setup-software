@@ -84,8 +84,8 @@ CHECK can be one of the following (in decreasing precedence):
   if EXECUTABLE-COMMAND starts with a &, this is replaced by the following
   ACTION (without a $SUDO prefix), allowing you to save repeated typing:
 	custom:&-check:foo-installer
-- an EXECUTABLE-NAME? (located through $PATH) or FILESPEC?, and succeeds if
-  it's there
+- an EXECUTABLE-NAME? (located through $PATH) or GLOB?, and succeeds if
+  it's there / resolves to an existing file or directory
 - the special expression "false"; then, no check is performed and whether the
   installation action will happen depends solely on the (potentially recalled or
   derived from the whole definition) user's answer
@@ -262,7 +262,7 @@ customCheck()
     elif [[ "$customCheck" =~ \?$ ]] && local customCheckLikeAction="${customActionsDirspec}/${customActionWithoutSudo}${customCheck#\&}" && [ -x "$customCheckLikeAction" ]; then
 	"$customCheckLikeAction"
     elif [[ "$customCheck" =~ \?$ ]]; then
-	which "${customCheck%\?}" >/dev/null 2>&1
+	which "${customCheck%\?}" >/dev/null 2>&1 || expandglob -- "${customCheck%\?}" >/dev/null 2>&1
     else
 	if [[ "$customCheck" =~ ^\& ]]; then
 	    customCheck="${customActionWithoutSudo}${customCheck#\&}"
