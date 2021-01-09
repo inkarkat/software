@@ -23,6 +23,12 @@ HELPTEXT
 
 printConfigUsage()
 {
+    cat <<'HELPTEXT'
+A definition consists of one or many whitespace-separated ITEMs, optionally
+followed by a # DESCRIPTION. It can be broken over multiple lines, with a
+trailing \ as the line continuation character.
+HELPTEXT
+    echo
     local padding=
     case "$1" in
 	'') cat <<'HELPTEXT'
@@ -525,7 +531,15 @@ do
 	exit 2
     fi
 
-    readarray -O ${#definitions[@]} -t definitions < "$definitionFilespec"
+    while IFS=$'\n' read -r line
+    do
+	while [[ "$line" =~ \\$ ]]
+	do
+	    IFS=$'\n' read -r nextLine
+	    line="${line%\\}$nextLine"
+	done
+	definitions+=("$line")
+    done < "$definitionFilespec"
 done
 [ ${#definitions[@]} -eq 0 ] && exit 1
 
