@@ -18,34 +18,57 @@ printUsage()
 Guided wizard to install various common software that I use.
 HELPTEXT
     echo
-    printf 'Usage: %q %s\n' "$(basename "$1")" '[-v|--verbose] -a|--all|DEFINITION-NAME|FILESPEC [...] [-?|-h|--help|-H|--config-help]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[-v|--verbose] -a|--all|DEFINITION-NAME|FILESPEC [...] [-?|-h|--help]|[-H|--config-help [TYPE]]'
 }
 
 printConfigUsage()
 {
-    cat <<'HELPTEXT'
+    local padding=
+    case "$1" in
+	'') cat <<'HELPTEXT'
 Items without a prefix refer to packages installed via the distribution's
 package manager (apt).
-
+HELPTEXT
+	    padding='\n'
+	    ;;&
+	''|ppa)	cat <<'HELPTEXT'
 ppa: items refer to Ubuntu personal package archives that enable additional
 packages (or other versions) to be installed through apt.
-
+HELPTEXT
+	    printf "$padding"
+	    ;;&
+	''|deb-build) cat <<'HELPTEXT'
 deb-build: items refer to packages that satisfy the build dependencies for a
 source package.
-
+HELPTEXT
+	    printf "$padding"
+	    ;;&
+	''|deb+url) cat <<'HELPTEXT'
 deb+url: items consist of a
 PACKAGE[:MAX-AGE[SUFFIX]]:[[SUBDIR/]NAME/]PACKAGE-GLOB:URL triplet / quadruplet.
 If ~/install/(SUBDIR|*)/(NAME|*)/PACKAGE-GLOB already exists [and if it is
 younger than MAX-AGE[SUFFIX]], it will be used; else, the *.deb from URL will
 be downloaded (and put into ~/install/* if it exists).
-
+HELPTEXT
+	    printf "$padding"
+	    ;;&
+	''|snap) cat <<'HELPTEXT'
 snap: items refer to packages from the Snap store that work across many
 different Linux distributions, are segregated and update automatically.
-
+HELPTEXT
+	    printf "$padding"
+	    ;;&
+	''|pip3)    cat <<'HELPTEXT'
 pip3: items refer to the Python package installer.
-
+HELPTEXT
+	    printf "$padding"
+	    ;;&
+	''|npm)	cat <<'HELPTEXT'
 npm: items refer to the Node.js package (or "Node modules") installer.
-
+HELPTEXT
+	    printf "$padding"
+	    ;;&
+	''|custom)  cat <<'HELPTEXT'
 custom: items consist of a CHECK:ACTION pair.
 CHECK can be one of the following (in decreasing precedence):
 - an EXECUTABLE-COMMAND in the ./etc/custom directory tree that is called and
@@ -72,7 +95,10 @@ ACTION is one of the following:
   the application
 - an INSTALL-EXPRESSION (whitespace must be escaped or the entire expression
   quoted!) that is eval'd (prepend $SUDO if it needs to be invoked as root)
-
+HELPTEXT
+	    printf "$padding"
+	    ;;&
+	''|postinstall)	cat <<'HELPTEXT'
 postinstall: items consist of an ACTION that is one of the following:
 - an executable command in the ./etc/postinstall directory tree that is invoked
   (prepend $SUDO if it needs to be invoked as root) and should then perform the
@@ -87,6 +113,8 @@ A postinstall item runs if the non-postinstall item preceding it in the current
 definition was missing, but has been successfully installed by the installation
 commands.
 HELPTEXT
+	    ;;&
+    esac
 }
 
 typeset -a acceptedDefinitions=()
