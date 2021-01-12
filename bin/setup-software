@@ -241,7 +241,7 @@ getInstalledNpmPackages()
 	    installedNpmPackages["$packageName"]=t
 	    case ",${DEBUG:-}," in *,setup-software:npm,*) echo >&2 "${PS4}setup-software (npm): Found installed ${packageName}";; esac
 	fi
-    done < <(npm --global --parseable --depth 0 2>/dev/null)
+    done < <(npm ls --global --parseable --depth 0 2>/dev/null)
 
     isInstalledNpmPackagesAvailable=t
 }
