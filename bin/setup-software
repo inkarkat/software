@@ -554,7 +554,7 @@ do
     comment="${comment##[	 ]}"
     subject="${comment:-"$items"}"
     eval "set -- $items"
-    itemVerb=are; [ $# -eq 1 ] && itemVerb=is
+    itemVerb=are; [ -n "$comment" -o $# -eq 1 ] && itemVerb=is
     itemAuxVerb=
 
     typeset -a missingItems=()
@@ -586,9 +586,10 @@ do
     else
 	what=
 	if [ $# -gt ${#missingItems[@]} ]; then
-	    what="missing: ${missingItems[*]}"
+	    missingItemsPlural=s; [ ${#missingItems[@]} -eq 1 ] && missingItemsPlural=
+	    what="${#missingItems[@]} item${missingItemsPlural} missing: ${missingItems[*]}"
 	elif [ $# -gt 1 ]; then
-	    what='all are missing'
+	    what="all ${#missingItems[@]} items are missing"
 	fi
 
 	if [ ${#missingItems[@]} -eq 1 ] && [[ "${missingItems[0]}" =~ 'custom:false:' ]]; then
