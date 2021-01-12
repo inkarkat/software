@@ -545,6 +545,7 @@ done
 
 
 
+missingDefinitionCount=0
 for definition in "${definitions[@]}"
 do
     [[ "$definition" =~ ^[[:space:]]*# ]] && continue
@@ -584,6 +585,7 @@ do
     if [ ${#missingItems[@]} -eq 0 ]; then
 	[ "$isVerbose" ] && printf >&2 'Already installed: %s\n' "$definition"
     else
+	let missingDefinitionCount+=1
 	what=
 	if [ $# -gt ${#missingItems[@]} ]; then
 	    missingItemsPlural=s; [ ${#missingItems[@]} -eq 1 ] && missingItemsPlural=
@@ -615,5 +617,20 @@ npmInstall
 customInstall
 postInstall
 
-[ ${#toBeInstalledCommands[@]} -gt 0 ] && \
+if [ ${#toBeInstalledCommands[@]} -gt 0 ]; then
     printf '%s\n' "${toBeInstalledCommands[@]}"
+    exit
+fi
+
+if [ "${#definitions[@]}" -gt 0 ]; then
+    if [ $missingDefinitionCount -gt 0 ]; then
+	missingDefinitionCountPlural=s; [ $missingDefinitionCount -eq 1 ] && missingDefinitionCountPlural=
+	printf >&2 '%d not yet installed definition%s were declined.\n' "$missingDefinitionCount" "$missingDefinitionCountPlural"
+    else
+	definitionsVerb=are; definitionsPlural=s; [ ${#definitions[@]} -eq 1 ] && { definitionsVerb=is; definitionsPlural= ; }
+	printf >&2 '%d definition%s %s already installed.\n' "${#definitions[@]}" "$definitionsPlural" "$definitionsVerb"
+    fi
+else
+    echo >&2 'No definitions have been found.'
+fi
+exit 1
