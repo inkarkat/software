@@ -317,7 +317,7 @@ hasDebSrc()
 	local debSrcEnable; printf -v debSrcEnable %q "${projectDir}/lib/enableDebSrc.sh"
 	toBeInstalledCommands+=("${SUDO}${SUDO:+ }$debSrcEnable $APT_SOURCES")
     else
-    	return 1
+	return 1
     fi
 }
 isAvailable()
@@ -552,6 +552,7 @@ do
     comment="${definition#"$items"}"
     comment="${comment#[	 ]#}"
     comment="${comment##[	 ]}"
+    subject="${comment:-"$items"}"
     eval "set -- $items"
     itemVerb=are; [ $# -eq 1 ] && itemVerb=is
     itemAuxVerb=
@@ -595,7 +596,7 @@ do
 	    itemAuxVerb=be
 	fi
 
-	if askTo --subject "$items" --verb "${comment:+(}${comment}${comment:+) }$itemVerb not yet${itemAuxVerb:+ }$itemAuxVerb" --state "installed${what:+ (}${what}${what:+)}" --action 'install it'; then
+	if askTo --subject "$subject" --verb "$itemVerb not yet${itemAuxVerb:+ }$itemAuxVerb" --state "installed${what:+ (}${what}${what:+)}" --action 'install it'; then
 	    addItems "${missingItems[@]}"
 	fi
     fi
