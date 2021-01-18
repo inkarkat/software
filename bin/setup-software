@@ -549,6 +549,8 @@ missingDefinitionCount=0
 for definition in "${definitions[@]}"
 do
     [[ "$definition" =~ ^[[:space:]]*# ]] && continue
+    [[ "$definition" =~ ^[[:space:]]*$ ]] && continue
+
     items="${definition%%[	 ]#*}"
     comment="${definition#"$items"}"
     comment="${comment#[	 ]#}"
