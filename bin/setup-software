@@ -389,8 +389,8 @@ addItems()
 	    wine+url:)	    isAvailable wine && addedWineUrlPackages+=("$name");;
 	    custom:)	    addedCustomActions+=("${name#*:}");;
 	    postinstall:)   # Convert the "postinstall:ACTION\nITEM" to
-			    # --check "$ITEM" --action "$ACTION".
-			    addedPostinstallArgs+=(--check "${name#*$'\n'}" --action "${name%%$'\n'*}")
+			    # --post "$ITEM" --action "$ACTION".
+			    addedPostinstallArgs+=(--post "${name#*$'\n'}" --action "${name%%$'\n'*}")
 			    ;;
 	    *)		    printf >&2 'ERROR: Invalid type: %s\n' "$prefix"; exit 3;;
 	esac
@@ -582,7 +582,7 @@ printInstallCommands()
 }
 
 
-checkStatus=
+prePostStatus=
 isVerbose=
 while [ $# -ne 0 ]
 do
@@ -604,20 +604,20 @@ do
 			fi
 			;;
 	--database)	shift; database "$@"; exit $?;;
-	--check)	shift; item="$1"; shift
+	--post)		shift; item="$1"; shift
 			if [ "$1" != '--action' ]; then
-			    printf >&2 'ASSERT: No --action following after --check %q.\n' "$item"; exit 3
+			    printf >&2 'ASSERT: No --action following after --post %q.\n' "$item"; exit 3
 			fi
 			shift; action="$1"; shift
-			: ${checkStatus:=0}
-			runPostInstallCheck "$item" "$action" || checkStatus=1
+			: ${prePostStatus:=0}
+			runPostInstallCheck "$item" "$action" || prePostStatus=1
 			;;
 	--)		shift; break;;
 	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
 	*)		break;;
     esac
 done
-[ -n "$checkStatus" ] && exit $checkStatus
+[ -n "$prePostStatus" ] && exit $prePostStatus
 if [ $# -eq 0 ]; then
     printUsage "$0" >&2
     exit 2
