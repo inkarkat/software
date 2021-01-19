@@ -133,6 +133,8 @@ postinstall: items consist of an ACTION that is one of the following:
   extension) is taken as a notification title and contents as notification to be
   displayed (presumably with instructions for manual post-installation steps)
   immediately and on each login until the user acknowledges it
+- another ITEM (that is then executed as usual); for packages installed via the
+  distribution's package manager, use the special "native:" prefix here
 - a POSTINSTALL-EXPRESSION (whitespace must be escaped or the entire expression
   quoted!) that is eval'd (prepend $SUDO if it needs to be invoked as root)
 A postinstall item runs if the non-postinstall item preceding it in the current
@@ -532,7 +534,28 @@ runPostInstallCheck()
 	elif [ -e "${postinstallActionsDirspec}/${action}" ]; then
 	    addLoginNotification --file "${postinstallActionsDirspec}/${action}" --immediate
 	else
-	    eval "$action"
+	    local name="${item#*:}"
+	    local prefix="${item%"$name"}"
+	    case "$prefix" in
+		# Note: Native packages would be indistinguishable from the
+		# POSTINSTALL-EXPRESSION, as they have no prefix. Allow using a
+		# special "native:" prefix should it be necessary to install a
+		# package via the distribution's package manager after a
+		# successful installation.
+		native:)
+		    addItems "${action#native:}"
+		    printInstallCommands || \
+			printf >&2 'Skipping postinstall action, because %s indicated that no action is needed.\n' "$action"
+		    ;;
+		ppa:|build-dep:|deb+url:|snap:|pip3:|npm:|wine+url:|custom:)
+		    addItems "$action"
+		    generateInstallCommands
+		    printInstallCommands || \
+			printf >&2 'Skipping postinstall action, because %s indicated that no action is needed.\n' "$action"
+		    ;;
+		*)
+		    eval "$action";;
+	    esac
 	fi || return 1
     else
 	printf >&2 'Skipping postinstall action, because installation of %s was not successful.\n' "$item"
