@@ -539,6 +539,26 @@ runPostInstallCheck()
     fi
 }
 
+generateInstallCommands()
+{
+    ppaInstall
+    pkgInstall
+    debBuildDependencyInstall
+    debUrlInstall
+    snapInstall
+    pip3Install
+    npmInstall
+    wineUrlInstall
+    customInstall
+    postInstall
+}
+printInstallCommands()
+{
+    [ ${#toBeInstalledCommands[@]} -eq 0 ] && return 1
+    printf '%s\n' "${toBeInstalledCommands[@]}"
+}
+
+
 checkStatus=
 isVerbose=
 while [ $# -ne 0 ]
@@ -672,21 +692,8 @@ done
 
 
 
-ppaInstall
-pkgInstall
-debBuildDependencyInstall
-debUrlInstall
-snapInstall
-pip3Install
-npmInstall
-wineUrlInstall
-customInstall
-postInstall
-
-if [ ${#toBeInstalledCommands[@]} -gt 0 ]; then
-    printf '%s\n' "${toBeInstalledCommands[@]}"
-    exit
-fi
+generateInstallCommands
+printInstallCommands && exit
 
 if [ "${#definitions[@]}" -gt 0 ]; then
     if [ $missingDefinitionCount -gt 0 ]; then
