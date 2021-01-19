@@ -79,7 +79,7 @@ HELPTEXT
 	    ;;&
 	''|wine+url)	cat <<'HELPTEXT'
 wine+url: items consist of a
-    EXECUTABLE-NAME?:[:MAX-AGE[SUFFIX]]:[[SUBDIR/]NAME/]PACKAGE-GLOB:[URL]
+    EXECUTABLE-NAME?[:MAX-AGE[SUFFIX]]:[[SUBDIR/]NAME/]PACKAGE-GLOB:[URL]
 triplet / quadruplet.
 If EXECUTABLE-NAME? (located in Wine's drive C: unless it's an absolute path)
 exists / resolves to an existing file or directory, the item is deemed already
@@ -287,7 +287,7 @@ getInstalledNpmPackages()
 
 hasWinePackage()
 {
-    if [[ ! "$1" =~ ^[^:]+\?:.+:. ]]; then
+    if [[ ! "$1" =~ ^[^:]+\?:.+: ]]; then
 	printf >&2 'ERROR: Invalid wine+url item: "wine+url:%s"\n' "$1"
 	exit 3
     fi
