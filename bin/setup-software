@@ -534,8 +534,8 @@ runPostInstallCheck()
 	elif [ -e "${postinstallActionsDirspec}/${action}" ]; then
 	    addLoginNotification --file "${postinstallActionsDirspec}/${action}" --immediate
 	else
-	    local name="${item#*:}"
-	    local prefix="${item%"$name"}"
+	    local name="${action#*:}"
+	    local prefix="${action%"$name"}"
 	    case "$prefix" in
 		# Note: Native packages would be indistinguishable from the
 		# POSTINSTALL-EXPRESSION, as they have no prefix. Allow using a
