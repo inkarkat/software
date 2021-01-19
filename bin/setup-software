@@ -7,6 +7,7 @@ readonly scriptDir="$([ "${BASH_SOURCE[0]}" ] && absoluteScriptFile="$(readlink 
 readonly projectDir="${scriptDir}/.."
 readonly scriptName="$(basename -- "${BASH_SOURCE[0]}")"
 customActionsDirspec="${projectDir}/etc/custom"
+preinstallActionsDirspec="${projectDir}/etc/preinstall"
 postinstallActionsDirspec="${projectDir}/etc/postinstall"
 definitionDirspec="${projectDir}/etc/definitions"
 
@@ -124,6 +125,24 @@ ACTION is one of the following:
 HELPTEXT
 	    printf "$padding"
 	    ;;&
+	''|preinstall)	cat <<'HELPTEXT'
+preinstall: items consist of an ACTION that is one of the following:
+- an executable command in the ./etc/preinstall directory tree that is invoked
+  (prepend $SUDO if it needs to be invoked as root) and should then perform the
+  preinstallation steps
+- a text file in the ./etc/preinstall directory tree whose file name (without
+  extension) is taken as a notification title and contents as notification to be
+  displayed (presumably with instructions for manual pre-installation steps)
+  immediately and on each login until the user acknowledges it
+- another ITEM (that is then executed as usual); for packages installed via the
+  distribution's package manager, use the special "native:" prefix here
+- a PREINSTALL-EXPRESSION (whitespace must be escaped or the entire expression
+  quoted!) that is eval'd (prepend $SUDO if it needs to be invoked as root)
+A preinstall item runs (before other installation actions) if the
+non-pre/postinstall item preceding it in the current definition is missing, but
+the definition has now been selected.
+HELPTEXT
+	    ;;&
 	''|postinstall)	cat <<'HELPTEXT'
 postinstall: items consist of an ACTION that is one of the following:
 - an executable command in the ./etc/postinstall directory tree that is invoked
@@ -137,9 +156,9 @@ postinstall: items consist of an ACTION that is one of the following:
   distribution's package manager, use the special "native:" prefix here
 - a POSTINSTALL-EXPRESSION (whitespace must be escaped or the entire expression
   quoted!) that is eval'd (prepend $SUDO if it needs to be invoked as root)
-A postinstall item runs if the non-postinstall item preceding it in the current
-definition was missing, but has been successfully installed by the installation
-commands.
+A postinstall item runs if the non-pre/postinstall item preceding it in the
+current definition was missing, but has been successfully installed by the
+installation commands.
 HELPTEXT
 	    ;;&
     esac
@@ -372,6 +391,7 @@ isAvailable()
 	return 1
     fi
 }
+typeset -A addedItems=()
 addItems()
 {
     local item; for item
@@ -388,12 +408,29 @@ addItems()
 	    npm:)	    isAvailable npm  && addedNpmPackages+=("$name");;
 	    wine+url:)	    isAvailable wine && addedWineUrlPackages+=("$name");;
 	    custom:)	    addedCustomActions+=("${name#*:}");;
+	    preinstall:)    if [ "${addedItems["${name#*$'\n'}"]}" ]; then
+				# Convert the "preinstall:ACTION\nITEM" to
+				# --pre "$ITEM" --action "$ACTION" and do a
+				# recursive invocation now, in order to print
+				# the preinstallation commands before anything
+				# else. This cannot be done within this script's
+				# scope, as preinstall items that reference
+				# another ITEM will populate all the
+				# addedITEM* arrays, and everything will be
+				# intermingled and later printed type by type in
+				# the static order, but the purpose of
+				# preinstall is to execute stuff before anything
+				# else.
+				"${scriptDir}/${scriptName}" ${isVerbose:+--verbose} --pre "${name#*$'\n'}" --action "${name%%$'\n'*}"
+			    fi
+			    ;;
 	    postinstall:)   # Convert the "postinstall:ACTION\nITEM" to
 			    # --post "$ITEM" --action "$ACTION".
 			    addedPostinstallArgs+=(--post "${name#*$'\n'}" --action "${name%%$'\n'*}")
 			    ;;
 	    *)		    printf >&2 'ERROR: Invalid type: %s\n' "$prefix"; exit 3;;
 	esac
+	addedItems["$item"]=t	# Record all added items for the preinstall check.
     done
 }
 
@@ -513,6 +550,45 @@ customInstall()
     done
 }
 
+preInstall()
+{
+    local item="${1:?}"; shift
+    local action="${1:?}"; shift
+
+    local actionWithoutSudo="${action#\$SUDO }"
+    if [ -x "${preinstallActionsDirspec}/${actionWithoutSudo}" ]; then
+	actionWithoutSudo="${preinstallActionsDirspec}/${actionWithoutSudo}"
+	toBeInstalledCommands+=("${sudoPrefix:+${SUDO}${SUDO:+ }}${actionWithoutSudo}")
+    elif [ -e "${preinstallActionsDirspec}/${action}" ]; then
+	local quotedPreinstallNotification; printf -v quotedPreinstallNotification %s "${preinstallActionsDirspec}/${action}"
+	toBeInstalledCommands+=("addLoginNotification --file $quotedPreinstallNotification --immediate")
+    else
+	local name="${action#*:}"
+	local prefix="${action%"$name"}"
+	case "$prefix" in
+	    # Note: Native packages would be indistinguishable from the
+	    # PREINSTALL-EXPRESSION, as they have no prefix. Allow using a
+	    # special "native:" prefix should it be necessary to install a
+	    # package via the distribution's package manager before the main
+	    # installation.
+	    native:)
+		addItems "${action#native:}"
+		generateInstallCommands
+		;;
+	    ppa:|build-dep:|deb+url:|snap:|pip3:|npm:|wine+url:|custom:)
+		addItems "$action"
+		generateInstallCommands
+		;;
+	    *)
+		toBeInstalledCommands+=("${sudoPrefix:+${SUDO}${SUDO:+ }}${actionWithoutSudo}")
+		;;
+	esac
+    fi
+
+    printInstallCommands || \
+	printf >&2 'Skipping preinstall action, because %s indicated that no action is needed.\n' "$action"
+}
+
 postInstall()
 {
     [ ${#addedPostinstallArgs[@]} -gt 0 ] || return
@@ -604,6 +680,14 @@ do
 			fi
 			;;
 	--database)	shift; database "$@"; exit $?;;
+	--pre)		shift; item="$1"; shift
+			if [ "$1" != '--action' ]; then
+			    printf >&2 'ASSERT: No --action following after --pre %q.\n' "$item"; exit 3
+			fi
+			shift; action="$1"; shift
+			: ${prePostStatus:=0}
+			preInstall "$item" "$action" || prePostStatus=1
+			;;
 	--post)		shift; item="$1"; shift
 			if [ "$1" != '--action' ]; then
 			    printf >&2 'ASSERT: No --action following after --post %q.\n' "$item"; exit 3
@@ -671,12 +755,13 @@ do
     for item
     do
 	case "$item" in
-	    postinstall:*)
+	    preinstall:*|postinstall:*)
 		if [ -n "$lastMissingItem" ]; then
-		    # The postinstall action will run when the installation of
-		    # the previous item was successful. To be able to check
-		    # that, we need that item as well, so append it on a new
-		    # line.
+		    # The preinstall action will run when the previous item will
+		    # be installed. The postinstall action will run when the
+		    # installation of the previous item was successful. To be
+		    # able to check that, we need that item as well, so append
+		    # it on a new line.
 		    missingItems+=("$item"$'\n'"$lastMissingItem")
 		fi
 		;;
