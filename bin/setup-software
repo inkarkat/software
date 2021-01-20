@@ -564,7 +564,7 @@ preInstall()
 	toBeInstalledCommands+=("${sudoPrefix:+${SUDO}${SUDO:+ }}${actionWithoutSudo}")
     elif [ -e "${preinstallActionsDirspec}/${action}" ]; then
 	local quotedPreinstallNotification; printf -v quotedPreinstallNotification %s "${preinstallActionsDirspec}/${action}"
-	toBeInstalledCommands+=("addLoginNotification --file $quotedPreinstallNotification --immediate")
+	toBeInstalledCommands+=("addLoginNotification --file $quotedPreinstallNotification --immediate --no-blocking-gui")
     else
 	local name="${action#*:}"
 	local prefix="${action%"$name"}"
