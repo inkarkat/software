@@ -319,6 +319,9 @@ customCheck()
 	which "${customCheck%\?}" >/dev/null 2>&1 || expandglob -- "${customCheck%\?}" >/dev/null 2>&1
     else
 	if [[ "$customCheck" =~ ^\& ]]; then
+	    if [ -x "${customActionsDirspec}/${customActionWithoutSudo}" ]; then
+		customActionWithoutSudo="${customActionsDirspec}/${customActionWithoutSudo}"
+	    fi
 	    customCheck="${customActionWithoutSudo}${customCheck#\&}"
 	fi
 
