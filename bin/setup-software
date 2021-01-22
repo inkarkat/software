@@ -389,7 +389,19 @@ isAvailable()
     fi
 
     if askTo --subject "$packageManagerName" --verb 'is not yet' --state installed --action 'install it'; then
+	# Allow special pre- and post-install steps for implicitly added package manager packages.
+	local actionScript
+	for actionScript in "${preinstallActionsDirspec}/${packageManagerName}"/*
+	do
+	    [ -x "$actionScript" ] && "${scriptDir}/${scriptName}" ${isVerbose:+--verbose} --pre "$packageManagerName" --action "${actionScript#"${preinstallActionsDirspec}/${packageManagerName}/"}"
+	done
+
 	addedPackages+=("$packageManagerName")
+
+	for actionScript in "${postinstallActionsDirspec}/${packageManagerName}"/*
+	do
+	    [ -x "$actionScript" ] && addedPostinstallArgs+=(--post "$packageManagerName" --action "${actionScript#"${postinstallActionsDirspec}/${packageManagerName}/"}")
+	done
     else
 	return 1
     fi
