@@ -16,10 +16,11 @@ SUDO='sudo --set-home'; [ $EUID -eq 0 ] && SUDO=''  # Use root's home; especiall
 printUsage()
 {
     cat <<HELPTEXT
-Guided wizard to install various common software that I use.
+Guided wizard to interactively choose / take (with -y|--yes) (from DEFINITION(s)
+/ all / the passed GROUP(s)) and install various common software that I use.
 HELPTEXT
     echo
-    printf 'Usage: %q %s\n' "$(basename "$1")" '[-v|--verbose] -a|--all|GROUP-NAME|GROUP-FILESPEC [...] [-?|-h|--help]|[-H|--config-help [TYPE]]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[-v|--verbose] [-y|--yes] [-s|--select DEFINITION [-s ...]] -a|--all|GROUP-NAME|GROUP-FILESPEC [...] [-?|-h|--help]|[-H|--config-help [TYPE]]'
 }
 
 printConfigUsage()
@@ -676,6 +677,8 @@ printInstallCommands()
 }
 
 
+obtainSelection=askTo
+typeset -a selections=()
 prePostStatus=
 isVerbose=
 while [ $# -ne 0 ]
@@ -689,6 +692,8 @@ do
 			exit 0
 			;;
 	--verbose|-v)	shift; isVerbose=t;;
+	--yes|-y)	shift; obtainSelection=true;;
+	--select|-s)	shift; selections+=("$1"); shift;;
 	--all|-a)	shift
 			addAllAcceptedGroups
 			if [ ${#acceptedGroups[@]} -eq 0 ]; then
@@ -748,7 +753,21 @@ do
 	done
 	[[ "$line" =~ ^[[:space:]]*# ]] && continue
 	[[ "$line" =~ ^[[:space:]]*$ ]] && continue
-	definitions+=("$line")
+
+
+	if [ ${#selections[@]} -eq 0 ]; then
+	    definitions+=("$line")
+	else
+	    items="${line%%[	 ]#*}"
+	    comment="${line#"$items"}"
+	    comment="${comment#[	 ]#}"
+	    comment="${comment##[	 ]}"
+	    subject="${comment:-"$items"}"
+
+	    contains "$subject" "${selections[@]}" && \
+		definitions+=("$line")
+	fi
+
     done < "$definitionFilespec"
 done
 [ ${#definitions[@]} -eq 0 ] && exit 1
@@ -809,7 +828,7 @@ do
 	    itemAuxVerb=be
 	fi
 
-	if askTo --subject "$subject" --verb "$itemVerb not yet${itemAuxVerb:+ }$itemAuxVerb" --state "installed${what:+ (}${what}${what:+)}" --action 'install it'; then
+	if $obtainSelection --subject "$subject" --verb "$itemVerb not yet${itemAuxVerb:+ }$itemAuxVerb" --state "installed${what:+ (}${what}${what:+)}" --action 'install it'; then
 	    addItems "${missingItems[@]}"
 	fi
     fi
