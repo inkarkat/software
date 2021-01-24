@@ -743,6 +743,8 @@ do
 	    IFS=$'\n' read -r nextLine
 	    line="${line%\\}$nextLine"
 	done
+	[[ "$line" =~ ^[[:space:]]*# ]] && continue
+	[[ "$line" =~ ^[[:space:]]*$ ]] && continue
 	definitions+=("$line")
     done < "$definitionFilespec"
 done
@@ -753,9 +755,6 @@ done
 missingDefinitionCount=0
 for definition in "${definitions[@]}"
 do
-    [[ "$definition" =~ ^[[:space:]]*# ]] && continue
-    [[ "$definition" =~ ^[[:space:]]*$ ]] && continue
-
     items="${definition%%[	 ]#*}"
     comment="${definition#"$items"}"
     comment="${comment#[	 ]#}"
