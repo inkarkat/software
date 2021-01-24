@@ -19,7 +19,7 @@ printUsage()
 Guided wizard to install various common software that I use.
 HELPTEXT
     echo
-    printf 'Usage: %q %s\n' "$(basename "$1")" '[-v|--verbose] -a|--all|DEFINITION-NAME|FILESPEC [...] [-?|-h|--help]|[-H|--config-help [TYPE]]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[-v|--verbose] -a|--all|GROUP-NAME|GROUP-FILESPEC [...] [-?|-h|--help]|[-H|--config-help [TYPE]]'
 }
 
 printConfigUsage()
@@ -164,14 +164,14 @@ HELPTEXT
     esac
 }
 
-typeset -a acceptedDefinitions=()
-addAllAcceptedDefinitions()
+typeset -a acceptedGroups=()
+addAllAcceptedGroups()
 {
-    local definition; while IFS=$'\n' read -r definition
+    local group; while IFS=$'\n' read -r group
     do
-	definition="${definition#./}"
-	memoizeDecision --memoize-group setup-software-definitions --subject "$definition" --verb 'is not' --state 'chosen' --action 'consider it' && \
-	    acceptedDefinitions+=("$definition")
+	group="${group#./}"
+	memoizeDecision --memoize-group setup-software-groups --subject "$group" --verb 'is not' --state 'chosen' --action 'consider it' && \
+	    acceptedGroups+=("$group")
     done < <(cd "$definitionDirspec" && find . -type f -print | sort)
 }
 
@@ -687,11 +687,11 @@ do
 			;;
 	--verbose|-v)	shift; isVerbose=t;;
 	--all|-a)	shift
-			addAllAcceptedDefinitions
-			if [ ${#acceptedDefinitions[@]} -eq 0 ]; then
+			addAllAcceptedGroups
+			if [ ${#acceptedGroups[@]} -eq 0 ]; then
 			    exit 1
 			else
-			    set -- "${acceptedDefinitions[@]}" "$@"
+			    set -- "${acceptedGroups[@]}" "$@"
 			fi
 			;;
 	--database)	shift; database "$@"; exit $?;;
