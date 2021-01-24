@@ -28,6 +28,9 @@ printConfigUsage()
 A definition consists of one or many whitespace-separated ITEMs, optionally
 followed by a # DESCRIPTION. It can be broken over multiple lines, with a
 trailing \ as the line continuation character.
+Definitions are grouped into DEFINITION-GROUPs which contain definitions that
+belong to a certain category or are typically installed together for a certain
+use case.
 HELPTEXT
     echo
     local padding=
@@ -110,7 +113,7 @@ CHECK can be one of the following (in decreasing precedence):
   is replaced by the following ACTION (without a $SUDO prefix), allowing you
   to re-use the same script for checking and installing:
 	custom:'& --check':foo-installer
-  or save repeated typing:
+    or save repeated typing:
 	custom:&-check:foo-installer
 ACTION is one of the following:
 - an executable command in the ./etc/custom directory tree that is invoked
