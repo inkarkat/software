@@ -18,6 +18,8 @@ printShortUsage()
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
     printf 'Usage: %q %s\n' "$(basename "$1")" '[-v|--verbose] [-y|--yes] [-s|--select DEFINITION [-s ...]] -a|--all|GROUP-NAME|GROUP-FILESPEC [...] [-?|-h|--help]|[-H|--config-help [TYPE]]'
+    echo
+    printf 'Usage: packageInstallCommandLine="$(%q %s)" && eval "$packageInstallCommandLine"\n' "$(basename "$1")" '--yes [--select DEFINITION] GROUP-FILESPEC'
 }
 printUsage()
 {
