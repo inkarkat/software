@@ -5,11 +5,8 @@ shopt -qs extglob
 readonly scriptDir="$([ "${BASH_SOURCE[0]}" ] && absoluteScriptFile="$(readlink -nf -- "${BASH_SOURCE[0]}")" && dirname -- "$absoluteScriptFile" || exit 3)"
 [ -d "$scriptDir" ] || { echo >&2 "ERROR: Cannot determine script directory!"; exit 3; }
 readonly projectDir="${scriptDir}/.."
+baseDir="${projectDir}/etc"
 readonly scriptName="$(basename -- "${BASH_SOURCE[0]}")"
-customActionsDirspec="${projectDir}/etc/custom"
-preinstallActionsDirspec="${projectDir}/etc/preinstall"
-postinstallActionsDirspec="${projectDir}/etc/postinstall"
-definitionDirspec="${projectDir}/etc/definitions"
 
 SUDO='sudo --set-home'; [ $EUID -eq 0 ] && SUDO=''  # Use root's home; especially pip3 writes to ~/.cache/pip and complains if the files belong to another user.
 
@@ -17,9 +14,9 @@ printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s\n' "$(basename "$1")" '[-v|--verbose] [-y|--yes] [-s|--select DEFINITION [-s ...]] -a|--all|GROUP-NAME|GROUP-FILESPEC [...] [-?|-h|--help]|[-H|--config-help [TYPE]]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[-v|--verbose] [-y|--yes] [-s|--select DEFINITION [-s ...]] [--base-dir BASE-DIR] -a|--all|GROUP-NAME|GROUP-FILESPEC [...] [-?|-h|--help]|[-H|--config-help [TYPE]]'
     echo
-    printf 'Usage: packageInstallCommandLine="$(%q %s)" && eval "$packageInstallCommandLine"\n' "$(basename "$1")" '--yes [--select DEFINITION] GROUP-FILESPEC'
+    printf 'Usage: packageInstallCommandLine="$(%q %s)" && eval "$packageInstallCommandLine"\n' "$(basename "$1")" '--yes [--select DEFINITION] (--base-dir BASE-DIR -a|--all|GROUP-NAME | GROUP-FILESPEC)'
 }
 printUsage()
 {
@@ -53,10 +50,13 @@ HELPDESCRIPTION
 			(with definitions broken over multiple lines already
 			joined), instead of considering all from the passed
 			GROUP(s).
+    --base-dir BASE-DIR	Reference definitions, custom actions, pre-, and
+			post-install actions from BASE-DIR instead of using
+			those bundled with this project.
     --all|-a		Consider definitions from all existing definition
 			groups.
     GROUP-NAME		Consider definitions from GROUP-NAME, as stored inside
-			this project.
+			this project / BASE-DIR.
     GROUP-FILESPEC	Consider definitions from GROUP-FILESPEC, which can
 			point to anywhere in the file system.
 HELPTEXT
@@ -730,6 +730,7 @@ do
 			eval 'printConfigUsage "$@"' "${pager:+|}" '"${pager[@]}"'
 			exit 0
 			;;
+	--base-dir)	shift; baseDir="${1:?}"; shift;;
 	--verbose|-v)	shift; isVerbose=t;;
 	--yes|-y)	shift; obtainSelection=true;;
 	--select|-s)	shift; selections+=("$1"); shift;;
@@ -770,6 +771,10 @@ if [ $# -eq 0 ]; then
 fi
 
 IFS=' '
+customActionsDirspec="${baseDir}/custom"
+preinstallActionsDirspec="${baseDir}/preinstall"
+postinstallActionsDirspec="${baseDir}/postinstall"
+definitionDirspec="${baseDir}/definitions"
 
 typeset -a definitions=()
 for definitionFile
