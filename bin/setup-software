@@ -436,7 +436,7 @@ isAvailable()
 	local actionScript
 	for actionScript in "${preinstallActionsDirspec}/${packageManagerName}"/*
 	do
-	    [ -x "$actionScript" ] && "${scriptDir}/${scriptName}" ${isVerbose:+--verbose} --pre "$packageManagerName" --action "${actionScript#"${preinstallActionsDirspec}/${packageManagerName}/"}"
+	    [ -x "$actionScript" ] && "${scriptDir}/${scriptName}" "${recursiveArgs[@]}" --pre "$packageManagerName" --action "${actionScript#"${preinstallActionsDirspec}/${packageManagerName}/"}"
 	done
 
 	addedPackages+=("$packageManagerName")
@@ -479,7 +479,7 @@ addItems()
 				# the static order, but the purpose of
 				# preinstall is to execute stuff before anything
 				# else.
-				"${scriptDir}/${scriptName}" ${isVerbose:+--verbose} --pre "${name#*$'\n'}" --action "${name%%$'\n'*}"
+				"${scriptDir}/${scriptName}" "${recursiveArgs[@]}" --pre "${name#*$'\n'}" --action "${name%%$'\n'*}"
 			    fi
 			    ;;
 	    postinstall:)   # Convert the "postinstall:ACTION\nITEM" to
@@ -652,7 +652,7 @@ postInstall()
     [ ${#addedPostinstallArgs[@]} -gt 0 ] || return
 
     local quotedPostInstallCommand
-    printf -v quotedPostInstallCommand '%q ' "${scriptDir}/${scriptName}" ${isVerbose:+--verbose} "${addedPostinstallArgs[@]}"
+    printf -v quotedPostInstallCommand '%q ' "${scriptDir}/${scriptName}" "${recursiveArgs[@]}" "${addedPostinstallArgs[@]}"
     toBeInstalledCommands+=("${quotedPostInstallCommand% }")
 }
 runPostInstallCheck()
@@ -720,6 +720,7 @@ obtainSelection=askTo
 typeset -a selections=()
 prePostStatus=
 isVerbose=
+typeset -a recursiveArgs=()
 while [ $# -ne 0 ]
 do
     case "$1" in
@@ -730,8 +731,8 @@ do
 			eval 'printConfigUsage "$@"' "${pager:+|}" '"${pager[@]}"'
 			exit 0
 			;;
-	--base-dir)	shift; baseDir="${1:?}"; shift;;
-	--verbose|-v)	shift; isVerbose=t;;
+	--base-dir)	recursiveArgs+=("$1" "$2"); shift; baseDir="${1:?}"; shift;;
+	--verbose|-v)	recursiveArgs+=("$1"); shift; isVerbose=t;;
 	--yes|-y)	shift; obtainSelection=true;;
 	--select|-s)	shift; selections+=("$1"); shift;;
 	--all|-a)	shift
