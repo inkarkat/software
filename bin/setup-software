@@ -330,24 +330,20 @@ preInstall()
     else
 	local name="${action#*:}"
 	local prefix="${action%"$name"}"
-	case "$prefix" in
+	if [ "$prefix" = native: ]; then
 	    # Note: Native packages would be indistinguishable from the
 	    # PREINSTALL-EXPRESSION, as they have no prefix. Allow using a
 	    # special "native:" prefix should it be necessary to install a
 	    # package via the distribution's package manager before the main
 	    # installation.
-	    native:)
-		addItems "${action#native:}"
-		generateInstallCommands
-		;;
-	    ppa:|build-dep:|deb+url:|snap:|pip3:|npm:|wine+url:|custom:)
-		addItems "$action"
-		generateInstallCommands
-		;;
-	    *)
-		toBeInstalledCommands+=("${sudoPrefix:+${SUDO}${SUDO:+ }}${actionWithoutSudo}")
-		;;
-	esac
+	    addItems "${action#native:}"
+	    generateInstallCommands
+	elif [ -n "${typeRegistry["$prefix"]}" ]; then
+	    addItems "$action"
+	    generateInstallCommands
+	else
+	    toBeInstalledCommands+=("${sudoPrefix:+${SUDO}${SUDO:+ }}${actionWithoutSudo}")
+	fi
     fi
 
     printInstallCommands || \
@@ -377,26 +373,23 @@ runPostInstallCheck()
 	else
 	    local name="${action#*:}"
 	    local prefix="${action%"$name"}"
-	    case "$prefix" in
+	    if [ "$prefix" = native: ]; then
 		# Note: Native packages would be indistinguishable from the
 		# POSTINSTALL-EXPRESSION, as they have no prefix. Allow using a
 		# special "native:" prefix should it be necessary to install a
 		# package via the distribution's package manager after a
 		# successful installation.
-		native:)
-		    addItems "${action#native:}"
-		    printInstallCommands || \
-			printf >&2 'Skipping postinstall action, because %s indicated that no action is needed.\n' "$action"
-		    ;;
-		ppa:|build-dep:|deb+url:|snap:|pip3:|npm:|wine+url:|custom:)
-		    addItems "$action"
-		    generateInstallCommands
-		    printInstallCommands || \
-			printf >&2 'Skipping postinstall action, because %s indicated that no action is needed.\n' "$action"
-		    ;;
-		*)
-		    eval "$action";;
-	    esac
+		addItems "${action#native:}"
+		printInstallCommands || \
+		    printf >&2 'Skipping postinstall action, because %s indicated that no action is needed.\n' "$action"
+	    elif [ -n "${typeRegistry["$prefix"]}" ]; then
+		addItems "$action"
+		generateInstallCommands
+		printInstallCommands || \
+		    printf >&2 'Skipping postinstall action, because %s indicated that no action is needed.\n' "$action"
+	    else
+		eval "$action"
+	    fi
 	fi || return 1
     else
 	printf >&2 'Skipping postinstall action, because installation of %s was not successful.\n' "$item"
