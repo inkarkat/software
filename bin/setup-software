@@ -231,34 +231,34 @@ database()
     picoDB --base-type data --namespace setup-software --table "$@"
 }
 
-typeset -A installedPackages=()
-isInstalledPackagesAvailable=
-getInstalledPackages()
+typeset -A installedNativePackages=()
+isInstalledNativePackagesAvailable=
+getInstalledNativePackages()
 {
-    [ "$isInstalledPackagesAvailable" ] && return
+    [ "$isInstalledNativePackagesAvailable" ] && return
 
     local package; while IFS=$'\n' read -r package
     do
-	installedPackages["$package"]=t
+	installedNativePackages["$package"]=t
 	case ",${DEBUG:-}," in *,setup-software:pkg,*) echo >&2 "${PS4}setup-software (pkg): Found installed ${package}";; esac
     done < <(dpkg-package-list)
 
-    if [ ${#installedPackages[@]} -eq 0 ]; then
+    if [ ${#installedNativePackages[@]} -eq 0 ]; then
 	echo >&2 'ERROR: Failed to obtain installed package list.'
 	exit 3
     fi
 
-    isInstalledPackagesAvailable=t
+    isInstalledNativePackagesAvailable=t
 }
 hasNative()
 {
     # If a package retrieval fails, treat this as an existing item, so that
     # these are effectively skipped.
-    ! getInstalledPackages || [ "${installedPackages["${1:?}"]}" ]
+    ! getInstalledNativePackages || [ "${installedNativePackages["${1:?}"]}" ]
 }
 addNative()
 {
-    addedPackages+=("${1:?}")
+    addedNativePackages+=("${1:?}")
 }
 
 addPreinstall()
@@ -303,7 +303,7 @@ askTo()
     memoizeDecision --memoize-group setup-software "$@"
 }
 
-typeset -a addedPackages=()
+typeset -a addedNativePackages=()
 typeset -a addedPostinstallArgs=()
 hasDebSrc()
 {
@@ -322,7 +322,7 @@ isAvailable()
     local packageManager="${1:?}"; shift
     local packageManagerName="${1:-$packageManager}"; shift
 
-    if [ "${installedPackages["$packageManager"]}" ] || [ "${addedPackages["$packageManager"]}" ] || exists "$packageManager"; then
+    if [ "${installedNativePackages["$packageManager"]}" ] || [ "${addedNativePackages["$packageManager"]}" ] || exists "$packageManager"; then
 	return
     fi
 
@@ -334,7 +334,7 @@ isAvailable()
 	    [ -x "$actionScript" ] && "${scriptDir}/${scriptName}" "${recursiveArgs[@]}" --pre "$packageManagerName" --action "${actionScript#"${preinstallActionsDirspec}/${packageManagerName}/"}"
 	done
 
-	addedPackages+=("$packageManagerName")
+	addedNativePackages+=("$packageManagerName")
 
 	for actionScript in "${postinstallActionsDirspec}/${packageManagerName}"/*
 	do
@@ -365,9 +365,9 @@ addItems()
 
 installNative()
 {
-    [ ${#addedPackages[@]} -gt 0 ] || return
+    [ ${#addedNativePackages[@]} -gt 0 ] || return
     local IFS=' '
-    toBeInstalledCommands+=("${SUDO}${SUDO:+ }apt install ${addedPackages[*]}")
+    toBeInstalledCommands+=("${SUDO}${SUDO:+ }apt install ${addedNativePackages[*]}")
 }
 
 preInstall()
