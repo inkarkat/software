@@ -207,7 +207,7 @@ HELPTEXT
     esac
 }
 
-typeset -A typeRegistry=([native]=Native)
+typeset -A typeRegistry=([native:]=Native)
 typeset -A typeInstallOrder=([10]=Native)
 for typeLib in "${typeDir}"/*.sh
 do
@@ -289,7 +289,7 @@ hasItem()
     local name="${item#*:}"
     local prefix="${item%"$name"}"
 
-    local typeFunction="${typeRegistry["${prefix:-native}"]}"
+    local typeFunction="${typeRegistry["${prefix:-native:}"]}"
     if [ -n "$typeFunction" ]; then
 	eval "has${typeFunction} \"\$name\""
     else
@@ -339,7 +339,7 @@ addItems()
     do
 	local name="${item#*:}"
 	local prefix="${item%"$name"}"
-	local typeFunction="${typeRegistry["${prefix:-native}"]}"
+	local typeFunction="${typeRegistry["${prefix:-native:}"]}"
 	if [ -n "$typeFunction" ]; then
 	    eval "add${typeFunction} \"\$name\""
 	else
