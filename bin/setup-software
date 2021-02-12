@@ -208,6 +208,7 @@ HELPTEXT
 }
 
 typeset -A typeRegistry=(['']=Native [ppa:]=Ppa [build-dep:]=DebBuild [deb+url:]=DebUrl [snap:]=Snap [pip3:]=Pip3 [npm:]=Npm [wine+url:]=Wine [custom:]=Custom)
+typeset -A typeInstallOrder=([1]=Ppa [10]=Native [20]=DebBuild [30]=DebUrl [100]=Snap [200]=Pip3 [300]=Npm [400]=Wine [1000]=Custom)
 
 typeset -a acceptedGroups=()
 addAllAcceptedGroups()
@@ -551,14 +552,14 @@ addItems()
 }
 
 
-pkgInstall()
+installNative()
 {
     [ ${#addedPackages[@]} -gt 0 ] || return
     local IFS=' '
     toBeInstalledCommands+=("${SUDO}${SUDO:+ }apt install ${addedPackages[*]}")
 }
 
-ppaInstall()
+installPpa()
 {
     [ ${#addedPpaRepositories[@]} -gt 0 ] || return
     local repo; for repo in "${addedPpaRepositories[@]}"
@@ -568,7 +569,7 @@ ppaInstall()
     toBeInstalledCommands+=("${SUDO}${SUDO:+ }apt update")
 }
 
-debBuildDependencyInstall()
+installDebBuild()
 {
     [ ${#addedDebBuildDependencies[@]} -gt 0 ] || return
 
@@ -579,7 +580,7 @@ debBuildDependencyInstall()
     done
 }
 
-debUrlInstall()
+installDebUrl()
 {
     [ ${#addedDebUrlPackages[@]} -gt 0 ] || return
     local debUrlRecord; for debUrlRecord in "${addedDebUrlPackages[@]}"
@@ -602,28 +603,28 @@ debUrlInstall()
     done
 }
 
-snapInstall()
+installSnap()
 {
     [ ${#addedSnapPackages[@]} -gt 0 ] || return
     local IFS=' '
     toBeInstalledCommands+=("${SUDO}${SUDO:+ }snap install ${addedSnapPackages[*]}")
 }
 
-pip3Install()
+installPip3()
 {
     [ ${#addedPip3Packages[@]} -gt 0 ] || return
     local IFS=' '
     toBeInstalledCommands+=("${SUDO}${SUDO:+ }pip3 install ${addedPip3Packages[*]}")
 }
 
-npmInstall()
+installNpm()
 {
     [ ${#addedNpmPackages[@]} -gt 0 ] || return
     local IFS=' '
     toBeInstalledCommands+=("${SUDO}${SUDO:+ }npm install --global ${addedNpmPackages[*]}")
 }
 
-wineUrlInstall()
+installWine()
 {
     [ ${#addedWineUrlPackages[@]} -gt 0 ] || return
     local wineUrlRecord; for wineUrlRecord in "${addedWineUrlPackages[@]}"
@@ -646,7 +647,7 @@ wineUrlInstall()
     done
 }
 
-customInstall()
+installCustom()
 {
     [ ${#addedCustomActions[@]} -gt 0 ] || return
 
@@ -756,15 +757,15 @@ runPostInstallCheck()
 
 generateInstallCommands()
 {
-    ppaInstall
-    pkgInstall
-    debBuildDependencyInstall
-    debUrlInstall
-    snapInstall
-    pip3Install
-    npmInstall
-    wineUrlInstall
-    customInstall
+    typeset -a typeOrdering=("${!typeInstallOrder[@]}")
+    readarray -t typeOrdering < <(printf '%s\n' "${typeOrdering[@]}" | sort -n)
+
+    local order; for order in "${typeOrdering[@]}"
+    do
+	local typeFunction="${typeInstallOrder["$order"]}"
+	eval "install${typeFunction}"
+    done
+
     postInstall
 }
 printInstallCommands()
