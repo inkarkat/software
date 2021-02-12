@@ -246,6 +246,10 @@ hasNative()
 {
     ! getInstalledPackages || [ "${installedPackages["${1:?}"]}" ]
 }
+addNative()
+{
+    addedPackages+=("${1:?}")
+}
 
 typeset -A installedPpaRepositories=()
 isInstalledPpaRepositoriesAvailable=
@@ -265,6 +269,10 @@ hasPpa()
 {
     ! getInstalledPpaRepositories || [ "${installedPpaRepositories["${1:?}"]}" ]
 }
+addPpa()
+{
+    addedPpaRepositories+=("${1:?}")
+}
 
 typeset -A installedDebBuildDependencies=()
 isInstalledDebBuildDependenciesAvailable=
@@ -283,10 +291,18 @@ hasDebBuild()
 {
     ! getInstalledDebBuildDependencies|| [ "${installedDebBuildDependencies["${1:?}"]}" ]
 }
+addDebBuild()
+{
+    hasDebSrc && addedDebBuildDependencies+=("${1:?}")
+}
 
 hasDebUrl()
 {
     ! getInstalledPackages || [ "${installedPackages["${1%%:*}"]}" ]
+}
+addDebUrl()
+{
+    addedDebUrlPackages+=("${1:?}")
 }
 
 typeset -A installedSnapPackages=()
@@ -311,6 +327,10 @@ hasSnap()
 {
     ! getInstalledSnapPackages || [ "${installedSnapPackages["${1:?}"]}" ]
 }
+addSnap()
+{
+    isAvailable snap snapd && addedSnapPackages+=("${1:?}")
+}
 
 typeset -A installedPip3Packages=()
 isInstalledPip3PackagesAvailable=
@@ -334,6 +354,10 @@ hasPip3()
 {
     ! getInstalledPip3Packages || [ "${installedPip3Packages["${1:?}"]}" ]
 }
+addPip3()
+{
+    isAvailable pip3 && addedPip3Packages+=("${1:?}")
+}
 
 typeset -A installedNpmPackages=()
 isInstalledNpmPackagesAvailable=
@@ -356,6 +380,10 @@ hasNpm()
 {
     ! getInstalledNpmPackages || [ "${installedNpmPackages["${1:?}"]}" ]
 }
+addNpm()
+{
+    isAvailable npm && addedNpmPackages+=("${1:?}")
+}
 
 hasWine()
 {
@@ -370,6 +398,10 @@ hasWine()
 	which "${wineDriveC}/${checkGlob%\?}" >/dev/null 2>&1 || expandglob -- "${wineDriveC}/${checkGlob%\?}" >/dev/null 2>&1 && return 0
     fi
     which "${checkGlob%\?}" >/dev/null 2>&1 || expandglob -- "${checkGlob%\?}" >/dev/null 2>&1
+}
+addWine()
+{
+    isAvailable wine && addedWineUrlPackages+=("${1:?}")
 }
 
 hasCustom()
@@ -400,7 +432,32 @@ hasCustom()
 	eval "$customCheck"
     fi
 }
+addCustom()
+{
+    addedCustomActions+=("${1#*:}")
+}
 
+addPreinstall()
+{
+    local name="${1:?}"; shift
+    if [ "${addedItems["${name#*$'\n'}"]}" ]; then
+	# Convert the "preinstall:ACTION\nITEM" to --pre "$ITEM" --action
+	# "$ACTION" and do a recursive invocation now, in order to print the
+	# preinstallation commands before anything else. This cannot be done
+	# within this script's scope, as preinstall items that reference another
+	# ITEM will populate all the addedITEM* arrays, and everything will be
+	# intermingled and later printed type by type in the static order, but
+	# the purpose of preinstall is to execute stuff before anything else.
+	"${scriptDir}/${scriptName}" "${recursiveArgs[@]}" --pre "${name#*$'\n'}" --action "${name%%$'\n'*}"
+    fi
+}
+addPostinstall()
+{
+    local name="${1:?}"; shift
+    # Convert the "postinstall:ACTION\nITEM" to
+    # --post "$ITEM" --action "$ACTION".
+    addedPostinstallArgs+=(--post "${name#*$'\n'}" --action "${name%%$'\n'*}")
+}
 
 hasItem()
 {
@@ -486,35 +543,17 @@ addItems()
 	local name="${item#*:}"
 	local prefix="${item%"$name"}"
 	case "$prefix" in
-	    '')		    addedPackages+=("$name");;
-	    ppa:)	    addedPpaRepositories+=("$name");;
-	    build-dep:)	    hasDebSrc && addedDebBuildDependencies+=("$name");;
-	    deb+url:)	    addedDebUrlPackages+=("$name");;
-	    snap:)	    isAvailable snap snapd && addedSnapPackages+=("$name");;
-	    pip3:)	    isAvailable pip3 && addedPip3Packages+=("$name");;
-	    npm:)	    isAvailable npm  && addedNpmPackages+=("$name");;
-	    wine+url:)	    isAvailable wine && addedWineUrlPackages+=("$name");;
-	    custom:)	    addedCustomActions+=("${name#*:}");;
-	    preinstall:)    if [ "${addedItems["${name#*$'\n'}"]}" ]; then
-				# Convert the "preinstall:ACTION\nITEM" to
-				# --pre "$ITEM" --action "$ACTION" and do a
-				# recursive invocation now, in order to print
-				# the preinstallation commands before anything
-				# else. This cannot be done within this script's
-				# scope, as preinstall items that reference
-				# another ITEM will populate all the
-				# addedITEM* arrays, and everything will be
-				# intermingled and later printed type by type in
-				# the static order, but the purpose of
-				# preinstall is to execute stuff before anything
-				# else.
-				"${scriptDir}/${scriptName}" "${recursiveArgs[@]}" --pre "${name#*$'\n'}" --action "${name%%$'\n'*}"
-			    fi
-			    ;;
-	    postinstall:)   # Convert the "postinstall:ACTION\nITEM" to
-			    # --post "$ITEM" --action "$ACTION".
-			    addedPostinstallArgs+=(--post "${name#*$'\n'}" --action "${name%%$'\n'*}")
-			    ;;
+	    '')		    addNative "$name";;
+	    ppa:)	    addPpa "$name";;
+	    build-dep:)	    addDebBuild "$name";;
+	    deb+url:)	    addDebUrl "$name";;
+	    snap:)	    addSnap "$name";;
+	    pip3:)	    addPip3 "$name";;
+	    npm:)	    addNpm "$name";;
+	    wine+url:)	    addWine "$name";;
+	    custom:)	    addCustom "$name";;
+	    preinstall:)    addPreinstall "$name";;
+	    postinstall:)   addPostinstall "$name";;
 	    *)		    printf >&2 'ERROR: Invalid type: %s\n' "$prefix"; exit 3;;
 	esac
 	addedItems["$item"]=t	# Record all added items for the preinstall check.
