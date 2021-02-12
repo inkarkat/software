@@ -1,0 +1,32 @@
+#!/bin/bash
+shopt -qs nullglob
+
+printUsage()
+{
+    cat <<HELPTEXT
+Print setup-software definitions for all Firefox add-ons installed under
+PROFILE-NAME / in all profiles.
+HELPTEXT
+    echo
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[PROFILE-NAME] [-?|-h|--help]'
+}
+case "$1" in
+    --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+esac
+
+
+readonly FIREFOX_PROFILES_DIRSPEC=~/.mozilla/firefox
+addonsConfigFilespecs=("$FIREFOX_PROFILES_DIRSPEC"/*.${1:-*}/addons.json)
+if [ ${#addonsConfigFilespecs[@]} -eq 0 ]; then
+    echo >&2 "ERROR: No ${1:+such }Firefox profile found."
+    exit 3
+fi
+
+for addonsConfigFilespec in "${addonsConfigFilespecs[@]}"
+do
+    addonsConfigDirspec="$(dirname -- "$addonsConfigFilespec")"
+    profileName="${addonsConfigDirspec##*.}"
+    [[ "$profileName" =~ ^default(-release)?$ ]] && profileName=''
+
+    jq --raw-output ".addons | .[] | \"firefox:${profileName}:\\(.id):\\(.reviewURL|rtrimstr(\"reviews/\")) # \\(.name)\"" "$addonsConfigFilespec"
+done
