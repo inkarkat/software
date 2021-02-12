@@ -207,6 +207,8 @@ HELPTEXT
     esac
 }
 
+typeset -A typeRegistry=(['']=Native [ppa:]=Ppa [build-dep:]=DebBuild [deb+url:]=DebUrl [snap:]=Snap [pip3:]=Pip3 [npm:]=Npm [wine+url:]=Wine [custom:]=Custom)
+
 typeset -a acceptedGroups=()
 addAllAcceptedGroups()
 {
@@ -244,6 +246,8 @@ getInstalledPackages()
 }
 hasNative()
 {
+    # If a package retrieval fails, treat this as an existing item, so that
+    # these are effectively skipped.
     ! getInstalledPackages || [ "${installedPackages["${1:?}"]}" ]
 }
 addNative()
@@ -465,20 +469,13 @@ hasItem()
     local name="${item#*:}"
     local prefix="${item%"$name"}"
 
-    case "$prefix" in
-	# If a package retrieval fails, treat this as an existing item, so that
-	# these are effectively skipped.
-	'')		hasNative "$name";;
-	ppa:)		hasPpa "$name";;
-	build-dep:)	hasDebBuild "$name";;
-	deb+url:)	hasDebUrl "$name";;
-	snap:)		hasSnap "$name";;
-	pip3:)		hasPip3 "$name";;
-	npm:)		hasNpm "$name";;
-	wine+url:)	hasWine "$name";;
-	custom:)	hasCustom "$name";;
-	*)		printf >&2 'ERROR: Invalid type: %s\n' "$prefix"; exit 3;;
-    esac
+    local typeFunction="${typeRegistry["$prefix"]}"
+    if [ -n "$typeFunction" ]; then
+	eval "has${typeFunction} \"\$name\""
+    else
+	printf >&2 'ERROR: Invalid type: %s\n' "$prefix"
+	exit 3
+    fi
 }
 
 askTo()
@@ -542,20 +539,13 @@ addItems()
     do
 	local name="${item#*:}"
 	local prefix="${item%"$name"}"
-	case "$prefix" in
-	    '')		    addNative "$name";;
-	    ppa:)	    addPpa "$name";;
-	    build-dep:)	    addDebBuild "$name";;
-	    deb+url:)	    addDebUrl "$name";;
-	    snap:)	    addSnap "$name";;
-	    pip3:)	    addPip3 "$name";;
-	    npm:)	    addNpm "$name";;
-	    wine+url:)	    addWine "$name";;
-	    custom:)	    addCustom "$name";;
-	    preinstall:)    addPreinstall "$name";;
-	    postinstall:)   addPostinstall "$name";;
-	    *)		    printf >&2 'ERROR: Invalid type: %s\n' "$prefix"; exit 3;;
-	esac
+	local typeFunction="${typeRegistry["$prefix"]}"
+	if [ -n "$typeFunction" ]; then
+	    eval "add${typeFunction} \"\$name\""
+	else
+	    printf >&2 'ERROR: Invalid type: %s\n' "$prefix"
+	    exit 3
+	fi
 	addedItems["$item"]=t	# Record all added items for the preinstall check.
     done
 }
