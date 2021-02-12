@@ -18,6 +18,18 @@ hasDebBuild()
     ! getInstalledDebBuildDependencies|| [ "${installedDebBuildDependencies["${1:?}"]}" ]
 }
 
+hasDebSrc()
+{
+    local APT_SOURCES=/etc/apt/sources.list
+    grep --quiet -e '^deb-src' "$APT_SOURCES" && return
+
+    if askTo --subject 'deb-src' --verb 'are not yet' --state 'enabled in sources.list' --action 'enable them'; then
+	local debSrcEnable; printf -v debSrcEnable %q "${projectDir}/lib/enableDebSrc.sh"
+	toBeInstalledCommands+=("${SUDO}${SUDO:+ }$debSrcEnable $APT_SOURCES")
+    else
+	return 1
+    fi
+}
 typeset -a addedDebBuildDependencies=()
 addDebBuild()
 {
