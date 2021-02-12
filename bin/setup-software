@@ -90,8 +90,22 @@ belong to a certain category or are typically installed together for a certain
 use case.
 HELPTEXT
 	echo
-	typeset -a prefixes=("${!typeRegistry[@]}")
-	printConfigUsageForTypes "${prefixes[@]%:}"    # Show config help for all types (for simplicity in undefined order).
+	typeset -a typeOrdering=("${!typeInstallOrder[@]}")
+	readarray -t typeOrdering < <(printf '%s\n' "${typeOrdering[@]}" | sort -n)
+
+	typeset -A mirroredTypeRegistry=()
+	for prefix in "${!typeRegistry[@]}"
+	do
+	    mirroredTypeRegistry["${typeRegistry["$prefix"]}"]="$prefix"
+	done
+
+	typeset -a prefixes=()
+	local order; for order in "${typeOrdering[@]}"
+	do
+	    prefixes+=("${mirroredTypeRegistry["${typeInstallOrder["$order"]}"]}")
+	done
+
+	printConfigUsageForTypes "${prefixes[@]%:}"    # Show config help for all types (in the order in which the types are also installed).
 
 	echo
 	configUsagePreinstall
