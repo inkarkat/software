@@ -242,6 +242,10 @@ getInstalledPackages()
 
     isInstalledPackagesAvailable=t
 }
+hasNative()
+{
+    ! getInstalledPackages || [ "${installedPackages["${1:?}"]}" ]
+}
 
 typeset -A installedPpaRepositories=()
 isInstalledPpaRepositoriesAvailable=
@@ -257,6 +261,10 @@ getInstalledPpaRepositories()
 
     isInstalledPpaRepositoriesAvailable=t
 }
+hasPpa()
+{
+    ! getInstalledPpaRepositories || [ "${installedPpaRepositories["${1:?}"]}" ]
+}
 
 typeset -A installedDebBuildDependencies=()
 isInstalledDebBuildDependenciesAvailable=
@@ -270,6 +278,15 @@ getInstalledDebBuildDependencies()
 	case ",${DEBUG:-}," in *,setup-software:deb-build,*) echo >&2 "${PS4}setup-software (deb-build): Found installed ${!installedDebBuildDependencies[*]}";; esac
 
     isInstalledDebBuildDependenciesAvailable=t
+}
+hasDebBuild()
+{
+    ! getInstalledDebBuildDependencies|| [ "${installedDebBuildDependencies["${1:?}"]}" ]
+}
+
+hasDebUrl()
+{
+    ! getInstalledPackages || [ "${installedPackages["${1%%:*}"]}" ]
 }
 
 typeset -A installedSnapPackages=()
@@ -290,6 +307,10 @@ getInstalledSnapPackages()
 
     isInstalledSnapPackagesAvailable=t
 }
+hasSnap()
+{
+    ! getInstalledSnapPackages || [ "${installedSnapPackages["${1:?}"]}" ]
+}
 
 typeset -A installedPip3Packages=()
 isInstalledPip3PackagesAvailable=
@@ -309,6 +330,10 @@ getInstalledPip3Packages()
 
     isInstalledPip3PackagesAvailable=t
 }
+hasPip3()
+{
+    ! getInstalledPip3Packages || [ "${installedPip3Packages["${1:?}"]}" ]
+}
 
 typeset -A installedNpmPackages=()
 isInstalledNpmPackagesAvailable=
@@ -327,8 +352,12 @@ getInstalledNpmPackages()
 
     isInstalledNpmPackagesAvailable=t
 }
+hasNpm()
+{
+    ! getInstalledNpmPackages || [ "${installedNpmPackages["${1:?}"]}" ]
+}
 
-hasWinePackage()
+hasWine()
 {
     if [[ ! "$1" =~ ^[^:]+\?:.+: ]]; then
 	printf >&2 'ERROR: Invalid wine+url item: "wine+url:%s"\n' "$1"
@@ -343,7 +372,7 @@ hasWinePackage()
     which "${checkGlob%\?}" >/dev/null 2>&1 || expandglob -- "${checkGlob%\?}" >/dev/null 2>&1
 }
 
-customCheck()
+hasCustom()
 {
     local customAction="${1#*:}"
     local customCheck="${1%:$customAction}"
@@ -382,15 +411,15 @@ hasItem()
     case "$prefix" in
 	# If a package retrieval fails, treat this as an existing item, so that
 	# these are effectively skipped.
-	'')		! getInstalledPackages			|| [ "${installedPackages["$name"]}" ];;
-	ppa:)		! getInstalledPpaRepositories		|| [ "${installedPpaRepositories["$name"]}" ];;
-	build-dep:)	! getInstalledDebBuildDependencies	|| [ "${installedDebBuildDependencies["$name"]}" ];;
-	deb+url:)	! getInstalledPackages			|| [ "${installedPackages["${name%%:*}"]}" ];;
-	snap:)		! getInstalledSnapPackages		|| [ "${installedSnapPackages["$name"]}" ];;
-	pip3:)		! getInstalledPip3Packages		|| [ "${installedPip3Packages["$name"]}" ];;
-	npm:)		! getInstalledNpmPackages		|| [ "${installedNpmPackages["$name"]}" ];;
-	wine+url:)	hasWinePackage "$name";;
-	custom:)	customCheck "$name";;
+	'')		hasNative "$name";;
+	ppa:)		hasPpa "$name";;
+	build-dep:)	hasDebBuild "$name";;
+	deb+url:)	hasDebUrl "$name";;
+	snap:)		hasSnap "$name";;
+	pip3:)		hasPip3 "$name";;
+	npm:)		hasNpm "$name";;
+	wine+url:)	hasWine "$name";;
+	custom:)	hasCustom "$name";;
 	*)		printf >&2 'ERROR: Invalid type: %s\n' "$prefix"; exit 3;;
     esac
 }
