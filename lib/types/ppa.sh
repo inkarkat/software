@@ -1,5 +1,13 @@
 #!/bin/bash source-this-script
 
+configUsagePpa()
+{
+    cat <<'HELPTEXT'
+ppa: items refer to Ubuntu personal package archives that enable additional
+packages (or other versions) to be installed through apt.
+HELPTEXT
+}
+
 typeset -A installedPpaRepositories=()
 isInstalledPpaRepositoriesAvailable=
 getInstalledPpaRepositories()

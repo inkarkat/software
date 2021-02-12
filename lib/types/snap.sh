@@ -1,5 +1,13 @@
 #!/bin/bash source-this-script
 
+configUsageSnap()
+{
+    cat <<'HELPTEXT'
+snap: items refer to packages from the Snap store that work across many
+different Linux distributions, are segregated and update automatically.
+HELPTEXT
+}
+
 typeset -A installedSnapPackages=()
 isInstalledSnapPackagesAvailable=
 getInstalledSnapPackages()

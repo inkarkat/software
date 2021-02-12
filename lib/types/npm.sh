@@ -1,5 +1,12 @@
 #!/bin/bash source-this-script
 
+configUsageNpm()
+{
+    cat <<'HELPTEXT'
+npm: items refer to the Node.js package (or "Node modules") installer.
+HELPTEXT
+}
+
 typeset -A installedNpmPackages=()
 isInstalledNpmPackagesAvailable=
 getInstalledNpmPackages()

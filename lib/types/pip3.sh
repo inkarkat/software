@@ -1,5 +1,12 @@
 #!/bin/bash source-this-script
 
+configUsagePip3()
+{
+    cat <<'HELPTEXT'
+pip3: items refer to the Python package installer.
+HELPTEXT
+}
+
 typeset -A installedPip3Packages=()
 isInstalledPip3PackagesAvailable=
 getInstalledPip3Packages()

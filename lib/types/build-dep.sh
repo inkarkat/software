@@ -1,5 +1,13 @@
 #!/bin/bash source-this-script
 
+configUsageDebBuild()
+{
+    cat <<'HELPTEXT'
+deb-build: items refer to packages that satisfy the build dependencies for a
+source package.
+HELPTEXT
+}
+
 typeset -A installedDebBuildDependencies=()
 isInstalledDebBuildDependenciesAvailable=
 getInstalledDebBuildDependencies()

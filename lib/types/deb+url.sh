@@ -1,5 +1,18 @@
 #!/bin/bash source-this-script
 
+configUsageDebUrl()
+{
+    cat <<'HELPTEXT'
+deb+url: items consist of a
+    PACKAGE[:MAX-AGE[SUFFIX]]:[[SUBDIR/]NAME/]PACKAGE-GLOB:[URL]
+triplet / quadruplet.
+If ~/install/(SUBDIR|*)/(NAME|*)/PACKAGE-GLOB already exists [and if it is
+younger than MAX-AGE[SUFFIX]], it will be used; else, the *.deb from URL will
+be downloaded (and put into ~/install/* if it exists). If no URL is given and
+the package does not exist, the installation will fail.
+HELPTEXT
+}
+
 hasDebUrl()
 {
     hasNative "${1%%:*}"
