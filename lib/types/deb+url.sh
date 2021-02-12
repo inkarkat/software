@@ -2,7 +2,7 @@
 
 hasDebUrl()
 {
-    ! getInstalledPackages || [ "${installedPackages["${1%%:*}"]}" ]
+    hasNative "${1%%:*}"
 }
 
 typeset -a addedDebUrlPackages=()
