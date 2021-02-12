@@ -1,11 +1,11 @@
 #!/bin/bash
-set -o noglob
 shopt -qs extglob
 
 readonly scriptDir="$([ "${BASH_SOURCE[0]}" ] && absoluteScriptFile="$(readlink -nf -- "${BASH_SOURCE[0]}")" && dirname -- "$absoluteScriptFile" || exit 3)"
 [ -d "$scriptDir" ] || { echo >&2 "ERROR: Cannot determine script directory!"; exit 3; }
 readonly projectDir="${scriptDir}/.."
 baseDir="${projectDir}/etc"
+typeDir="${projectDir}/lib/types"
 readonly scriptName="$(basename -- "${BASH_SOURCE[0]}")"
 
 SUDO='sudo --set-home'; [ $EUID -eq 0 ] && SUDO=''  # Use root's home; especially pip3 writes to ~/.cache/pip and complains if the files belong to another user.
@@ -207,6 +207,14 @@ HELPTEXT
     esac
 }
 
+typeset -A typeRegistry=([native]=Native)
+typeset -A typeInstallOrder=([10]=Native)
+for typeLib in "${typeDir}"/*.sh
+do
+    source "$typeLib" || exit $?
+done
+set -o noglob
+
 typeset -a acceptedGroups=()
 addAllAcceptedGroups()
 {
@@ -223,155 +231,57 @@ database()
     picoDB --base-type data --namespace setup-software --table "$@"
 }
 
-typeset -A installedPackages=()
-isInstalledPackagesAvailable=
-getInstalledPackages()
+typeset -A installedNativePackages=()
+isInstalledNativePackagesAvailable=
+getInstalledNativePackages()
 {
-    [ "$isInstalledPackagesAvailable" ] && return
+    [ "$isInstalledNativePackagesAvailable" ] && return
 
     local package; while IFS=$'\n' read -r package
     do
-	installedPackages["$package"]=t
+	installedNativePackages["$package"]=t
 	case ",${DEBUG:-}," in *,setup-software:pkg,*) echo >&2 "${PS4}setup-software (pkg): Found installed ${package}";; esac
     done < <(dpkg-package-list)
 
-    if [ ${#installedPackages[@]} -eq 0 ]; then
+    if [ ${#installedNativePackages[@]} -eq 0 ]; then
 	echo >&2 'ERROR: Failed to obtain installed package list.'
 	exit 3
     fi
 
-    isInstalledPackagesAvailable=t
+    isInstalledNativePackagesAvailable=t
+}
+hasNative()
+{
+    # If a package retrieval fails, treat this as an existing item, so that
+    # these are effectively skipped.
+    ! getInstalledNativePackages || [ "${installedNativePackages["${1:?}"]}" ]
+}
+addNative()
+{
+    addedNativePackages+=("${1:?}")
 }
 
-typeset -A installedPpaRepositories=()
-isInstalledPpaRepositoriesAvailable=
-getInstalledPpaRepositories()
+addPreinstall()
 {
-    [ "$isInstalledPpaRepositoriesAvailable" ] && return
-
-    local repo; while IFS=$'\n' read -r repo
-    do
-	installedPpaRepositories["${repo#ppa:}"]=t
-	case ",${DEBUG:-}," in *,setup-software:ppa,*) echo >&2 "${PS4}setup-software (ppa): Found installed ppa:${repo}";; esac
-    done < <(apt-list-repositories --ppa-only)
-
-    isInstalledPpaRepositoriesAvailable=t
-}
-
-typeset -A installedDebBuildDependencies=()
-isInstalledDebBuildDependenciesAvailable=
-getInstalledDebBuildDependencies()
-{
-    [ "$isInstalledDebBuildDependenciesAvailable" ] && return
-
-    eval "$(database debBuildDependencies --get-as-dictionary installedDebBuildDependencies --omit-declaration)" || exit 3
-
-    [ ${#installedDebBuildDependencies[@]} -gt 0 ] &&
-	case ",${DEBUG:-}," in *,setup-software:deb-build,*) echo >&2 "${PS4}setup-software (deb-build): Found installed ${!installedDebBuildDependencies[*]}";; esac
-
-    isInstalledDebBuildDependenciesAvailable=t
-}
-
-typeset -A installedSnapPackages=()
-isInstalledSnapPackagesAvailable=
-getInstalledSnapPackages()
-{
-    [ "$isInstalledSnapPackagesAvailable" ] && return
-
-    local packageName remainder; while IFS=' ' read -r packageName remainder
-    do
-	case "$packageName" in
-	    Name)	    continue;;	# Skip single-line header
-	    *)		    installedSnapPackages["$packageName"]=t
-			    case ",${DEBUG:-}," in *,setup-software:snap,*) echo >&2 "${PS4}setup-software (snap): Found installed ${packageName}";; esac
-			    ;;
-	esac
-    done < <(snap list --color=never --unicode=never 2>/dev/null)
-
-    isInstalledSnapPackagesAvailable=t
-}
-
-typeset -A installedPip3Packages=()
-isInstalledPip3PackagesAvailable=
-getInstalledPip3Packages()
-{
-    [ "$isInstalledPip3PackagesAvailable" ] && return
-
-    local packageName remainder; while IFS=' ' read -r packageName remainder
-    do
-	case "$packageName" in
-	    Package|+(-))   continue;;	# Skip 2-line header
-	    *)		    installedPip3Packages["$packageName"]=t
-			    case ",${DEBUG:-}," in *,setup-software:pip3,*) echo >&2 "${PS4}setup-software (pip3): Found installed ${packageName}";; esac
-			    ;;
-	esac
-    done < <(pip3 list 2>/dev/null)
-
-    isInstalledPip3PackagesAvailable=t
-}
-
-typeset -A installedNpmPackages=()
-isInstalledNpmPackagesAvailable=
-getInstalledNpmPackages()
-{
-    [ "$isInstalledNpmPackagesAvailable" ] && return
-
-    local packageDirspec; while IFS=$'\n' read -r packageDirspec
-    do
-	local packageName; packageName="${packageDirspec##*/}"
-	if [ -n "$packageName" ]; then
-	    installedNpmPackages["$packageName"]=t
-	    case ",${DEBUG:-}," in *,setup-software:npm,*) echo >&2 "${PS4}setup-software (npm): Found installed ${packageName}";; esac
-	fi
-    done < <(npm ls --global --parseable --depth 0 2>/dev/null)
-
-    isInstalledNpmPackagesAvailable=t
-}
-
-hasWinePackage()
-{
-    if [[ ! "$1" =~ ^[^:]+\?:.+: ]]; then
-	printf >&2 'ERROR: Invalid wine+url item: "wine+url:%s"\n' "$1"
-	exit 3
-    fi
-    local checkGlob="${1%%:*}"
-
-    local -r wineDriveC=~/.wine/drive_c
-    if [[ ! "$checkGlob" =~ ^/ ]] && [ -d "$wineDriveC" ]; then
-	which "${wineDriveC}/${checkGlob%\?}" >/dev/null 2>&1 || expandglob -- "${wineDriveC}/${checkGlob%\?}" >/dev/null 2>&1 && return 0
-    fi
-    which "${checkGlob%\?}" >/dev/null 2>&1 || expandglob -- "${checkGlob%\?}" >/dev/null 2>&1
-}
-
-customCheck()
-{
-    local customAction="${1#*:}"
-    local customCheck="${1%:$customAction}"
-    local customActionWithoutSudo="${customAction#\$SUDO }"
-
-    if [ -z "$customAction" -o -z "$customCheck" ]; then
-	printf >&2 'ERROR: Invalid custom item: "custom:%s"\n' "$1"
-	exit 3
-    fi
-
-    if [ -x "${customActionsDirspec}/${customCheck}" ]; then
-	"${customActionsDirspec}/${customCheck}"
-    elif [[ "$customCheck" =~ \?$ ]] && local customCheckLikeAction="${customActionsDirspec}/${customActionWithoutSudo}${customCheck#\&}" && [ -x "$customCheckLikeAction" ]; then
-	"$customCheckLikeAction"
-    elif [[ "$customCheck" =~ \?$ ]]; then
-	which "${customCheck%\?}" >/dev/null 2>&1 || expandglob -- "${customCheck%\?}" >/dev/null 2>&1
-    else
-	if [[ "$customCheck" =~ ^\& ]]; then
-	    if [ -x "${customActionsDirspec}/${customActionWithoutSudo}" ]; then
-		customActionWithoutSudo="${customActionsDirspec}/${customActionWithoutSudo}"
-	    fi
-	    customCheck="${customActionWithoutSudo}${customCheck#\&}"
-	fi
-
-	eval "$customCheck"
+    local name="${1:?}"; shift
+    if [ "${addedItems["${name#*$'\n'}"]}" ]; then
+	# Convert the "preinstall:ACTION\nITEM" to --pre "$ITEM" --action
+	# "$ACTION" and do a recursive invocation now, in order to print the
+	# preinstallation commands before anything else. This cannot be done
+	# within this script's scope, as preinstall items that reference another
+	# ITEM will populate all the addedITEM* arrays, and everything will be
+	# intermingled and later printed type by type in the static order, but
+	# the purpose of preinstall is to execute stuff before anything else.
+	"${scriptDir}/${scriptName}" "${recursiveArgs[@]}" --pre "${name#*$'\n'}" --action "${name%%$'\n'*}"
     fi
 }
-
+addPostinstall()
+{
+    local name="${1:?}"; shift
+    # Convert the "postinstall:ACTION\nITEM" to
+    # --post "$ITEM" --action "$ACTION".
+    addedPostinstallArgs+=(--post "${name#*$'\n'}" --action "${name%%$'\n'*}")
+}
 
 hasItem()
 {
@@ -379,20 +289,13 @@ hasItem()
     local name="${item#*:}"
     local prefix="${item%"$name"}"
 
-    case "$prefix" in
-	# If a package retrieval fails, treat this as an existing item, so that
-	# these are effectively skipped.
-	'')		! getInstalledPackages			|| [ "${installedPackages["$name"]}" ];;
-	ppa:)		! getInstalledPpaRepositories		|| [ "${installedPpaRepositories["$name"]}" ];;
-	build-dep:)	! getInstalledDebBuildDependencies	|| [ "${installedDebBuildDependencies["$name"]}" ];;
-	deb+url:)	! getInstalledPackages			|| [ "${installedPackages["${name%%:*}"]}" ];;
-	snap:)		! getInstalledSnapPackages		|| [ "${installedSnapPackages["$name"]}" ];;
-	pip3:)		! getInstalledPip3Packages		|| [ "${installedPip3Packages["$name"]}" ];;
-	npm:)		! getInstalledNpmPackages		|| [ "${installedNpmPackages["$name"]}" ];;
-	wine+url:)	hasWinePackage "$name";;
-	custom:)	customCheck "$name";;
-	*)		printf >&2 'ERROR: Invalid type: %s\n' "$prefix"; exit 3;;
-    esac
+    local typeFunction="${typeRegistry["${prefix:-native}"]}"
+    if [ -n "$typeFunction" ]; then
+	eval "has${typeFunction} \"\$name\""
+    else
+	printf >&2 'ERROR: Invalid type: %s\n' "$prefix"
+	exit 3
+    fi
 }
 
 askTo()
@@ -400,34 +303,14 @@ askTo()
     memoizeDecision --memoize-group setup-software "$@"
 }
 
-typeset -a addedPackages=()
-typeset -a addedPpaRepositories=()
-typeset -a addedDebBuildDependencies=()
-typeset -a addedDebUrlPackages=()
-typeset -a addedSnapPackages=()
-typeset -a addedPip3Packages=()
-typeset -a addedNpmPackages=()
-typeset -a addedWineUrlPackages=()
-typeset -a addedCustomActions=()
+typeset -a addedNativePackages=()
 typeset -a addedPostinstallArgs=()
-hasDebSrc()
-{
-    local APT_SOURCES=/etc/apt/sources.list
-    grep --quiet -e '^deb-src' "$APT_SOURCES" && return
-
-    if askTo --subject 'deb-src' --verb 'are not yet' --state 'enabled in sources.list' --action 'enable them'; then
-	local debSrcEnable; printf -v debSrcEnable %q "${projectDir}/lib/enableDebSrc.sh"
-	toBeInstalledCommands+=("${SUDO}${SUDO:+ }$debSrcEnable $APT_SOURCES")
-    else
-	return 1
-    fi
-}
 isAvailable()
 {
     local packageManager="${1:?}"; shift
     local packageManagerName="${1:-$packageManager}"; shift
 
-    if [ "${installedPackages["$packageManager"]}" ] || [ "${addedPackages["$packageManager"]}" ] || exists "$packageManager"; then
+    if [ "${installedNativePackages["$packageManager"]}" ] || [ "${addedNativePackages["$packageManager"]}" ] || exists "$packageManager"; then
 	return
     fi
 
@@ -439,7 +322,7 @@ isAvailable()
 	    [ -x "$actionScript" ] && "${scriptDir}/${scriptName}" "${recursiveArgs[@]}" --pre "$packageManagerName" --action "${actionScript#"${preinstallActionsDirspec}/${packageManagerName}/"}"
 	done
 
-	addedPackages+=("$packageManagerName")
+	addedNativePackages+=("$packageManagerName")
 
 	for actionScript in "${postinstallActionsDirspec}/${packageManagerName}"/*
 	do
@@ -456,156 +339,23 @@ addItems()
     do
 	local name="${item#*:}"
 	local prefix="${item%"$name"}"
-	case "$prefix" in
-	    '')		    addedPackages+=("$name");;
-	    ppa:)	    addedPpaRepositories+=("$name");;
-	    build-dep:)	    hasDebSrc && addedDebBuildDependencies+=("$name");;
-	    deb+url:)	    addedDebUrlPackages+=("$name");;
-	    snap:)	    isAvailable snap snapd && addedSnapPackages+=("$name");;
-	    pip3:)	    isAvailable pip3 && addedPip3Packages+=("$name");;
-	    npm:)	    isAvailable npm  && addedNpmPackages+=("$name");;
-	    wine+url:)	    isAvailable wine && addedWineUrlPackages+=("$name");;
-	    custom:)	    addedCustomActions+=("${name#*:}");;
-	    preinstall:)    if [ "${addedItems["${name#*$'\n'}"]}" ]; then
-				# Convert the "preinstall:ACTION\nITEM" to
-				# --pre "$ITEM" --action "$ACTION" and do a
-				# recursive invocation now, in order to print
-				# the preinstallation commands before anything
-				# else. This cannot be done within this script's
-				# scope, as preinstall items that reference
-				# another ITEM will populate all the
-				# addedITEM* arrays, and everything will be
-				# intermingled and later printed type by type in
-				# the static order, but the purpose of
-				# preinstall is to execute stuff before anything
-				# else.
-				"${scriptDir}/${scriptName}" "${recursiveArgs[@]}" --pre "${name#*$'\n'}" --action "${name%%$'\n'*}"
-			    fi
-			    ;;
-	    postinstall:)   # Convert the "postinstall:ACTION\nITEM" to
-			    # --post "$ITEM" --action "$ACTION".
-			    addedPostinstallArgs+=(--post "${name#*$'\n'}" --action "${name%%$'\n'*}")
-			    ;;
-	    *)		    printf >&2 'ERROR: Invalid type: %s\n' "$prefix"; exit 3;;
-	esac
+	local typeFunction="${typeRegistry["${prefix:-native}"]}"
+	if [ -n "$typeFunction" ]; then
+	    eval "add${typeFunction} \"\$name\""
+	else
+	    printf >&2 'ERROR: Invalid type: %s\n' "$prefix"
+	    exit 3
+	fi
 	addedItems["$item"]=t	# Record all added items for the preinstall check.
     done
 }
 
 
-pkgInstall()
+installNative()
 {
-    [ ${#addedPackages[@]} -gt 0 ] || return
+    [ ${#addedNativePackages[@]} -gt 0 ] || return
     local IFS=' '
-    toBeInstalledCommands+=("${SUDO}${SUDO:+ }apt install ${addedPackages[*]}")
-}
-
-ppaInstall()
-{
-    [ ${#addedPpaRepositories[@]} -gt 0 ] || return
-    local repo; for repo in "${addedPpaRepositories[@]}"
-    do
-	toBeInstalledCommands+=("${SUDO}${SUDO:+ }add-apt-repository ppa:$repo")
-    done
-    toBeInstalledCommands+=("${SUDO}${SUDO:+ }apt update")
-}
-
-debBuildDependencyInstall()
-{
-    [ ${#addedDebBuildDependencies[@]} -gt 0 ] || return
-
-    local databaseUpdate; printf -v databaseUpdate %q "${scriptDir}/${scriptName}"
-    local buildDep; for buildDep in "${addedDebBuildDependencies[@]}"
-    do
-	toBeInstalledCommands+=("${SUDO}${SUDO:+ }apt-get build-dep $buildDep && ${databaseUpdate}${isVerbose:+ --verbose} --database debBuildDependencies --add $buildDep")
-    done
-}
-
-debUrlInstall()
-{
-    [ ${#addedDebUrlPackages[@]} -gt 0 ] || return
-    local debUrlRecord; for debUrlRecord in "${addedDebUrlPackages[@]}"
-    do
-	local maxAge=
-	local packageNameGlobUrl="${debUrlRecord#*:}"
-	if [[ "$packageNameGlobUrl" =~ ^[0-9]+([smhdwyg]|mo): ]]; then
-	    maxAge="${BASH_REMATCH[0]%:}"
-	    packageNameGlobUrl="${packageNameGlobUrl#"${BASH_REMATCH[0]}"}"
-	fi
-	local packageUrl="${packageNameGlobUrl#*:}"
-	local packageNameAndGlob="${packageNameGlobUrl%:$packageUrl}"
-	local packageGlob="${packageNameAndGlob##*/}"
-	local packageName="${packageNameAndGlob%"$packageGlob"}"
-	packageName="${packageName%/}"
-
-	# Note: No sudo here, as the downloading will happen as the current user
-	# and only the installation itself will be done through sudo.
-	toBeInstalledCommands+=("deb-download-installer${packageName:+ --application-name "'"}${packageName}${packageName:+"'"} --expression '$packageGlob'${maxAge:+ --max-age }$maxAge --url '$packageUrl'")
-    done
-}
-
-snapInstall()
-{
-    [ ${#addedSnapPackages[@]} -gt 0 ] || return
-    local IFS=' '
-    toBeInstalledCommands+=("${SUDO}${SUDO:+ }snap install ${addedSnapPackages[*]}")
-}
-
-pip3Install()
-{
-    [ ${#addedPip3Packages[@]} -gt 0 ] || return
-    local IFS=' '
-    toBeInstalledCommands+=("${SUDO}${SUDO:+ }pip3 install ${addedPip3Packages[*]}")
-}
-
-npmInstall()
-{
-    [ ${#addedNpmPackages[@]} -gt 0 ] || return
-    local IFS=' '
-    toBeInstalledCommands+=("${SUDO}${SUDO:+ }npm install --global ${addedNpmPackages[*]}")
-}
-
-wineUrlInstall()
-{
-    [ ${#addedWineUrlPackages[@]} -gt 0 ] || return
-    local wineUrlRecord; for wineUrlRecord in "${addedWineUrlPackages[@]}"
-    do
-	local maxAge=
-	local packageNameGlobUrl="${wineUrlRecord#*:}"
-	if [[ "$packageNameGlobUrl" =~ ^[0-9]+([smhdwyg]|mo): ]]; then
-	    maxAge="${BASH_REMATCH[0]%:}"
-	    packageNameGlobUrl="${packageNameGlobUrl#"${BASH_REMATCH[0]}"}"
-	fi
-	local packageUrl="${packageNameGlobUrl#*:}"
-	local packageNameAndGlob="${packageNameGlobUrl%:$packageUrl}"
-	local packageGlob="${packageNameAndGlob##*/}"
-	local packageName="${packageNameAndGlob%"$packageGlob"}"
-	packageName="${packageName%/}"
-
-	# Note: No sudo here, as downloading and installation will happen as the
-	# current user.
-	toBeInstalledCommands+=("wine-download-installer${packageName:+ --application-name "'"}${packageName}${packageName:+"'"} --expression '$packageGlob'${maxAge:+ --max-age }$maxAge --url '$packageUrl'")
-    done
-}
-
-customInstall()
-{
-    [ ${#addedCustomActions[@]} -gt 0 ] || return
-
-    local customAction; for customAction in "${addedCustomActions[@]}"
-    do
-	local customActionWithoutSudo="${customAction#\$SUDO }"
-	local sudoPrefix="${customAction%"$customActionWithoutSudo"}"
-
-	if [ -x "${customActionsDirspec}/${customActionWithoutSudo}" ]; then
-	    customActionWithoutSudo="${customActionsDirspec}/${customActionWithoutSudo}"
-	elif [ -e "${customActionsDirspec}/${customAction}" ]; then
-	    local quotedCustomNotification; printf -v quotedCustomNotification %s "${customActionsDirspec}/${customAction}"
-	    toBeInstalledCommands+=("addLoginNotification --file $quotedCustomNotification --immediate")
-	    continue
-	fi
-	toBeInstalledCommands+=("${sudoPrefix:+${SUDO}${SUDO:+ }}${customActionWithoutSudo}")
-    done
+    toBeInstalledCommands+=("${SUDO}${SUDO:+ }apt install ${addedNativePackages[*]}")
 }
 
 preInstall()
@@ -698,15 +448,15 @@ runPostInstallCheck()
 
 generateInstallCommands()
 {
-    ppaInstall
-    pkgInstall
-    debBuildDependencyInstall
-    debUrlInstall
-    snapInstall
-    pip3Install
-    npmInstall
-    wineUrlInstall
-    customInstall
+    typeset -a typeOrdering=("${!typeInstallOrder[@]}")
+    readarray -t typeOrdering < <(printf '%s\n' "${typeOrdering[@]}" | sort -n)
+
+    local order; for order in "${typeOrdering[@]}"
+    do
+	local typeFunction="${typeInstallOrder["$order"]}"
+	eval "install${typeFunction}"
+    done
+
     postInstall
 }
 printInstallCommands()
