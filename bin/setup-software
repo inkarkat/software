@@ -207,7 +207,7 @@ HELPTEXT
     esac
 }
 
-typeset -A typeRegistry=(['']=Native [ppa:]=Ppa [build-dep:]=DebBuild [deb+url:]=DebUrl [snap:]=Snap [pip3:]=Pip3 [npm:]=Npm [wine+url:]=Wine [custom:]=Custom)
+typeset -A typeRegistry=([native]=Native [ppa:]=Ppa [build-dep:]=DebBuild [deb+url:]=DebUrl [snap:]=Snap [pip3:]=Pip3 [npm:]=Npm [wine+url:]=Wine [custom:]=Custom)
 typeset -A typeInstallOrder=([1]=Ppa [10]=Native [20]=DebBuild [30]=DebUrl [100]=Snap [200]=Pip3 [300]=Npm [400]=Wine [1000]=Custom)
 
 typeset -a acceptedGroups=()
@@ -470,7 +470,7 @@ hasItem()
     local name="${item#*:}"
     local prefix="${item%"$name"}"
 
-    local typeFunction="${typeRegistry["$prefix"]}"
+    local typeFunction="${typeRegistry["${prefix:-native}"]}"
     if [ -n "$typeFunction" ]; then
 	eval "has${typeFunction} \"\$name\""
     else
@@ -540,7 +540,7 @@ addItems()
     do
 	local name="${item#*:}"
 	local prefix="${item%"$name"}"
-	local typeFunction="${typeRegistry["$prefix"]}"
+	local typeFunction="${typeRegistry["${prefix:-native}"]}"
 	if [ -n "$typeFunction" ]; then
 	    eval "add${typeFunction} \"\$name\""
 	else
