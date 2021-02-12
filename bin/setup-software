@@ -1,11 +1,11 @@
 #!/bin/bash
-set -o noglob
 shopt -qs extglob
 
 readonly scriptDir="$([ "${BASH_SOURCE[0]}" ] && absoluteScriptFile="$(readlink -nf -- "${BASH_SOURCE[0]}")" && dirname -- "$absoluteScriptFile" || exit 3)"
 [ -d "$scriptDir" ] || { echo >&2 "ERROR: Cannot determine script directory!"; exit 3; }
 readonly projectDir="${scriptDir}/.."
 baseDir="${projectDir}/etc"
+typeDir="${projectDir}/lib/types"
 readonly scriptName="$(basename -- "${BASH_SOURCE[0]}")"
 
 SUDO='sudo --set-home'; [ $EUID -eq 0 ] && SUDO=''  # Use root's home; especially pip3 writes to ~/.cache/pip and complains if the files belong to another user.
@@ -207,8 +207,13 @@ HELPTEXT
     esac
 }
 
-typeset -A typeRegistry=([native]=Native [ppa:]=Ppa [build-dep:]=DebBuild [deb+url:]=DebUrl [snap:]=Snap [pip3:]=Pip3 [npm:]=Npm [wine+url:]=Wine [custom:]=Custom)
-typeset -A typeInstallOrder=([1]=Ppa [10]=Native [20]=DebBuild [30]=DebUrl [100]=Snap [200]=Pip3 [300]=Npm [400]=Wine [1000]=Custom)
+typeset -A typeRegistry=([native]=Native)
+typeset -A typeInstallOrder=([10]=Native)
+for typeLib in "${typeDir}"/*.sh
+do
+    source "$typeLib" || exit $?
+done
+set -o noglob
 
 typeset -a acceptedGroups=()
 addAllAcceptedGroups()
@@ -256,192 +261,6 @@ addNative()
     addedPackages+=("${1:?}")
 }
 
-typeset -A installedPpaRepositories=()
-isInstalledPpaRepositoriesAvailable=
-getInstalledPpaRepositories()
-{
-    [ "$isInstalledPpaRepositoriesAvailable" ] && return
-
-    local repo; while IFS=$'\n' read -r repo
-    do
-	installedPpaRepositories["${repo#ppa:}"]=t
-	case ",${DEBUG:-}," in *,setup-software:ppa,*) echo >&2 "${PS4}setup-software (ppa): Found installed ppa:${repo}";; esac
-    done < <(apt-list-repositories --ppa-only)
-
-    isInstalledPpaRepositoriesAvailable=t
-}
-hasPpa()
-{
-    ! getInstalledPpaRepositories || [ "${installedPpaRepositories["${1:?}"]}" ]
-}
-addPpa()
-{
-    addedPpaRepositories+=("${1:?}")
-}
-
-typeset -A installedDebBuildDependencies=()
-isInstalledDebBuildDependenciesAvailable=
-getInstalledDebBuildDependencies()
-{
-    [ "$isInstalledDebBuildDependenciesAvailable" ] && return
-
-    eval "$(database debBuildDependencies --get-as-dictionary installedDebBuildDependencies --omit-declaration)" || exit 3
-
-    [ ${#installedDebBuildDependencies[@]} -gt 0 ] &&
-	case ",${DEBUG:-}," in *,setup-software:deb-build,*) echo >&2 "${PS4}setup-software (deb-build): Found installed ${!installedDebBuildDependencies[*]}";; esac
-
-    isInstalledDebBuildDependenciesAvailable=t
-}
-hasDebBuild()
-{
-    ! getInstalledDebBuildDependencies|| [ "${installedDebBuildDependencies["${1:?}"]}" ]
-}
-addDebBuild()
-{
-    hasDebSrc && addedDebBuildDependencies+=("${1:?}")
-}
-
-hasDebUrl()
-{
-    ! getInstalledPackages || [ "${installedPackages["${1%%:*}"]}" ]
-}
-addDebUrl()
-{
-    addedDebUrlPackages+=("${1:?}")
-}
-
-typeset -A installedSnapPackages=()
-isInstalledSnapPackagesAvailable=
-getInstalledSnapPackages()
-{
-    [ "$isInstalledSnapPackagesAvailable" ] && return
-
-    local packageName remainder; while IFS=' ' read -r packageName remainder
-    do
-	case "$packageName" in
-	    Name)	    continue;;	# Skip single-line header
-	    *)		    installedSnapPackages["$packageName"]=t
-			    case ",${DEBUG:-}," in *,setup-software:snap,*) echo >&2 "${PS4}setup-software (snap): Found installed ${packageName}";; esac
-			    ;;
-	esac
-    done < <(snap list --color=never --unicode=never 2>/dev/null)
-
-    isInstalledSnapPackagesAvailable=t
-}
-hasSnap()
-{
-    ! getInstalledSnapPackages || [ "${installedSnapPackages["${1:?}"]}" ]
-}
-addSnap()
-{
-    isAvailable snap snapd && addedSnapPackages+=("${1:?}")
-}
-
-typeset -A installedPip3Packages=()
-isInstalledPip3PackagesAvailable=
-getInstalledPip3Packages()
-{
-    [ "$isInstalledPip3PackagesAvailable" ] && return
-
-    local packageName remainder; while IFS=' ' read -r packageName remainder
-    do
-	case "$packageName" in
-	    Package|+(-))   continue;;	# Skip 2-line header
-	    *)		    installedPip3Packages["$packageName"]=t
-			    case ",${DEBUG:-}," in *,setup-software:pip3,*) echo >&2 "${PS4}setup-software (pip3): Found installed ${packageName}";; esac
-			    ;;
-	esac
-    done < <(pip3 list 2>/dev/null)
-
-    isInstalledPip3PackagesAvailable=t
-}
-hasPip3()
-{
-    ! getInstalledPip3Packages || [ "${installedPip3Packages["${1:?}"]}" ]
-}
-addPip3()
-{
-    isAvailable pip3 && addedPip3Packages+=("${1:?}")
-}
-
-typeset -A installedNpmPackages=()
-isInstalledNpmPackagesAvailable=
-getInstalledNpmPackages()
-{
-    [ "$isInstalledNpmPackagesAvailable" ] && return
-
-    local packageDirspec; while IFS=$'\n' read -r packageDirspec
-    do
-	local packageName; packageName="${packageDirspec##*/}"
-	if [ -n "$packageName" ]; then
-	    installedNpmPackages["$packageName"]=t
-	    case ",${DEBUG:-}," in *,setup-software:npm,*) echo >&2 "${PS4}setup-software (npm): Found installed ${packageName}";; esac
-	fi
-    done < <(npm ls --global --parseable --depth 0 2>/dev/null)
-
-    isInstalledNpmPackagesAvailable=t
-}
-hasNpm()
-{
-    ! getInstalledNpmPackages || [ "${installedNpmPackages["${1:?}"]}" ]
-}
-addNpm()
-{
-    isAvailable npm && addedNpmPackages+=("${1:?}")
-}
-
-hasWine()
-{
-    if [[ ! "$1" =~ ^[^:]+\?:.+: ]]; then
-	printf >&2 'ERROR: Invalid wine+url item: "wine+url:%s"\n' "$1"
-	exit 3
-    fi
-    local checkGlob="${1%%:*}"
-
-    local -r wineDriveC=~/.wine/drive_c
-    if [[ ! "$checkGlob" =~ ^/ ]] && [ -d "$wineDriveC" ]; then
-	which "${wineDriveC}/${checkGlob%\?}" >/dev/null 2>&1 || expandglob -- "${wineDriveC}/${checkGlob%\?}" >/dev/null 2>&1 && return 0
-    fi
-    which "${checkGlob%\?}" >/dev/null 2>&1 || expandglob -- "${checkGlob%\?}" >/dev/null 2>&1
-}
-addWine()
-{
-    isAvailable wine && addedWineUrlPackages+=("${1:?}")
-}
-
-hasCustom()
-{
-    local customAction="${1#*:}"
-    local customCheck="${1%:$customAction}"
-    local customActionWithoutSudo="${customAction#\$SUDO }"
-
-    if [ -z "$customAction" -o -z "$customCheck" ]; then
-	printf >&2 'ERROR: Invalid custom item: "custom:%s"\n' "$1"
-	exit 3
-    fi
-
-    if [ -x "${customActionsDirspec}/${customCheck}" ]; then
-	"${customActionsDirspec}/${customCheck}"
-    elif [[ "$customCheck" =~ \?$ ]] && local customCheckLikeAction="${customActionsDirspec}/${customActionWithoutSudo}${customCheck#\&}" && [ -x "$customCheckLikeAction" ]; then
-	"$customCheckLikeAction"
-    elif [[ "$customCheck" =~ \?$ ]]; then
-	which "${customCheck%\?}" >/dev/null 2>&1 || expandglob -- "${customCheck%\?}" >/dev/null 2>&1
-    else
-	if [[ "$customCheck" =~ ^\& ]]; then
-	    if [ -x "${customActionsDirspec}/${customActionWithoutSudo}" ]; then
-		customActionWithoutSudo="${customActionsDirspec}/${customActionWithoutSudo}"
-	    fi
-	    customCheck="${customActionWithoutSudo}${customCheck#\&}"
-	fi
-
-	eval "$customCheck"
-    fi
-}
-addCustom()
-{
-    addedCustomActions+=("${1#*:}")
-}
-
 addPreinstall()
 {
     local name="${1:?}"; shift
@@ -485,14 +304,6 @@ askTo()
 }
 
 typeset -a addedPackages=()
-typeset -a addedPpaRepositories=()
-typeset -a addedDebBuildDependencies=()
-typeset -a addedDebUrlPackages=()
-typeset -a addedSnapPackages=()
-typeset -a addedPip3Packages=()
-typeset -a addedNpmPackages=()
-typeset -a addedWineUrlPackages=()
-typeset -a addedCustomActions=()
 typeset -a addedPostinstallArgs=()
 hasDebSrc()
 {
@@ -557,114 +368,6 @@ installNative()
     [ ${#addedPackages[@]} -gt 0 ] || return
     local IFS=' '
     toBeInstalledCommands+=("${SUDO}${SUDO:+ }apt install ${addedPackages[*]}")
-}
-
-installPpa()
-{
-    [ ${#addedPpaRepositories[@]} -gt 0 ] || return
-    local repo; for repo in "${addedPpaRepositories[@]}"
-    do
-	toBeInstalledCommands+=("${SUDO}${SUDO:+ }add-apt-repository ppa:$repo")
-    done
-    toBeInstalledCommands+=("${SUDO}${SUDO:+ }apt update")
-}
-
-installDebBuild()
-{
-    [ ${#addedDebBuildDependencies[@]} -gt 0 ] || return
-
-    local databaseUpdate; printf -v databaseUpdate %q "${scriptDir}/${scriptName}"
-    local buildDep; for buildDep in "${addedDebBuildDependencies[@]}"
-    do
-	toBeInstalledCommands+=("${SUDO}${SUDO:+ }apt-get build-dep $buildDep && ${databaseUpdate}${isVerbose:+ --verbose} --database debBuildDependencies --add $buildDep")
-    done
-}
-
-installDebUrl()
-{
-    [ ${#addedDebUrlPackages[@]} -gt 0 ] || return
-    local debUrlRecord; for debUrlRecord in "${addedDebUrlPackages[@]}"
-    do
-	local maxAge=
-	local packageNameGlobUrl="${debUrlRecord#*:}"
-	if [[ "$packageNameGlobUrl" =~ ^[0-9]+([smhdwyg]|mo): ]]; then
-	    maxAge="${BASH_REMATCH[0]%:}"
-	    packageNameGlobUrl="${packageNameGlobUrl#"${BASH_REMATCH[0]}"}"
-	fi
-	local packageUrl="${packageNameGlobUrl#*:}"
-	local packageNameAndGlob="${packageNameGlobUrl%:$packageUrl}"
-	local packageGlob="${packageNameAndGlob##*/}"
-	local packageName="${packageNameAndGlob%"$packageGlob"}"
-	packageName="${packageName%/}"
-
-	# Note: No sudo here, as the downloading will happen as the current user
-	# and only the installation itself will be done through sudo.
-	toBeInstalledCommands+=("deb-download-installer${packageName:+ --application-name "'"}${packageName}${packageName:+"'"} --expression '$packageGlob'${maxAge:+ --max-age }$maxAge --url '$packageUrl'")
-    done
-}
-
-installSnap()
-{
-    [ ${#addedSnapPackages[@]} -gt 0 ] || return
-    local IFS=' '
-    toBeInstalledCommands+=("${SUDO}${SUDO:+ }snap install ${addedSnapPackages[*]}")
-}
-
-installPip3()
-{
-    [ ${#addedPip3Packages[@]} -gt 0 ] || return
-    local IFS=' '
-    toBeInstalledCommands+=("${SUDO}${SUDO:+ }pip3 install ${addedPip3Packages[*]}")
-}
-
-installNpm()
-{
-    [ ${#addedNpmPackages[@]} -gt 0 ] || return
-    local IFS=' '
-    toBeInstalledCommands+=("${SUDO}${SUDO:+ }npm install --global ${addedNpmPackages[*]}")
-}
-
-installWine()
-{
-    [ ${#addedWineUrlPackages[@]} -gt 0 ] || return
-    local wineUrlRecord; for wineUrlRecord in "${addedWineUrlPackages[@]}"
-    do
-	local maxAge=
-	local packageNameGlobUrl="${wineUrlRecord#*:}"
-	if [[ "$packageNameGlobUrl" =~ ^[0-9]+([smhdwyg]|mo): ]]; then
-	    maxAge="${BASH_REMATCH[0]%:}"
-	    packageNameGlobUrl="${packageNameGlobUrl#"${BASH_REMATCH[0]}"}"
-	fi
-	local packageUrl="${packageNameGlobUrl#*:}"
-	local packageNameAndGlob="${packageNameGlobUrl%:$packageUrl}"
-	local packageGlob="${packageNameAndGlob##*/}"
-	local packageName="${packageNameAndGlob%"$packageGlob"}"
-	packageName="${packageName%/}"
-
-	# Note: No sudo here, as downloading and installation will happen as the
-	# current user.
-	toBeInstalledCommands+=("wine-download-installer${packageName:+ --application-name "'"}${packageName}${packageName:+"'"} --expression '$packageGlob'${maxAge:+ --max-age }$maxAge --url '$packageUrl'")
-    done
-}
-
-installCustom()
-{
-    [ ${#addedCustomActions[@]} -gt 0 ] || return
-
-    local customAction; for customAction in "${addedCustomActions[@]}"
-    do
-	local customActionWithoutSudo="${customAction#\$SUDO }"
-	local sudoPrefix="${customAction%"$customActionWithoutSudo"}"
-
-	if [ -x "${customActionsDirspec}/${customActionWithoutSudo}" ]; then
-	    customActionWithoutSudo="${customActionsDirspec}/${customActionWithoutSudo}"
-	elif [ -e "${customActionsDirspec}/${customAction}" ]; then
-	    local quotedCustomNotification; printf -v quotedCustomNotification %s "${customActionsDirspec}/${customAction}"
-	    toBeInstalledCommands+=("addLoginNotification --file $quotedCustomNotification --immediate")
-	    continue
-	fi
-	toBeInstalledCommands+=("${sudoPrefix:+${SUDO}${SUDO:+ }}${customActionWithoutSudo}")
-    done
 }
 
 preInstall()
