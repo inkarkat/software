@@ -187,9 +187,9 @@ configUsagePreinstall()
 {
     cat <<'HELPTEXT'
 preinstall: items consist of an ACTION that is one of the following:
-- an executable command in the ./etc/preinstall directory tree that is invoked
-  (prepend $SUDO if it needs to be invoked as root) and should then perform the
-  preinstallation steps
+- an executable command (potentially followed by command-line arguments) in the
+  ./etc/preinstall directory tree that is invoked (prepend $SUDO if it needs to
+  be invoked as root) and should then perform the preinstallation steps
 - a text file in the ./etc/preinstall directory tree whose file name (without
   extension) is taken as a notification title and contents as notification to be
   displayed (presumably with instructions for manual pre-installation steps)
@@ -207,9 +207,9 @@ configUsagePostinstall()
 {
     cat <<'HELPTEXT'
 postinstall: items consist of an ACTION that is one of the following:
-- an executable command in the ./etc/postinstall directory tree that is invoked
-  (prepend $SUDO if it needs to be invoked as root) and should then perform the
-  postinstallation steps
+- an executable command (potentially followed by command-line arguments) in the
+  ./etc/postinstall directory tree that is invoked (prepend $SUDO if it needs to
+  be invoked as root) and should then perform the postinstallation steps
 - a text file in the ./etc/postinstall directory tree whose file name (without
   extension) is taken as a notification title and contents as notification to be
   displayed (presumably with instructions for manual post-installation steps)
@@ -327,7 +327,7 @@ preInstall()
     local action="${1:?}"; shift
 
     local actionWithoutSudo="${action#\$SUDO }"
-    if [ -x "${preinstallActionsDirspec}/${actionWithoutSudo}" ]; then
+    if [ -x "${preinstallActionsDirspec}/${actionWithoutSudo%% *}" ]; then
 	actionWithoutSudo="${preinstallActionsDirspec}/${actionWithoutSudo}"
 	toBeInstalledCommands+=("${sudoPrefix:+${SUDO}${SUDO:+ }}${actionWithoutSudo}")
     elif [ -e "${preinstallActionsDirspec}/${action}" ]; then
@@ -369,11 +369,13 @@ runPostInstallCheck()
     local item="${1:?}"; shift
     local action="${1:?}"; shift
     local actionWithoutSudo="${action#\$SUDO }"
+    local actionWithoutSudoAndArgs="${actionWithoutSudo%% *}"
     if hasItem "$item"; then
 	if [ -x "${postinstallActionsDirspec}/${action}" ]; then
 	    "${postinstallActionsDirspec}/${action}"
-	elif [ -x "${postinstallActionsDirspec}/${actionWithoutSudo}" ]; then
-	    $SUDO "${postinstallActionsDirspec}/${actionWithoutSudo}"
+	elif [ -x "${postinstallActionsDirspec}/${actionWithoutSudoAndArgs}" ]; then
+	    local actionArgs="${actionWithoutSudo#"${actionWithoutSudoAndArgs}"}"
+	    $SUDO "${postinstallActionsDirspec}/${actionWithoutSudoAndArgs}" $actionArgs
 	elif [ -e "${postinstallActionsDirspec}/${action}" ]; then
 	    addLoginNotification --file "${postinstallActionsDirspec}/${action}" --immediate
 	else
