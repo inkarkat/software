@@ -18,15 +18,16 @@ CHECK can be one of the following (in decreasing precedence):
 - a TEST-EXPRESSION (whitespace must be escaped or the entire expression
   quoted!) that is eval'd and should succeed if the application already
   exists, and fail if it is missing; if TEST-EXPRESSION starts with a &, this
-  is replaced by the following ACTION (without a $SUDO prefix), allowing you
-  to re-use the same script for checking and installing:
+  is replaced by the following ACTION (without a $SUDO prefix and without its
+  command-line arguments), allowing you to re-use the same script for checking
+  and installing:
 	custom:'& --check':foo-installer
     or save repeated typing:
 	custom:&-check:foo-installer
 ACTION is one of the following:
-- an executable command in the ./etc/custom directory tree that is invoked
-  (prepend $SUDO if it needs to be invoked as root) and should then install
-  the application
+- an executable command (potentially followed by command-line arguments) in the
+  ./etc/custom directory tree that is invoked (prepend $SUDO if it needs to be
+  invoked as root) and should then install the application
 - a text file in the ./etc/custom directory tree whose file name (without
   extension) is taken as a notification title and contents as notification to be
   displayed (presumably with instructions for manual installation steps)
@@ -40,7 +41,7 @@ hasCustom()
 {
     local customAction="${1#*:}"
     local customCheck="${1%:$customAction}"
-    local customActionWithoutSudo="${customAction#\$SUDO }"
+    local customActionWithoutSudoAndArgs="${customAction#\$SUDO }"; customActionWithoutSudoAndArgs="${customActionWithoutSudoAndArgs%% *}"
 
     if [ -z "$customAction" -o -z "$customCheck" ]; then
 	printf >&2 'ERROR: Invalid custom item: "custom:%s"\n' "$1"
@@ -49,16 +50,16 @@ hasCustom()
 
     if [ -x "${customActionsDirspec}/${customCheck}" ]; then
 	"${customActionsDirspec}/${customCheck}"
-    elif [[ "$customCheck" =~ \?$ ]] && local customCheckLikeAction="${customActionsDirspec}/${customActionWithoutSudo}${customCheck#\&}" && [ -x "$customCheckLikeAction" ]; then
+    elif [[ "$customCheck" =~ \?$ ]] && local customCheckLikeAction="${customActionsDirspec}/${customActionWithoutSudoAndArgs}${customCheck#\&}" && [ -x "$customCheckLikeAction" ]; then
 	"$customCheckLikeAction"
     elif [[ "$customCheck" =~ \?$ ]]; then
 	which "${customCheck%\?}" >/dev/null 2>&1 || expandglob -- "${customCheck%\?}" >/dev/null 2>&1
     else
 	if [[ "$customCheck" =~ ^\& ]]; then
-	    if [ -x "${customActionsDirspec}/${customActionWithoutSudo}" ]; then
-		customActionWithoutSudo="${customActionsDirspec}/${customActionWithoutSudo}"
+	    if [ -x "${customActionsDirspec}/${customActionWithoutSudoAndArgs}" ]; then
+		customActionWithoutSudoAndArgs="${customActionsDirspec}/${customActionWithoutSudoAndArgs}"
 	    fi
-	    customCheck="${customActionWithoutSudo}${customCheck#\&}"
+	    customCheck="${customActionWithoutSudoAndArgs}${customCheck#\&}"
 	fi
 
 	eval "$customCheck"
@@ -80,7 +81,7 @@ installCustom()
 	local customActionWithoutSudo="${customAction#\$SUDO }"
 	local sudoPrefix="${customAction%"$customActionWithoutSudo"}"
 
-	if [ -x "${customActionsDirspec}/${customActionWithoutSudo}" ]; then
+	if [ -x "${customActionsDirspec}/${customActionWithoutSudo%% *}" ]; then
 	    customActionWithoutSudo="${customActionsDirspec}/${customActionWithoutSudo}"
 	elif [ -e "${customActionsDirspec}/${customAction}" ]; then
 	    local quotedCustomNotification; printf -v quotedCustomNotification %s "${customActionsDirspec}/${customAction}"
