@@ -348,7 +348,7 @@ preInstall()
 	    # installation.
 	    addItems "${action#native:}"
 	    generateInstallCommands
-	elif [ -n "${typeRegistry["$prefix"]}" ]; then
+	elif [ -n "$prefix" ] && [ -n "${typeRegistry["$prefix"]}" ]; then
 	    addItems "$action"
 	    generateInstallCommands
 	else
@@ -394,7 +394,7 @@ runPostInstallCheck()
 		addItems "${action#native:}"
 		printInstallCommands || \
 		    printf >&2 'Skipping postinstall action, because %s indicated that no action is needed.\n' "$action"
-	    elif [ -n "${typeRegistry["$prefix"]}" ]; then
+	    elif [ -n "$prefix" ] && [ -n "${typeRegistry["$prefix"]}" ]; then
 		addItems "$action"
 		generateInstallCommands
 		printInstallCommands || \
