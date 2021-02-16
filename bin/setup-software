@@ -430,7 +430,7 @@ printInstallCommands()
 
 obtainSelection=askTo
 typeset -a selections=()
-prePostStatus=
+typeset -a specialHandlingCommands=()
 isVerbose=
 typeset -a recursiveArgs=()
 while [ $# -ne 0 ]
@@ -461,34 +461,40 @@ do
 			    printf >&2 'ASSERT: No --action following after --pre %q.\n' "$item"; exit 3
 			fi
 			shift; action="$1"; shift
-			: ${prePostStatus:=0}
-			preInstall "$item" "$action" || prePostStatus=1
+			printf -v specialCommand '%q ' preInstall "$item" "$action"
+			specialHandlingCommands+=("${specialCommand% }")
 			;;
 	--post)		shift; item="$1"; shift
 			if [ "$1" != '--action' ]; then
 			    printf >&2 'ASSERT: No --action following after --post %q.\n' "$item"; exit 3
 			fi
 			shift; action="$1"; shift
-			: ${prePostStatus:=0}
-			runPostInstallCheck "$item" "$action" || prePostStatus=1
+			printf -v specialCommand '%q ' runPostInstallCheck "$item" "$action"
+			specialHandlingCommands+=("${specialCommand% }")
 			;;
 	--)		shift; break;;
 	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
 	*)		break;;
     esac
 done
-[ -n "$prePostStatus" ] && exit $prePostStatus
-if [ $# -eq 0 ]; then
-    printUsage "$0" >&2
-    exit 2
-fi
-
-IFS=' '
 customActionsDirspec="${baseDir}/custom"
 preinstallActionsDirspec="${baseDir}/preinstall"
 postinstallActionsDirspec="${baseDir}/postinstall"
 definitionDirspec="${baseDir}/definitions"
 
+if [ ${#specialHandlingCommands[@]} -gt 0 ]; then
+    status=0
+    for specialCommand in "${specialHandlingCommands[@]}"
+    do
+	eval "$specialCommand" || status=1
+    done
+    exit $status
+elif [ $# -eq 0 ]; then
+    printUsage "$0" >&2
+    exit 2
+fi
+
+IFS=' '
 typeset -a definitions=()
 for definitionFile
 do
