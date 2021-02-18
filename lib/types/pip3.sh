@@ -33,7 +33,7 @@ hasPip3()
 typeset -a addedPip3Packages=()
 addPip3()
 {
-    isAvailable pip3 && addedPip3Packages+=("${1:?}")
+    isAvailable pip3 python3-pip && addedPip3Packages+=("${1:?}")
 }
 
 installPip3()
