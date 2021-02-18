@@ -270,26 +270,26 @@ typeset -a addedNativePackages=()
 typeset -a addedPostinstallArgs=()
 isAvailable()
 {
-    local packageManager="${1:?}"; shift
-    local packageManagerName="${1:-$packageManager}"; shift
+    local packageManagerExecutable="${1:?}"; shift
+    local packageManagerPackageName="${1:-$packageManagerExecutable}"; shift
 
-    if [ "${installedNativePackages["$packageManager"]}" ] || [ "${addedNativePackages["$packageManager"]}" ] || exists "$packageManager"; then
+    if [ "${installedNativePackages["$packageManagerPackageName"]}" ] || [ "${addedNativePackages["$packageManagerPackageName"]}" ] || exists "$packageManagerExecutable"; then
 	return
     fi
 
-    if askTo --subject "$packageManagerName" --verb 'is not yet' --state installed --action 'install it'; then
+    if askTo --subject "$packageManagerPackageName" --verb 'is not yet' --state installed --action 'install it'; then
 	# Allow special pre- and post-install steps for implicitly added package manager packages.
 	local actionScript
-	for actionScript in "${preinstallActionsDirspec}/${packageManagerName}"/*
+	for actionScript in "${preinstallActionsDirspec}/${packageManagerPackageName}"/*
 	do
-	    [ -x "$actionScript" ] && "${scriptDir}/${scriptName}" "${recursiveArgs[@]}" --pre "$packageManagerName" --action "${actionScript#"${preinstallActionsDirspec}/${packageManagerName}/"}"
+	    [ -x "$actionScript" ] && "${scriptDir}/${scriptName}" "${recursiveArgs[@]}" --pre "$packageManagerPackageName" --action "${actionScript#"${preinstallActionsDirspec}/${packageManagerPackageName}/"}"
 	done
 
-	addedNativePackages+=("$packageManagerName")
+	addedNativePackages+=("$packageManagerPackageName")
 
-	for actionScript in "${postinstallActionsDirspec}/${packageManagerName}"/*
+	for actionScript in "${postinstallActionsDirspec}/${packageManagerPackageName}"/*
 	do
-	    [ -x "$actionScript" ] && addedPostinstallArgs+=(--post "$packageManagerName" --action "${actionScript#"${postinstallActionsDirspec}/${packageManagerName}/"}")
+	    [ -x "$actionScript" ] && addedPostinstallArgs+=(--post "$packageManagerPackageName" --action "${actionScript#"${postinstallActionsDirspec}/${packageManagerPackageName}/"}")
 	done
     else
 	return 1
