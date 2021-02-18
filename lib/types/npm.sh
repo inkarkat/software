@@ -32,7 +32,7 @@ hasNpm()
 typeset -a addedNpmPackages=()
 addNpm()
 {
-    isAvailable npm && addedNpmPackages+=("${1:?}")
+    isAvailable npm npm 'NPM Node.js package manager' && addedNpmPackages+=("${1:?}")
 }
 
 installNpm()
