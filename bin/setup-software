@@ -272,12 +272,13 @@ isAvailable()
 {
     local packageManagerExecutable="${1:?}"; shift
     local packageManagerPackageName="${1:-$packageManagerExecutable}"; shift
+    local packageManagerSubject="${1:-$packageManagerPackageName}"; shift
 
     if [ "${installedNativePackages["$packageManagerPackageName"]}" ] || [ "${addedNativePackages["$packageManagerPackageName"]}" ] || exists "$packageManagerExecutable"; then
 	return
     fi
 
-    if askTo --subject "$packageManagerPackageName" --verb 'is not yet' --state installed --action 'install it'; then
+    if askTo --subject "$packageManagerSubject" --verb 'is not yet' --state installed --action 'install it'; then
 	# Allow special pre- and post-install steps for implicitly added package manager packages.
 	local actionScript
 	for actionScript in "${preinstallActionsDirspec}/${packageManagerPackageName}"/*
