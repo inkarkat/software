@@ -1,0 +1,11 @@
+#!/bin/bash
+
+scriptDir="$([ "${BASH_SOURCE[0]}" ] && dirname -- "${BASH_SOURCE[0]}" || exit 3)"
+[ -d "$scriptDir" ] || { echo >&2 "ERROR: Cannot determine script directory!"; exit 3; }
+projectDir="${scriptDir}/.."
+
+DUMPMOZILLAADDONS_SUBJECT=Thunderbird
+DUMPMOZILLAADDONS_PROFILES_DIRSPEC=~/.thunderbird
+DUMPMOZILLAADDONS_SUBJECT_PACKAGE_NAME=thunderbird
+
+source "${projectDir}/lib/dumpMozillaAddons"
