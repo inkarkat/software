@@ -1,0 +1,35 @@
+#!/bin/bash source-this-script
+shopt -qs nullglob
+
+: ${DUMPMOZILLAADDONS_SUBJECT:?}
+: ${DUMPMOZILLAADDONS_PROFILES_DIRSPEC:?}
+: ${DUMPMOZILLAADDONS_SUBJECT_PACKAGE_NAME:?}
+
+printUsage()
+{
+    cat <<HELPTEXT
+Print setup-software definitions for all ${DUMPMOZILLAADDONS_SUBJECT} add-ons installed under
+PROFILE-NAME / in all profiles.
+HELPTEXT
+    echo
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[PROFILE-NAME] [-?|-h|--help]'
+}
+case "$1" in
+    --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+esac
+
+
+addonsConfigFilespecs=("$DUMPMOZILLAADDONS_PROFILES_DIRSPEC"/*.${1:-*}/addons.json)
+if [ ${#addonsConfigFilespecs[@]} -eq 0 ]; then
+    echo >&2 "ERROR: No ${1:+such }${DUMPMOZILLAADDONS_SUBJECT} profile found."
+    exit 3
+fi
+
+for addonsConfigFilespec in "${addonsConfigFilespecs[@]}"
+do
+    addonsConfigDirspec="$(dirname -- "$addonsConfigFilespec")"
+    profileName="${addonsConfigDirspec##*.}"
+    [[ "$profileName" =~ ^default(-release)?$ ]] && profileName=''
+
+    jq --raw-output ".addons | .[] | \"${DUMPMOZILLAADDONS_SUBJECT_PACKAGE_NAME}:${profileName}:\\(.id):\\(.reviewURL|rtrimstr(\"reviews/\")) # \\(.name)\"" "$addonsConfigFilespec"
+done
