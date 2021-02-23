@@ -33,8 +33,7 @@ typeset -a addedNpmPackages=()
 addNpm()
 {
     local npmPackageName="${1:?}"; shift
-    isAvailable npm npm 'NPM Node.js package manager' || return $?
-
+    isAvailableOrUserAcceptsNative npm npm 'NPM Node.js package manager' || return $?
     preinstallHook "$npmPackageName"
     addedNpmPackages+=("$npmPackageName")
     postinstallHook "$npmPackageName"

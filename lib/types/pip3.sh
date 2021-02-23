@@ -34,7 +34,7 @@ typeset -a addedPip3Packages=()
 addPip3()
 {
     local pip3PackageName="${1:?}"; shift
-    isAvailable pip3 python3-pip 'pip3 Python 3 package manager' || return $?
+    isAvailableOrUserAcceptsNative pip3 python3-pip 'pip3 Python 3 package manager' || return $?
 
     preinstallHook "$pip3PackageName"
     addedPip3Packages+=("$pip3PackageName")

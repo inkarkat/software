@@ -292,7 +292,7 @@ askTo()
     memoizeDecision --memoize-group setup-software "$@"
 }
 
-isAvailable()
+isAvailableOrUserAcceptsNative()
 {
     local packageManagerExecutable="${1:?}"; shift
     local packageManagerPackageName="${1:-$packageManagerExecutable}"; shift

@@ -35,7 +35,7 @@ typeset -a addedSnapPackages=()
 addSnap()
 {
     local snapPackageName="${1:?}"; shift
-    isAvailable snap snapd || return $?
+    isAvailableOrUserAcceptsNative snap snapd || return $?
 
     preinstallHook "$snapPackageName"
     addedSnapPackages+=("$snapPackageName")
