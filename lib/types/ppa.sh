@@ -37,6 +37,13 @@ addPpa()
     postinstallHook "$ppaRepoName"
 }
 
+isAvailablePpa()
+{
+    local ppaRepoName="${1:?}"; shift
+    getInstalledPpaRepositories || return $?
+    [ "${installedPpaRepositories["$ppaRepoName"]}" ] || [ "${addedPpaRepositories["$ppaRepoName"]}" ]
+}
+
 installPpa()
 {
     [ ${#addedPpaRepositories[@]} -gt 0 ] || return

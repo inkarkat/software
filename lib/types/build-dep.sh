@@ -23,7 +23,7 @@ getInstalledDebBuildDependencies()
 }
 hasDebBuild()
 {
-    ! getInstalledDebBuildDependencies|| [ "${installedDebBuildDependencies["${1:?}"]}" ]
+    ! getInstalledDebBuildDependencies || [ "${installedDebBuildDependencies["${1:?}"]}" ]
 }
 
 hasDebSrc()
@@ -47,6 +47,13 @@ addDebBuild()
     preinstallHook "$debBuildName"
     addedDebBuildDependencies+=("$debBuildName")
     postinstallHook "$debBuildName"
+}
+
+isAvailableDebBuild()
+{
+    local debBuildName="${1:?}"; shift
+    getInstalledDebBuildDependencies || return $?
+    [ "${installedDebBuildDependencies["$debBuildName"]}" ] || [ "${addedDebBuildDependencies["$debBuildName"]}" ]
 }
 
 installDebBuild()

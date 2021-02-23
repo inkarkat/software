@@ -42,6 +42,13 @@ addSnap()
     postinstallHook "$snapPackageName"
 }
 
+isAvailableSnap()
+{
+    local snapPackageName="${1:?}"; shift
+    getInstalledSnapPackages || return $?
+    [ "${installedSnapPackages["$snapPackageName"]}" ] || [ "${addedSnapPackages["$snapPackageName"]}" ]
+}
+
 installSnap()
 {
     [ ${#addedSnapPackages[@]} -gt 0 ] || return
