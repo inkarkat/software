@@ -171,6 +171,7 @@ hasNative()
     # these are effectively skipped.
     ! getInstalledNativePackages || [ "${installedNativePackages["${1:?}"]}" ]
 }
+typeset -a addedNativePackages=()
 addNative()
 {
     addedNativePackages+=("${1:?}")
@@ -238,6 +239,7 @@ addPreinstall()
 	"${scriptDir}/${scriptName}" "${recursiveArgs[@]}" --pre "${name#*$'\n'}" --action "${name%%$'\n'*}"
     fi
 }
+typeset -a addedPostinstallArgs=()
 addPostinstall()
 {
     local name="${1:?}"; shift
@@ -266,8 +268,6 @@ askTo()
     memoizeDecision --memoize-group setup-software "$@"
 }
 
-typeset -a addedNativePackages=()
-typeset -a addedPostinstallArgs=()
 isAvailable()
 {
     local packageManagerExecutable="${1:?}"; shift
