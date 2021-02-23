@@ -32,7 +32,12 @@ hasNpm()
 typeset -a addedNpmPackages=()
 addNpm()
 {
-    isAvailable npm npm 'NPM Node.js package manager' && addedNpmPackages+=("${1:?}")
+    local npmPackageName="${1:?}"; shift
+    isAvailable npm npm 'NPM Node.js package manager' || return $?
+
+    preinstallHook "$npmPackageName"
+    addedNpmPackages+=("$npmPackageName")
+    postinstallHook "$npmPackageName"
 }
 
 installNpm()

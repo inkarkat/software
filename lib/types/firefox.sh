@@ -63,7 +63,13 @@ hasFirefoxAddon()
 typeset -a addedFirefoxAddons=()
 addFirefoxAddon()
 {
-    exists firefox && addedFirefoxAddons+=("${1:?}")
+    local firefoxAddonRecord="${1:?}"; shift
+    local addonId="${firefoxAddonRecord#*:}"; addonId="${addonId%%:*}"
+    exists firefox || return $?
+
+    preinstallHook "$addonId"
+    addedFirefoxAddons+=("$firefoxAddonRecord")
+    postinstallHook "$addonId"
 }
 
 installFirefoxAddon()

@@ -41,7 +41,12 @@ hasDebSrc()
 typeset -a addedDebBuildDependencies=()
 addDebBuild()
 {
-    hasDebSrc && addedDebBuildDependencies+=("${1:?}")
+    local debBuildName="${1:?}"; shift
+    hasDebSrc || return $?
+
+    preinstallHook "$debBuildName"
+    addedDebBuildDependencies+=("$debBuildName")
+    postinstallHook "$debBuildName"
 }
 
 installDebBuild()

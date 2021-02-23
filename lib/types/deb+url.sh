@@ -21,7 +21,12 @@ hasDebUrl()
 typeset -a addedDebUrlPackages=()
 addDebUrl()
 {
-    addedDebUrlPackages+=("${1:?}")
+    local debUrlRecord="${1:?}"; shift
+    local packageName="${debUrlRecord%%:*}"
+
+    preinstallHook "$packageName"
+    addedDebUrlPackages+=("$debUrlRecord")
+    postinstallHook "$packageName"
 }
 
 installDebUrl()

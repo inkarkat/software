@@ -34,7 +34,12 @@ hasSnap()
 typeset -a addedSnapPackages=()
 addSnap()
 {
-    isAvailable snap snapd && addedSnapPackages+=("${1:?}")
+    local snapPackageName="${1:?}"; shift
+    isAvailable snap snapd || return $?
+
+    preinstallHook "$snapPackageName"
+    addedSnapPackages+=("$snapPackageName")
+    postinstallHook "$snapPackageName"
 }
 
 installSnap()

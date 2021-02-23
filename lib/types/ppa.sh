@@ -30,7 +30,11 @@ hasPpa()
 typeset -a addedPpaRepositories=()
 addPpa()
 {
-    addedPpaRepositories+=("${1:?}")
+    local ppaRepoName="${1:?}"; shift
+
+    preinstallHook "$ppaRepoName"
+    addedPpaRepositories+=("$ppaRepoName")
+    postinstallHook "$ppaRepoName"
 }
 
 installPpa()
