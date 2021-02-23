@@ -90,7 +90,10 @@ printConfigUsage()
 	cat <<'HELPTEXT'
 A definition consists of one or many whitespace-separated ITEMs, optionally
 followed by a # DESCRIPTION. It can be broken over multiple lines, with a
-trailing \ as the line continuation character.
+trailing \ as the line continuation character. Each ITEM may have implicit pre-
+and post-install steps in ./etc/{pre,post}install/ITEM/*, allowing for
+customization around their installation no matter in which definition ITEM has
+been selected.
 Definitions are grouped into DEFINITION-GROUPs which contain definitions that
 belong to a certain category or are typically installed together for a certain
 use case.
@@ -174,7 +177,10 @@ hasNative()
 typeset -a addedNativePackages=()
 addNative()
 {
-    addedNativePackages+=("${1:?}")
+    local packageName="${1:?}"; shift
+    preinstallHook "$packageName"
+    addedNativePackages+=("$packageName")
+    postinstallHook "$packageName"
 }
 
 configUsageNative()
@@ -239,6 +245,15 @@ addPreinstall()
 	"${scriptDir}/${scriptName}" "${recursiveArgs[@]}" --pre "${name#*$'\n'}" --action "${name%%$'\n'*}"
     fi
 }
+preinstallHook()
+{
+    local name="${1:?}"; shift
+    local actionScript
+    for actionScript in "${preinstallActionsDirspec}/${name}"/*
+    do
+	[ -x "$actionScript" ] && "${scriptDir}/${scriptName}" "${recursiveArgs[@]}" --pre "$name" --action "${actionScript#"${preinstallActionsDirspec}/${name}/"}"
+    done
+}
 typeset -a addedPostinstallArgs=()
 addPostinstall()
 {
@@ -246,6 +261,15 @@ addPostinstall()
     # Convert the "postinstall:ACTION\nITEM" to
     # --post "$ITEM" --action "$ACTION".
     addedPostinstallArgs+=(--post "${name#*$'\n'}" --action "${name%%$'\n'*}")
+}
+postinstallHook()
+{
+    local name="${1:?}"; shift
+    local actionScript
+    for actionScript in "${postinstallActionsDirspec}/${name}"/*
+    do
+	[ -x "$actionScript" ] && addedPostinstallArgs+=(--post "$name" --action "${actionScript#"${postinstallActionsDirspec}/${name}/"}")
+    done
 }
 
 hasItem()
@@ -279,19 +303,7 @@ isAvailable()
     fi
 
     if askTo --subject "$packageManagerSubject" --verb 'is not yet' --state installed --action 'install it'; then
-	# Allow special pre- and post-install steps for implicitly added package manager packages.
-	local actionScript
-	for actionScript in "${preinstallActionsDirspec}/${packageManagerPackageName}"/*
-	do
-	    [ -x "$actionScript" ] && "${scriptDir}/${scriptName}" "${recursiveArgs[@]}" --pre "$packageManagerPackageName" --action "${actionScript#"${preinstallActionsDirspec}/${packageManagerPackageName}/"}"
-	done
-
 	addNative "$packageManagerPackageName"
-
-	for actionScript in "${postinstallActionsDirspec}/${packageManagerPackageName}"/*
-	do
-	    [ -x "$actionScript" ] && addedPostinstallArgs+=(--post "$packageManagerPackageName" --action "${actionScript#"${postinstallActionsDirspec}/${packageManagerPackageName}/"}")
-	done
     else
 	return 1
     fi
