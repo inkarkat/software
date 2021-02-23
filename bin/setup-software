@@ -138,7 +138,7 @@ addAllAcceptedGroups()
 	group="${group#./}"
 	memoizeDecision --memoize-group setup-software-groups --subject "$group" --verb 'is not' --state 'chosen' --action 'consider it' && \
 	    acceptedGroups+=("$group")
-    done < <(cd "$definitionDirspec" && find . -type f -print | sort)
+    done < <(cd "${definitionDirspec:?}" && find . -type f -print | sort)
 }
 
 database()
@@ -430,6 +430,7 @@ printInstallCommands()
 
 
 obtainSelection=askTo
+isAddAll=
 typeset -a selections=()
 typeset -a specialHandlingCommands=()
 isVerbose=
@@ -448,14 +449,7 @@ do
 	--verbose|-v)	recursiveArgs+=("$1"); shift; isVerbose=t;;
 	--yes|-y)	shift; obtainSelection=true;;
 	--select|-s)	shift; selections+=("$1"); shift;;
-	--all|-a)	shift
-			addAllAcceptedGroups
-			if [ ${#acceptedGroups[@]} -eq 0 ]; then
-			    exit 1
-			else
-			    set -- "${acceptedGroups[@]}" "$@"
-			fi
-			;;
+	--all|-a)	shift; isAddAll=t;;
 	--database)	shift; database "$@"; exit $?;;
 	--pre)		shift; item="$1"; shift
 			if [ "$1" != '--action' ]; then
@@ -483,6 +477,14 @@ preinstallActionsDirspec="${baseDir}/preinstall"
 postinstallActionsDirspec="${baseDir}/postinstall"
 definitionDirspec="${baseDir}/definitions"
 
+if [ "$isAddAll" ]; then
+    addAllAcceptedGroups
+    if [ ${#acceptedGroups[@]} -eq 0 ]; then
+	exit 1
+    else
+	set -- "${acceptedGroups[@]}" "$@"
+    fi
+fi
 if [ ${#specialHandlingCommands[@]} -gt 0 ]; then
     status=0
     for specialCommand in "${specialHandlingCommands[@]}"
