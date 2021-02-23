@@ -34,7 +34,26 @@ hasWine()
 typeset -a addedWineUrlPackages=()
 addWine()
 {
-    isAvailable wine && addedWineUrlPackages+=("${1:?}")
+    local wineUrlRecord="${1:?}"; shift
+    isAvailable wine || return $?
+
+    # The best identifier for pre-/postinstall hooks is the package name
+    # (without any [SUBDIR/]); unfortunately, it is optional and hard to parse,
+    # so most of the implementation is copied from installWine().
+    local packageNameGlobUrl="${wineUrlRecord#*:}"
+    if [[ "$packageNameGlobUrl" =~ ^[0-9]+([smhdwyg]|mo): ]]; then
+	packageNameGlobUrl="${packageNameGlobUrl#"${BASH_REMATCH[0]}"}"
+    fi
+    local packageUrl="${packageNameGlobUrl#*:}"
+    local packageNameAndGlob="${packageNameGlobUrl%:$packageUrl}"
+    local packageGlob="${packageNameAndGlob##*/}"
+    local packageName="${packageNameAndGlob%"$packageGlob"}"
+    packageName="${packageName%/}"
+    packageName="${packageName##*/}"
+
+    [ -z "$packageName" ] || preinstallHook "$packageName"
+    addedWineUrlPackages+=("$wineUrlRecord")
+    [ -z "$packageName" ] || postinstallHook "$packageName"
 }
 
 installWine()

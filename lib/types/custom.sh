@@ -69,6 +69,8 @@ hasCustom()
 typeset -a addedCustomActions=()
 addCustom()
 {
+    # Note: Do not support pre-/postinstall hooks here, as we have no short
+    # "name" that we could use.
     addedCustomActions+=("${1#*:}")
 }
 
