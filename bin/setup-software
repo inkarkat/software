@@ -286,7 +286,7 @@ isAvailable()
 	    [ -x "$actionScript" ] && "${scriptDir}/${scriptName}" "${recursiveArgs[@]}" --pre "$packageManagerPackageName" --action "${actionScript#"${preinstallActionsDirspec}/${packageManagerPackageName}/"}"
 	done
 
-	addedNativePackages+=("$packageManagerPackageName")
+	addNative "$packageManagerPackageName"
 
 	for actionScript in "${postinstallActionsDirspec}/${packageManagerPackageName}"/*
 	do
