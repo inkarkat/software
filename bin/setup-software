@@ -292,13 +292,18 @@ askTo()
     memoizeDecision --memoize-group setup-software "$@"
 }
 
+isAvailableNative()
+{
+    local packageManagerPackageName="${1:-?}"; shift
+    [ "${installedNativePackages["$packageManagerPackageName"]}" ] || [ "${addedNativePackages["$packageManagerPackageName"]}" ]
+}
 isAvailableOrUserAcceptsNative()
 {
     local packageManagerExecutable="${1:?}"; shift
     local packageManagerPackageName="${1:-$packageManagerExecutable}"; shift
     local packageManagerSubject="${1:-$packageManagerPackageName}"; shift
 
-    if [ "${installedNativePackages["$packageManagerPackageName"]}" ] || [ "${addedNativePackages["$packageManagerPackageName"]}" ] || exists "$packageManagerExecutable"; then
+    if isAvailableNative "$packageManagerPackageName" || exists "$packageManagerExecutable"; then
 	return
     fi
 
