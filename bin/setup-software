@@ -524,8 +524,7 @@ do
 	else
 	    items="${line%%[	 ]#*}"
 	    comment="${line#"$items"}"
-	    comment="${comment#[	 ]#}"
-	    comment="${comment##[	 ]}"
+	    comment="${comment##+([	 ])#*([	 ])}"
 	    subject="${comment:-"$items"}"
 
 	    contains "$subject" "${selections[@]}" && \
