@@ -58,8 +58,9 @@ addWine()
 
 isAvailableWine()
 {
-    local queriedExecutableName="${1:?}"; shift
-    local queriedPackageName="${1?}"; shift
+    local executableNameAndPackageName="${1:?}"; shift
+    local queriedExecutableName="${executableNameAndPackageName%%:*}"; shift
+    local queriedPackageName="${executableNameAndPackageName#"${queriedExecutableName}:"}"; shift
 
 
     hasWine "${queriedExecutableName}:${queriedPackageName}:" && return 0

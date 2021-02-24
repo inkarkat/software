@@ -74,8 +74,9 @@ addFirefoxAddon()
 
 isAvailableFirefoxAddon()
 {
-    local queriedProfileName="${1?}"; shift
-    local queriedId="${1:?}"; shift
+    local profileNameAndId="${1:?}"; shift
+    local queriedProfileName="${profileNameAndId%%:*}"; shift
+    local queriedId="${profileNameAndId#"${queriedProfileName}:"}"; shift
 
     hasFirefoxAddon "${queriedProfileName}:dummyId:dummyUrl"	# Obtain the addons for the queried profile.
     [ -z "$queriedProfileName" ] && queriedProfileName="${firefoxDefaultProfileName:?}"
