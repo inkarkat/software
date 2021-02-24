@@ -366,6 +366,7 @@ preInstall()
     local action="${1:?}"; shift
 
     local actionWithoutSudo="${action#\$SUDO }"
+    local sudoPrefix="${action%"$actionWithoutSudo"}"
     if [ -x "${preinstallActionsDirspec}/${actionWithoutSudo%% *}" ]; then
 	actionWithoutSudo="${preinstallActionsDirspec}/${actionWithoutSudo}"
 	toBeInstalledCommands+=("${sudoPrefix:+${SUDO}${SUDO:+ }}${actionWithoutSudo}")
@@ -408,13 +409,14 @@ runPostInstallCheck()
     local item="${1:?}"; shift
     local action="${1:?}"; shift
     local actionWithoutSudo="${action#\$SUDO }"
+    local sudoPrefix="${action%"$actionWithoutSudo"}"
     local actionWithoutSudoAndArgs="${actionWithoutSudo%% *}"
     if hasItem "$item"; then
 	if [ -x "${postinstallActionsDirspec}/${action}" ]; then
 	    "${postinstallActionsDirspec}/${action}"
 	elif [ -x "${postinstallActionsDirspec}/${actionWithoutSudoAndArgs}" ]; then
 	    local actionArgs="${actionWithoutSudo#"${actionWithoutSudoAndArgs}"}"
-	    $SUDO "${postinstallActionsDirspec}/${actionWithoutSudoAndArgs}" $actionArgs
+	    ${sudoPrefix:+$SUDO} "${postinstallActionsDirspec}/${actionWithoutSudoAndArgs}" $actionArgs
 	elif [ -e "${postinstallActionsDirspec}/${action}" ]; then
 	    addLoginNotification --file "${postinstallActionsDirspec}/${action}" --immediate
 	else
