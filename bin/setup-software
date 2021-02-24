@@ -639,6 +639,8 @@ do
     for item
     do
 	case "$item" in
+	    require:*)
+		continue;;  # Ignore; requirements have already been handled.
 	    preinstall:*|postinstall:*)
 		if [ -n "$lastMissingItem" ]; then
 		    # The preinstall action will run when the previous item will
