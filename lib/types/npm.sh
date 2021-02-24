@@ -43,7 +43,7 @@ isAvailableNpm()
 {
     local npmPackageName="${1:?}"; shift
     getInstalledNpmPackages || return $?
-    [ "${installedNpmPackages["$npmPackageName"]}" ] || [ "${addedNpmPackages["$npmPackageName"]}" ]
+    [ "${installedNpmPackages["$npmPackageName"]}" ] || contains "$npmPackageName" "${addedNpmPackages[@]}"
 }
 
 installNpm()

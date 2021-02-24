@@ -53,7 +53,7 @@ isAvailableDebBuild()
 {
     local debBuildName="${1:?}"; shift
     getInstalledDebBuildDependencies || return $?
-    [ "${installedDebBuildDependencies["$debBuildName"]}" ] || [ "${addedDebBuildDependencies["$debBuildName"]}" ]
+    [ "${installedDebBuildDependencies["$debBuildName"]}" ] || contains "$debBuildName" "${addedDebBuildDependencies[@]}"
 }
 
 installDebBuild()

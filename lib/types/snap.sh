@@ -46,7 +46,7 @@ isAvailableSnap()
 {
     local snapPackageName="${1:?}"; shift
     getInstalledSnapPackages || return $?
-    [ "${installedSnapPackages["$snapPackageName"]}" ] || [ "${addedSnapPackages["$snapPackageName"]}" ]
+    [ "${installedSnapPackages["$snapPackageName"]}" ] || contains "$snapPackageName" "${addedSnapPackages[@]}"
 }
 
 installSnap()

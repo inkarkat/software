@@ -317,7 +317,7 @@ isAvailableNative()
 {
     local packageManagerPackageName="${1:-?}"; shift
     getInstalledNativePackages || return $?
-    [ "${installedNativePackages["$packageManagerPackageName"]}" ] || [ "${addedNativePackages["$packageManagerPackageName"]}" ]
+    [ "${installedNativePackages["$packageManagerPackageName"]}" ] || contains "$packageManagerPackageName" "${addedNativePackages[@]}"
 }
 isAvailableOrUserAcceptsNative()
 {
