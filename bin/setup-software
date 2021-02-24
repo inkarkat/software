@@ -367,7 +367,8 @@ preInstall()
 
     local actionWithoutSudo="${action#\$SUDO }"
     local sudoPrefix="${action%"$actionWithoutSudo"}"
-    if [ -x "${preinstallActionsDirspec}/${actionWithoutSudo%% *}" ]; then
+    local actionWithoutSudoAndArgs="${actionWithoutSudo%% *}"
+    if [ -x "${preinstallActionsDirspec}/${actionWithoutSudoAndArgs}" ]; then
 	actionWithoutSudo="${preinstallActionsDirspec}/${actionWithoutSudo}"
 	toBeInstalledCommands+=("${sudoPrefix:+${SUDO}${SUDO:+ }}${actionWithoutSudo}")
     elif [ -e "${preinstallActionsDirspec}/${action}" ]; then
