@@ -601,7 +601,7 @@ do
 		requirement="${item#require:}"
 		name="${requirement#*:}"
 		prefix="${requirement%"$name"}"
-		typeFunction="${typeRegistry["${prefix:-native:}"]}"
+		typeFunction=; [ -n "$prefix" ] && typeFunction="${typeRegistry["$prefix"]}"
 		if [ -n "$typeFunction" ]; then
 		    availabilityFunctionName="isAvailable${typeFunction}"
 		    if type -t "$availabilityFunctionName" >/dev/null; then
@@ -610,7 +610,7 @@ do
 			    continue 2
 			fi
 		    else
-			printf >&2 'ERROR: Type %s cannot be used for requirements checking.\n' "${prefix:-native}"
+			printf >&2 'ERROR: Type %s cannot be used for requirements checking.\n' "$prefix"
 			exit 3
 		    fi
 		elif [[ "$prefix" =~ ^[^[:space:]]+$ ]]; then
