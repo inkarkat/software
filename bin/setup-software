@@ -636,6 +636,8 @@ do
 
     typeset -a missingItems=()
     lastMissingItem=
+    let realItemCnt=0
+    let missingRealItemCnt=0
     for item
     do
 	case "$item" in
@@ -656,7 +658,9 @@ do
 		else
 		    missingItems+=("$item")
 		    lastMissingItem="$item"
+		    let missingRealItemCnt+=1
 		fi
+		let realItemCnt+=1
 		;;
 	esac
     done
@@ -666,14 +670,14 @@ do
     else
 	let missingDefinitionCount+=1
 	what=
-	if [ $# -gt ${#missingItems[@]} ]; then
-	    missingItemsPlural=s; [ ${#missingItems[@]} -eq 1 ] && missingItemsPlural=
-	    what="${#missingItems[@]} item${missingItemsPlural} missing: ${missingItems[*]}"
-	elif [ $# -gt 1 ]; then
-	    what="all ${#missingItems[@]} items are missing"
+	if [ $realItemCnt -gt $missingRealItemCnt ]; then
+	    missingItemsPlural=s; [ $missingRealItemCnt -eq 1 ] && missingItemsPlural=
+	    what="$missingRealItemCnt item${missingItemsPlural} missing: ${missingItems[*]}"
+	elif [ $realItemCnt -gt 1 ]; then
+	    what="all $missingRealItemCnt items are missing"
 	fi
 
-	if [ ${#missingItems[@]} -eq 1 ] && [[ "${missingItems[0]}" =~ 'custom:false:' ]]; then
+	if [ $missingRealItemCnt -eq 1 ] && [[ "${missingItems[0]}" =~ 'custom:false:' ]]; then
 	    itemVerb='may or may'
 	    itemAuxVerb=be
 	fi
