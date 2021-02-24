@@ -39,6 +39,13 @@ addNpm()
     postinstallHook "$npmPackageName"
 }
 
+isAvailableNpm()
+{
+    local npmPackageName="${1:?}"; shift
+    getInstalledNpmPackages || return $?
+    [ "${installedNpmPackages["$npmPackageName"]}" ] || contains "$npmPackageName" "${addedNpmPackages[@]}"
+}
+
 installNpm()
 {
     [ ${#addedNpmPackages[@]} -gt 0 ] || return

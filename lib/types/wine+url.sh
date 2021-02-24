@@ -49,11 +49,38 @@ addWine()
     local packageGlob="${packageNameAndGlob##*/}"
     local packageName="${packageNameAndGlob%"$packageGlob"}"
     packageName="${packageName%/}"
-    packageName="${packageName##*/}"
+    packageOnlyName="${packageName##*/}"
 
-    [ -z "$packageName" ] || preinstallHook "$packageName"
+    [ -z "$packageOnlyName" ] || preinstallHook "$packageOnlyName"
     addedWineUrlPackages+=("$wineUrlRecord")
-    [ -z "$packageName" ] || postinstallHook "$packageName"
+    [ -z "$packageOnlyName" ] || postinstallHook "$packageOnlyName"
+}
+
+isAvailableWine()
+{
+    local executableNameAndPackageName="${1:?}"; shift
+    local queriedExecutableName="${executableNameAndPackageName%%:*}"; shift
+    local queriedPackageName="${executableNameAndPackageName#"${queriedExecutableName}:"}"; shift
+
+
+    hasWine "${queriedExecutableName}:${queriedPackageName}:" && return 0
+
+    local wineUrlRecord; for wineUrlRecord in "${addedWineUrlPackages[@]}"
+    do
+	local packageNameGlobUrl="${wineUrlRecord#*:}"
+	if [[ "$packageNameGlobUrl" =~ ^[0-9]+([smhdwyg]|mo): ]]; then
+	    packageNameGlobUrl="${packageNameGlobUrl#"${BASH_REMATCH[0]}"}"
+	fi
+	local packageUrl="${packageNameGlobUrl#*:}"
+	local packageNameAndGlob="${packageNameGlobUrl%:$packageUrl}"
+	local packageGlob="${packageNameAndGlob##*/}"
+	local packageName="${packageNameAndGlob%"$packageGlob"}"
+	packageName="${packageName%/}"
+
+	[ "$packageName" = "$queriedPackageName" ] && return 0
+    done
+
+    return 1
 }
 
 installWine()

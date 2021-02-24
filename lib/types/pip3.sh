@@ -41,6 +41,13 @@ addPip3()
     postinstallHook "$pip3PackageName"
 }
 
+isAvailablePip3()
+{
+    local pip3PackageName="${1:?}"; shift
+    getInstalledPip3Packages || return $?
+    [ "${installedPip3Packages["$pip3PackageName"]}" ] || contains "$pip3PackageName" "${addedPip3Packages[@]}"
+}
+
 installPip3()
 {
     [ ${#addedPip3Packages[@]} -gt 0 ] || return

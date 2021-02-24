@@ -72,6 +72,9 @@ printConfigUsageForTypes()
 	if [ -n "$typeFunction" ]; then
 	    printf "$padding"; padding=$'\n'
 	    eval "configUsage${typeFunction}"
+	elif [ "$prefix" = require ]; then
+	    printf "$padding"; padding=$'\n'
+	    configUsageRequire
 	elif [ "$prefix" = preinstall ]; then
 	    printf "$padding"; padding=$'\n'
 	    configUsagePreinstall
@@ -116,6 +119,8 @@ HELPTEXT
 
 	printConfigUsageForTypes "${prefixes[@]%:}"    # Show config help for all types (in the order in which the types are also installed).
 
+	echo
+	configUsageRequire
 	echo
 	configUsagePreinstall
 	echo
@@ -188,6 +193,22 @@ configUsageNative()
     cat <<'HELPTEXT'
 Items without a prefix refer to packages installed via the distribution's
 package manager (apt).
+HELPTEXT
+}
+configUsageRequire()
+{
+    cat <<'HELPTEXT'
+require: items consist of a CHECK that can be:
+- another ITEM (in abbreviated form, usually just having one "package name"
+  parameter); for packages installed via the distribution's package manager, use
+  the special "native:" prefix here. The check passes if that ITEM has already
+  been installed or has already been selected by the user in the current
+  session.
+- an executable command (potentially followed by command-line arguments) in the
+  ./etc/require directory tree that is invoked and should fail if the
+  requirements are not fulfilled.
+- a REQUIREMENT-EXPRESSION (whitespace must be escaped or the entire expression
+  quoted!) that is eval'd and should fail if the requirements are not fulfilled.
 HELPTEXT
 }
 configUsagePreinstall()
@@ -295,7 +316,8 @@ askTo()
 isAvailableNative()
 {
     local packageManagerPackageName="${1:-?}"; shift
-    [ "${installedNativePackages["$packageManagerPackageName"]}" ] || [ "${addedNativePackages["$packageManagerPackageName"]}" ]
+    getInstalledNativePackages || return $?
+    [ "${installedNativePackages["$packageManagerPackageName"]}" ] || contains "$packageManagerPackageName" "${addedNativePackages[@]}"
 }
 isAvailableOrUserAcceptsNative()
 {
@@ -349,7 +371,9 @@ preInstall()
     local action="${1:?}"; shift
 
     local actionWithoutSudo="${action#\$SUDO }"
-    if [ -x "${preinstallActionsDirspec}/${actionWithoutSudo%% *}" ]; then
+    local sudoPrefix="${action%"$actionWithoutSudo"}"
+    local actionWithoutSudoAndArgs="${actionWithoutSudo%% *}"
+    if [ -x "${preinstallActionsDirspec}/${actionWithoutSudoAndArgs}" ]; then
 	actionWithoutSudo="${preinstallActionsDirspec}/${actionWithoutSudo}"
 	toBeInstalledCommands+=("${sudoPrefix:+${SUDO}${SUDO:+ }}${actionWithoutSudo}")
     elif [ -e "${preinstallActionsDirspec}/${action}" ]; then
@@ -391,13 +415,14 @@ runPostInstallCheck()
     local item="${1:?}"; shift
     local action="${1:?}"; shift
     local actionWithoutSudo="${action#\$SUDO }"
+    local sudoPrefix="${action%"$actionWithoutSudo"}"
     local actionWithoutSudoAndArgs="${actionWithoutSudo%% *}"
     if hasItem "$item"; then
 	if [ -x "${postinstallActionsDirspec}/${action}" ]; then
 	    "${postinstallActionsDirspec}/${action}"
 	elif [ -x "${postinstallActionsDirspec}/${actionWithoutSudoAndArgs}" ]; then
 	    local actionArgs="${actionWithoutSudo#"${actionWithoutSudoAndArgs}"}"
-	    $SUDO "${postinstallActionsDirspec}/${actionWithoutSudoAndArgs}" $actionArgs
+	    ${sudoPrefix:+$SUDO} "${postinstallActionsDirspec}/${actionWithoutSudoAndArgs}" $actionArgs
 	elif [ -e "${postinstallActionsDirspec}/${action}" ]; then
 	    addLoginNotification --file "${postinstallActionsDirspec}/${action}" --immediate
 	else
@@ -490,6 +515,7 @@ do
     esac
 done
 customActionsDirspec="${baseDir}/custom"
+requireActionsDirspec="${baseDir}/require"
 preinstallActionsDirspec="${baseDir}/preinstall"
 postinstallActionsDirspec="${baseDir}/postinstall"
 definitionDirspec="${baseDir}/definitions"
@@ -568,11 +594,55 @@ do
     itemVerb=are; [ -n "$comment" -o $# -eq 1 ] && itemVerb=is
     itemAuxVerb=
 
-    typeset -a missingItems=()
-    lastMissingItem=
     for item
     do
 	case "$item" in
+	    require:*)
+		requirement="${item#require:}"
+		name="${requirement#*:}"
+		prefix="${requirement%"$name"}"
+		typeFunction=; [ -n "$prefix" ] && typeFunction="${typeRegistry["$prefix"]}"
+		if [ -n "$typeFunction" ]; then
+		    availabilityFunctionName="isAvailable${typeFunction}"
+		    if type -t "$availabilityFunctionName" >/dev/null; then
+			if ! eval "$availabilityFunctionName \"\$name\""; then
+			    [ "$isVerbose" ] && printf >&2 'Skipping because requirement %s is not passed: %s\n' "$requirement" "$definition"
+			    continue 2
+			fi
+		    else
+			printf >&2 'ERROR: Type %s cannot be used for requirements checking.\n' "$prefix"
+			exit 3
+		    fi
+		elif [[ "$prefix" =~ ^[^[:space:]]+$ ]]; then
+		    printf >&2 'ERROR: Invalid type: %s\n' "$prefix"
+		    exit 3
+		else
+		    requirementWithoutArgs="${requirement%% *}"
+		    if ! if [ -x "${requireActionsDirspec}/${requirement}" ]; then
+			"${requireActionsDirspec}/${requirement}"
+		    elif [ -x "${requireActionsDirspec}/${requirementWithoutArgs}" ]; then
+			requirementArgs="${requirement#"${requirementWithoutArgs}"}"
+			"${requireActionsDirspec}/${requirementWithoutArgs}" $requirementArgs
+		    else
+			eval "$requirement"
+		    fi; then
+			[ "$isVerbose" ] && printf >&2 'Skipping because requirement %s is not passed: %s\n' "$requirement" "$definition"
+			continue 2
+		    fi
+		fi
+		;;
+	esac
+    done
+
+    typeset -a missingItems=()
+    lastMissingItem=
+    let realItemCnt=0
+    let missingRealItemCnt=0
+    for item
+    do
+	case "$item" in
+	    require:*)
+		continue;;  # Ignore; requirements have already been handled.
 	    preinstall:*|postinstall:*)
 		if [ -n "$lastMissingItem" ]; then
 		    # The preinstall action will run when the previous item will
@@ -588,7 +658,9 @@ do
 		else
 		    missingItems+=("$item")
 		    lastMissingItem="$item"
+		    let missingRealItemCnt+=1
 		fi
+		let realItemCnt+=1
 		;;
 	esac
     done
@@ -598,14 +670,14 @@ do
     else
 	let missingDefinitionCount+=1
 	what=
-	if [ $# -gt ${#missingItems[@]} ]; then
-	    missingItemsPlural=s; [ ${#missingItems[@]} -eq 1 ] && missingItemsPlural=
-	    what="${#missingItems[@]} item${missingItemsPlural} missing: ${missingItems[*]}"
-	elif [ $# -gt 1 ]; then
-	    what="all ${#missingItems[@]} items are missing"
+	if [ $realItemCnt -gt $missingRealItemCnt ]; then
+	    missingItemsPlural=s; [ $missingRealItemCnt -eq 1 ] && missingItemsPlural=
+	    what="$missingRealItemCnt item${missingItemsPlural} missing: ${missingItems[*]}"
+	elif [ $realItemCnt -gt 1 ]; then
+	    what="all $missingRealItemCnt items are missing"
 	fi
 
-	if [ ${#missingItems[@]} -eq 1 ] && [[ "${missingItems[0]}" =~ 'custom:false:' ]]; then
+	if [ $missingRealItemCnt -eq 1 ] && [[ "${missingItems[0]}" =~ 'custom:false:' ]]; then
 	    itemVerb='may or may'
 	    itemAuxVerb=be
 	fi

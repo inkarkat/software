@@ -72,6 +72,28 @@ addFirefoxAddon()
     postinstallHook "$addonId"
 }
 
+isAvailableFirefoxAddon()
+{
+    local profileNameAndId="${1:?}"; shift
+    local queriedProfileName="${profileNameAndId%%:*}"; shift
+    local queriedId="${profileNameAndId#"${queriedProfileName}:"}"; shift
+
+    hasFirefoxAddon "${queriedProfileName}:dummyId:dummyUrl"	# Obtain the addons for the queried profile.
+    [ -z "$queriedProfileName" ] && queriedProfileName="${firefoxDefaultProfileName:?}"
+    [ "${installedFirefoxProfileAddonIds["$queriedProfileName $queriedId"]}" ] && return 0
+
+    local firefoxAddonRecord; for firefoxAddonRecord in "${addedFirefoxAddons[@]}"
+    do
+	local profileName addonId addonUrl
+	IFS=: read -r profileName addonId addonUrl <<<"$firefoxAddonRecord"
+	[ -z "$profileName" ] && profileName="${firefoxDefaultProfileName:?}"	# Re-use default profile name cached by hasFirefoxAddon().
+
+	[ "$profileName" = "$queriedProfileName" -a "$addonId" = "$queriedId" ] && return 0
+    done
+
+    return 1
+}
+
 installFirefoxAddon()
 {
     [ ${#addedFirefoxAddons[@]} -gt 0 ] || return
