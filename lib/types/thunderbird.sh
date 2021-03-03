@@ -1,0 +1,120 @@
+#!/bin/bash source-this-script
+
+configUsageThunderbirdAddon()
+{
+    cat <<'HELPTEXT'
+thunderbird: items consist of a
+    [PROFILE-NAME]:ADDON-ID:ADDON-URL
+triplet.
+It checks the Thunderbird PROFILE-NAME / default profile for ADDON-ID and if that
+isn't installed yet launches ADDON-URL to let you download the latest package
+for (manual) installation of the add-on.
+HELPTEXT
+}
+
+readonly THUNDERBIRD_PROFILES_DIRSPEC=~/.thunderbird
+
+typeset -A installedThunderbirdProfileAddonIds=()
+typeset -A isInstalledThunderbirdAddonsAvailable=()
+getInstalledThunderbirdAddons()
+{
+    local profileName="${1:?}"; shift
+    [ "${isInstalledThunderbirdAddonsAvailable["$profileName"]}" ] && return
+    local addonsConfigFilespec="${1:?}/addons.json"; shift
+
+    while IFS=$'\n' read -r id
+    do
+	installedThunderbirdProfileAddonIds["$profileName $id"]=t
+	case ",${DEBUG:-}," in *,setup-software:thunderbird,*) echo >&2 "${PS4}setup-software (thunderbird): Found $id installed in profile $profileName";; esac
+    done < <(jq --raw-output '.addons | .[] | .id' "$addonsConfigFilespec")
+
+    isInstalledThunderbirdAddonsAvailable["$profileName"]=t
+}
+hasThunderbirdAddon()
+{
+    local profileName addonId addonUrl
+    IFS=: read -r profileName addonId addonUrl <<<"$1"
+    if [ -z "$addonId" -o -z "$addonUrl" ]; then
+	printf >&2 'ERROR: Invalid thunderbird item: "thunderbird:%s"\n' "$1"
+	exit 3
+    fi
+
+    local _disabledNoGlob=
+    case $- in
+	*f*)    set +f; _disabledNoGlob=t;;
+    esac
+	if [ -z "$profileName" ]; then
+	    typeset -a existingProfileDirspecs=("$THUNDERBIRD_PROFILES_DIRSPEC"/*.default?(-release))
+	else
+	    typeset -a existingProfileDirspecs=("$THUNDERBIRD_PROFILES_DIRSPEC"/*."$profileName")
+	fi
+    [ "${_disabledNoGlob:-}" ] && set -f; unset _disabledNoGlob
+
+    local configDirspec="${existingProfileDirspecs[0]}"
+    [ -d "$configDirspec" ] || return 0 # No such Thunderbird profile.
+    if [ -z "$profileName" ]; then
+	profileName="${configDirspec##*.}"
+	thunderbirdDefaultProfileName="$profileName"
+    fi
+
+    ! getInstalledThunderbirdAddons "$profileName" "$configDirspec" || [ "${installedThunderbirdProfileAddonIds["${profileName} ${addonId}"]}" ]
+}
+
+typeset -a addedThunderbirdAddons=()
+addThunderbirdAddon()
+{
+    local thunderbirdAddonRecord="${1:?}"; shift
+    local addonId="${thunderbirdAddonRecord#*:}"; addonId="${addonId%%:*}"
+    exists thunderbird || return $?
+
+    preinstallHook "$addonId"
+    addedThunderbirdAddons+=("$thunderbirdAddonRecord")
+    postinstallHook "$addonId"
+}
+
+isAvailableThunderbirdAddon()
+{
+    local profileNameAndId="${1:?}"; shift
+    local queriedProfileName="${profileNameAndId%%:*}"; shift
+    local queriedId="${profileNameAndId#"${queriedProfileName}:"}"; shift
+
+    hasThunderbirdAddon "${queriedProfileName}:dummyId:dummyUrl"	# Obtain the addons for the queried profile.
+    [ -z "$queriedProfileName" ] && queriedProfileName="${thunderbirdDefaultProfileName:?}"
+    [ "${installedThunderbirdProfileAddonIds["$queriedProfileName $queriedId"]}" ] && return 0
+
+    local thunderbirdAddonRecord; for thunderbirdAddonRecord in "${addedThunderbirdAddons[@]}"
+    do
+	local profileName addonId addonUrl
+	IFS=: read -r profileName addonId addonUrl <<<"$thunderbirdAddonRecord"
+	[ -z "$profileName" ] && profileName="${thunderbirdDefaultProfileName:?}"	# Re-use default profile name cached by hasThunderbirdAddon().
+
+	[ "$profileName" = "$queriedProfileName" -a "$addonId" = "$queriedId" ] && return 0
+    done
+
+    return 1
+}
+
+installThunderbirdAddon()
+{
+    [ ${#addedThunderbirdAddons[@]} -gt 0 ] || return
+
+    typeset -A thunderbirdAddonUrlsByProfile=()
+    local thunderbirdAddonRecord; for thunderbirdAddonRecord in "${addedThunderbirdAddons[@]}"
+    do
+	local profileName addonId addonUrl
+	IFS=: read -r profileName addonId addonUrl <<<"$thunderbirdAddonRecord"
+	[ -z "$profileName" ] && profileName="${thunderbirdDefaultProfileName:?}"	# Re-use default profile name cached by hasThunderbirdAddon().
+
+	printf -v quotedAddonUrl '%q' "$addonUrl"
+	thunderbirdAddonUrlsByProfile["$profileName"]="${thunderbirdAddonUrlsByProfile["$profileName"]}${thunderbirdAddonUrlsByProfile["$profileName"]:+ }${quotedAddonUrl}"
+    done
+
+    for profileName in "${!thunderbirdAddonUrlsByProfile[@]}"
+    do
+	profileComment=" # for the $profileName profile"; [ "$profileName" = "$thunderbirdDefaultProfileName" ] && profileComment=''
+	toBeInstalledCommands+=("browse ${thunderbirdAddonUrlsByProfile["$profileName"]}${profileComment}")
+    done
+}
+
+typeRegistry+=([thunderbird:]=ThunderbirdAddon)
+typeInstallOrder+=([810]=ThunderbirdAddon)
