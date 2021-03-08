@@ -528,7 +528,7 @@ if [ "$isAddAll" ]; then
 	set -- "${acceptedGroups[@]}" "$@"
 
 	acceptedGroupsPlural=s; [ ${#acceptedGroups[@]} -eq 1 ] && acceptedGroupsPlural=
-	printf '\nOkay, %d definition group%s selected. Now for the definitions themselves:\n\n' "${#acceptedGroups[@]}" "$acceptedGroupsPlural"
+	printf >&2 '\nOkay, %d definition group%s selected. Now for the definitions themselves:\n\n' "${#acceptedGroups[@]}" "$acceptedGroupsPlural"
     fi
 fi
 if [ ${#specialHandlingCommands[@]} -gt 0 ]; then
