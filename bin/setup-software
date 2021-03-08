@@ -348,7 +348,7 @@ hasOrAddItems()
     do
 	local name="${item#*:}"
 	local prefix="${item%"$name"}"
-	if contains "$prefix" require: preinstall: postinstall:; then
+	if contains "$prefix" "${!definitionFilterTypeRegistry[@]}" preinstall: postinstall:; then
 	    printf >&2 'ERROR: Cannot use a %s type within a preinstall / postinstall item.\n' "$prefix"
 	    exit 3
 	fi
@@ -621,8 +621,8 @@ do
     do
 	name="${item#*:}"
 	prefix="${item%"$name"}"
-	if contains "$prefix" require:; then
-	    continue    # Ignore; requirements have already been handled.
+	if contains "$prefix" "${!definitionFilterTypeRegistry[@]}"; then
+	    continue    # Ignore; definition filters have already been handled.
 	elif contains "$prefix" preinstall: postinstall:; then
 	    if [ -n "$lastMissingItem" ]; then
 		# The preinstall action will run when the previous item will
