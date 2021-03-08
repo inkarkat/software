@@ -356,6 +356,24 @@ addItems()
 	addedItems["$item"]=t	# Record all added items for the preinstall check.
     done
 }
+hasOrAddItems()
+{
+    typeset -a missingItems=()
+    local item; for item
+    do
+	case "$item" in
+	    require:*|preinstall:*|postinstall:*)
+		printf >&2 'ERROR: Cannot use a %s: type within a preinstall / postinstall item.\n' "${item%%:*}"
+		exit 3
+		;;
+	esac
+
+	hasItem "$item" || missingItems+=("$item")
+    done
+
+    [ ${#missingItems[@]} -eq 0 ] && return 1
+    addItems "${missingItems[@]}"
+}
 
 
 installNative()
@@ -388,11 +406,11 @@ preInstall()
 	    # special "native:" prefix should it be necessary to install a
 	    # package via the distribution's package manager before the main
 	    # installation.
-	    addItems "${action#native:}"
-	    generateInstallCommands
+	    hasOrAddItems "${action#native:}" && \
+		generateInstallCommands
 	elif [ -n "$prefix" ] && [ -n "${typeRegistry["$prefix"]}" ]; then
-	    addItems "$action"
-	    generateInstallCommands
+	    hasOrAddItems "$action" && \
+		generateInstallCommands
 	else
 	    toBeInstalledCommands+=("${sudoPrefix:+${SUDO}${SUDO:+ }}${actionWithoutSudo}")
 	fi
@@ -434,12 +452,13 @@ runPostInstallCheck()
 		# special "native:" prefix should it be necessary to install a
 		# package via the distribution's package manager after a
 		# successful installation.
-		addItems "${action#native:}"
+		hasOrAddItems "${action#native:}" && \
+		    generateInstallCommands
 		printInstallCommands || \
 		    printf >&2 'Skipping postinstall action, because %s indicated that no action is needed.\n' "$action"
 	    elif [ -n "$prefix" ] && [ -n "${typeRegistry["$prefix"]}" ]; then
-		addItems "$action"
-		generateInstallCommands
+		hasOrAddItems "$action" && \
+		    generateInstallCommands
 		printInstallCommands || \
 		    printf >&2 'Skipping postinstall action, because %s indicated that no action is needed.\n' "$action"
 	    else
