@@ -346,12 +346,12 @@ hasOrAddItems()
     typeset -a missingItems=()
     local item; for item
     do
-	case "$item" in
-	    require:*|preinstall:*|postinstall:*)
-		printf >&2 'ERROR: Cannot use a %s: type within a preinstall / postinstall item.\n' "${item%%:*}"
-		exit 3
-		;;
-	esac
+	local name="${item#*:}"
+	local prefix="${item%"$name"}"
+	if contains "$prefix" require: preinstall: postinstall:; then
+	    printf >&2 'ERROR: Cannot use a %s type within a preinstall / postinstall item.\n' "$prefix"
+	    exit 3
+	fi
 
 	hasItem "$item" || missingItems+=("$item")
     done
@@ -619,29 +619,29 @@ do
     let missingRealItemCnt=0
     for item
     do
-	case "$item" in
-	    require:*)
-		continue;;  # Ignore; requirements have already been handled.
-	    preinstall:*|postinstall:*)
-		if [ -n "$lastMissingItem" ]; then
-		    # The preinstall action will run when the previous item will
-		    # be installed. The postinstall action will run when the
-		    # installation of the previous item was successful. To be
-		    # able to check that, we need that item as well, so append
-		    # it on a new line.
-		    missingItems+=("$item"$'\n'"$lastMissingItem")
-		fi
-		;;
-	    *)	if hasItem "$item"; then
-		    lastMissingItem=
-		else
-		    missingItems+=("$item")
-		    lastMissingItem="$item"
-		    let missingRealItemCnt+=1
-		fi
-		let realItemCnt+=1
-		;;
-	esac
+	name="${item#*:}"
+	prefix="${item%"$name"}"
+	if contains "$prefix" require:; then
+	    continue    # Ignore; requirements have already been handled.
+	elif contains "$prefix" preinstall: postinstall:; then
+	    if [ -n "$lastMissingItem" ]; then
+		# The preinstall action will run when the previous item will
+		# be installed. The postinstall action will run when the
+		# installation of the previous item was successful. To be
+		# able to check that, we need that item as well, so append
+		# it on a new line.
+		missingItems+=("$item"$'\n'"$lastMissingItem")
+	    fi
+	else
+	    if hasItem "$item"; then
+		lastMissingItem=
+	    else
+		missingItems+=("$item")
+		lastMissingItem="$item"
+		let missingRealItemCnt+=1
+	    fi
+	    let realItemCnt+=1
+	fi
     done
 
     if [ ${#missingItems[@]} -eq 0 ]; then
