@@ -69,12 +69,13 @@ printConfigUsageForTypes()
     local prefix; for prefix
     do
 	local typeFunction="${typeRegistry["${prefix:-native}:"]}"
+	local definitionFilterFunction="${definitionFilterTypeRegistry["${prefix}:"]}"
 	if [ -n "$typeFunction" ]; then
 	    printf "$padding"; padding=$'\n'
 	    eval "configUsage${typeFunction}"
-	elif [ "$prefix" = require ]; then
+	elif [ -n "$definitionFilterFunction" ]; then
 	    printf "$padding"; padding=$'\n'
-	    configUsageRequire
+	    eval "configUsage${definitionFilterFunction}"
 	elif [ "$prefix" = preinstall ]; then
 	    printf "$padding"; padding=$'\n'
 	    configUsagePreinstall
@@ -116,11 +117,10 @@ HELPTEXT
 	do
 	    prefixes+=("${mirroredTypeRegistry["${typeInstallOrder["$order"]}"]}")
 	done
+	typeset -a definitionFilterPrefixes="${!definitionFilterTypeRegistry[@]}"
 
-	printConfigUsageForTypes "${prefixes[@]%:}"    # Show config help for all types (in the order in which the types are also installed).
+	printConfigUsageForTypes "${prefixes[@]%:}" "${definitionFilterPrefixes[@]%:}"    # Show config help for all types (in the order in which the types are also installed).
 
-	echo
-	configUsageRequire
 	echo
 	configUsagePreinstall
 	echo
@@ -132,6 +132,7 @@ HELPTEXT
 
 typeset -A typeRegistry=([native:]=Native)
 typeset -A typeInstallOrder=([10]=Native)
+typeset -A definitionFilterTypeRegistry=()
 for typeLib in "${typeDir}"/*.sh
 do
     source "$typeLib" || exit $?
@@ -193,22 +194,6 @@ configUsageNative()
     cat <<'HELPTEXT'
 Items without a prefix refer to packages installed via the distribution's
 package manager (apt).
-HELPTEXT
-}
-configUsageRequire()
-{
-    cat <<'HELPTEXT'
-require: items consist of a CHECK that can be:
-- another ITEM (in abbreviated form, usually just having one "package name"
-  parameter); for packages installed via the distribution's package manager, use
-  the special "native:" prefix here. The check passes if that ITEM has already
-  been installed or has already been selected by the user in the current
-  session.
-- an executable command (potentially followed by command-line arguments) in the
-  ./etc/require directory tree that is invoked and should fail if the
-  requirements are not fulfilled.
-- a REQUIREMENT-EXPRESSION (whitespace must be escaped or the entire expression
-  quoted!) that is eval'd and should fail if the requirements are not fulfilled.
 HELPTEXT
 }
 configUsagePreinstall()
@@ -361,12 +346,12 @@ hasOrAddItems()
     typeset -a missingItems=()
     local item; for item
     do
-	case "$item" in
-	    require:*|preinstall:*|postinstall:*)
-		printf >&2 'ERROR: Cannot use a %s: type within a preinstall / postinstall item.\n' "${item%%:*}"
-		exit 3
-		;;
-	esac
+	local name="${item#*:}"
+	local prefix="${item%"$name"}"
+	if contains "$prefix" "${!definitionFilterTypeRegistry[@]}" preinstall: postinstall:; then
+	    printf >&2 'ERROR: Cannot use a %s type within a preinstall / postinstall item.\n' "$prefix"
+	    exit 3
+	fi
 
 	hasItem "$item" || missingItems+=("$item")
     done
@@ -618,42 +603,14 @@ do
 
     for item
     do
-	case "$item" in
-	    require:*)
-		requirement="${item#require:}"
-		name="${requirement#*:}"
-		prefix="${requirement%"$name"}"
-		typeFunction=; [ -n "$prefix" ] && typeFunction="${typeRegistry["$prefix"]}"
-		if [ -n "$typeFunction" ]; then
-		    availabilityFunctionName="isAvailable${typeFunction}"
-		    if type -t "$availabilityFunctionName" >/dev/null; then
-			if ! eval "$availabilityFunctionName \"\$name\""; then
-			    [ "$isVerbose" ] && printf >&2 'Skipping because requirement %s is not passed: %s\n' "$requirement" "$definition"
-			    continue 2
-			fi
-		    else
-			printf >&2 'ERROR: Type %s cannot be used for requirements checking.\n' "$prefix"
-			exit 3
-		    fi
-		elif [[ "$prefix" =~ ^[^[:space:]]+$ ]]; then
-		    printf >&2 'ERROR: Invalid type: %s\n' "$prefix"
-		    exit 3
-		else
-		    requirementWithoutArgs="${requirement%% *}"
-		    if ! if [ -x "${requireActionsDirspec}/${requirement}" ]; then
-			"${requireActionsDirspec}/${requirement}"
-		    elif [ -x "${requireActionsDirspec}/${requirementWithoutArgs}" ]; then
-			requirementArgs="${requirement#"${requirementWithoutArgs}"}"
-			"${requireActionsDirspec}/${requirementWithoutArgs}" $requirementArgs
-		    else
-			eval "$requirement"
-		    fi; then
-			[ "$isVerbose" ] && printf >&2 'Skipping because requirement %s is not passed: %s\n' "$requirement" "$definition"
-			continue 2
-		    fi
-		fi
-		;;
-	esac
+	name="${item#*:}"
+	prefix="${item%"$name"}"
+	[ -n "$prefix" ] || continue
+	definitionFilterFunction="${definitionFilterTypeRegistry["$prefix"]}"
+	if [ -n "$definitionFilterFunction" ]; then
+	    eval "isDefinitionAcceptedBy${definitionFilterFunction} \"\$name\" \"\$definition\"" || \
+		continue 2
+	fi
     done
 
     typeset -a missingItems=()
@@ -662,29 +619,29 @@ do
     let missingRealItemCnt=0
     for item
     do
-	case "$item" in
-	    require:*)
-		continue;;  # Ignore; requirements have already been handled.
-	    preinstall:*|postinstall:*)
-		if [ -n "$lastMissingItem" ]; then
-		    # The preinstall action will run when the previous item will
-		    # be installed. The postinstall action will run when the
-		    # installation of the previous item was successful. To be
-		    # able to check that, we need that item as well, so append
-		    # it on a new line.
-		    missingItems+=("$item"$'\n'"$lastMissingItem")
-		fi
-		;;
-	    *)	if hasItem "$item"; then
-		    lastMissingItem=
-		else
-		    missingItems+=("$item")
-		    lastMissingItem="$item"
-		    let missingRealItemCnt+=1
-		fi
-		let realItemCnt+=1
-		;;
-	esac
+	name="${item#*:}"
+	prefix="${item%"$name"}"
+	if contains "$prefix" "${!definitionFilterTypeRegistry[@]}"; then
+	    continue    # Ignore; definition filters have already been handled.
+	elif contains "$prefix" preinstall: postinstall:; then
+	    if [ -n "$lastMissingItem" ]; then
+		# The preinstall action will run when the previous item will
+		# be installed. The postinstall action will run when the
+		# installation of the previous item was successful. To be
+		# able to check that, we need that item as well, so append
+		# it on a new line.
+		missingItems+=("$item"$'\n'"$lastMissingItem")
+	    fi
+	else
+	    if hasItem "$item"; then
+		lastMissingItem=
+	    else
+		missingItems+=("$item")
+		lastMissingItem="$item"
+		let missingRealItemCnt+=1
+	    fi
+	    let realItemCnt+=1
+	fi
     done
 
     if [ ${#missingItems[@]} -eq 0 ]; then
