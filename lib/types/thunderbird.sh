@@ -30,6 +30,7 @@ getInstalledThunderbirdAddons()
 
     isInstalledThunderbirdAddonsAvailable["$profileName"]=t
 }
+typeset -A addedThunderbirdAddons=()
 hasThunderbirdAddon()
 {
     local profileName addonId addonUrl
@@ -38,6 +39,8 @@ hasThunderbirdAddon()
 	printf >&2 'ERROR: Invalid thunderbird item: "thunderbird:%s"\n' "$1"
 	exit 3
     fi
+
+    [ "${addedThunderbirdAddons["$1"]}" ] && return 0	# This add-on has already been selected for installation.
 
     local _disabledNoGlob=
     case $- in
@@ -60,7 +63,6 @@ hasThunderbirdAddon()
     ! getInstalledThunderbirdAddons "$profileName" "$configDirspec" || [ "${installedThunderbirdProfileAddonIds["${profileName} ${addonId}"]}" ]
 }
 
-typeset -a addedThunderbirdAddons=()
 addThunderbirdAddon()
 {
     local thunderbirdAddonRecord="${1:?}"; shift
@@ -68,7 +70,7 @@ addThunderbirdAddon()
     exists thunderbird || return $?
 
     preinstallHook "$addonId"
-    addedThunderbirdAddons+=("$thunderbirdAddonRecord")
+    addedThunderbirdAddons["$thunderbirdAddonRecord"]=t
     postinstallHook "$addonId"
 }
 
@@ -82,7 +84,7 @@ isAvailableThunderbirdAddon()
     [ -z "$queriedProfileName" ] && queriedProfileName="${thunderbirdDefaultProfileName:?}"
     [ "${installedThunderbirdProfileAddonIds["$queriedProfileName $queriedId"]}" ] && return 0
 
-    local thunderbirdAddonRecord; for thunderbirdAddonRecord in "${addedThunderbirdAddons[@]}"
+    local thunderbirdAddonRecord; for thunderbirdAddonRecord in "${!addedThunderbirdAddons[@]}"
     do
 	local profileName addonId addonUrl
 	IFS=: read -r profileName addonId addonUrl <<<"$thunderbirdAddonRecord"
@@ -99,7 +101,7 @@ installThunderbirdAddon()
     [ ${#addedThunderbirdAddons[@]} -gt 0 ] || return
 
     typeset -A thunderbirdAddonUrlsByProfile=()
-    local thunderbirdAddonRecord; for thunderbirdAddonRecord in "${addedThunderbirdAddons[@]}"
+    local thunderbirdAddonRecord; for thunderbirdAddonRecord in "${!addedThunderbirdAddons[@]}"
     do
 	local profileName addonId addonUrl
 	IFS=: read -r profileName addonId addonUrl <<<"$thunderbirdAddonRecord"

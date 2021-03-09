@@ -25,19 +25,19 @@ getInstalledPip3Packages()
 
     isInstalledPip3PackagesAvailable=t
 }
+typeset -A addedPip3Packages=()
 hasPip3()
 {
-    ! getInstalledPip3Packages || [ "${installedPip3Packages["${1:?}"]}" ]
+    ! getInstalledPip3Packages || [ "${addedPip3Packages["${1:?}"]}" ] || [ "${installedPip3Packages["${1:?}"]}" ]
 }
 
-typeset -a addedPip3Packages=()
 addPip3()
 {
     local pip3PackageName="${1:?}"; shift
     isAvailableOrUserAcceptsNative pip3 python3-pip 'pip3 Python 3 package manager' || return $?
 
     preinstallHook "$pip3PackageName"
-    addedPip3Packages+=("$pip3PackageName")
+    addedPip3Packages["$pip3PackageName"]=t
     postinstallHook "$pip3PackageName"
 }
 
@@ -45,14 +45,14 @@ isAvailablePip3()
 {
     local pip3PackageName="${1:?}"; shift
     getInstalledPip3Packages || return $?
-    [ "${installedPip3Packages["$pip3PackageName"]}" ] || contains "$pip3PackageName" "${addedPip3Packages[@]}"
+    [ "${installedPip3Packages["$pip3PackageName"]}" ] || contains "$pip3PackageName" "${!addedPip3Packages[@]}"
 }
 
 installPip3()
 {
     [ ${#addedPip3Packages[@]} -gt 0 ] || return
     local IFS=' '
-    toBeInstalledCommands+=("${SUDO}${SUDO:+ }pip3 install ${addedPip3Packages[*]}")
+    toBeInstalledCommands+=("${SUDO}${SUDO:+ }pip3 install ${!addedPip3Packages[*]}")
 }
 
 typeRegistry+=([pip3:]=Pip3)

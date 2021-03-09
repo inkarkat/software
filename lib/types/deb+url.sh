@@ -15,26 +15,26 @@ If no URL is given and the package does not exist, the installation will fail.
 HELPTEXT
 }
 
+typeset -A addedDebUrlPackages=()
 hasDebUrl()
 {
-    hasNative "${1%%:*}"
+    hasNative "${1%%:*}" || [ "${addedDebUrlPackages["${1:?}"]}" ]
 }
 
-typeset -a addedDebUrlPackages=()
 addDebUrl()
 {
     local debUrlRecord="${1:?}"; shift
     local packageName="${debUrlRecord%%:*}"
 
     preinstallHook "$packageName"
-    addedDebUrlPackages+=("$debUrlRecord")
+    addedDebUrlPackages["$debUrlRecord"]=t
     postinstallHook "$packageName"
 }
 
 installDebUrl()
 {
     [ ${#addedDebUrlPackages[@]} -gt 0 ] || return
-    local debUrlRecord; for debUrlRecord in "${addedDebUrlPackages[@]}"
+    local debUrlRecord; for debUrlRecord in "${!addedDebUrlPackages[@]}"
     do
 	local maxAge=
 	local packageNameGlobUrl="${debUrlRecord#*:}"

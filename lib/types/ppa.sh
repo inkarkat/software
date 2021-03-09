@@ -22,18 +22,18 @@ getInstalledPpaRepositories()
 
     isInstalledPpaRepositoriesAvailable=t
 }
+typeset -A addedPpaRepositories=()
 hasPpa()
 {
-    ! getInstalledPpaRepositories || [ "${installedPpaRepositories["${1:?}"]}" ]
+    ! getInstalledPpaRepositories || [ "${addedPpaRepositories["${1:?}"]}" ] || [ "${installedPpaRepositories["${1:?}"]}" ]
 }
 
-typeset -a addedPpaRepositories=()
 addPpa()
 {
     local ppaRepoName="${1:?}"; shift
 
     preinstallHook "$ppaRepoName"
-    addedPpaRepositories+=("$ppaRepoName")
+    addedPpaRepositories["$ppaRepoName"]=t
     postinstallHook "$ppaRepoName"
 }
 
@@ -41,13 +41,13 @@ isAvailablePpa()
 {
     local ppaRepoName="${1:?}"; shift
     getInstalledPpaRepositories || return $?
-    [ "${installedPpaRepositories["$ppaRepoName"]}" ] || contains "$ppaRepoName" "${addedPpaRepositories[@]}"
+    [ "${installedPpaRepositories["$ppaRepoName"]}" ] || contains "$ppaRepoName" "${!addedPpaRepositories[@]}"
 }
 
 installPpa()
 {
     [ ${#addedPpaRepositories[@]} -gt 0 ] || return
-    local repo; for repo in "${addedPpaRepositories[@]}"
+    local repo; for repo in "${!addedPpaRepositories[@]}"
     do
 	toBeInstalledCommands+=("${SUDO}${SUDO:+ }add-apt-repository ppa:$repo")
     done

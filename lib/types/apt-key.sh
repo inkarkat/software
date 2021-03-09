@@ -15,22 +15,24 @@ If no URL is given and the key does not exist, the installation will fail.
 HELPTEXT
 }
 
+typeset -A addedAptKeyRecords=()
 hasAptKey()
 {
+    [ "${addedAptKeyRecords["${1:?}"]}" ] && return 0	# This key has already been selected for installation.
+
     return 1	# We cannot easily check for the imported key without downloading it. This item is meant to be used as a preinstall item, triggered by the installation of the main package, anyway.
 }
 
-typeset -a addedAptKeyRecords=()
 addAptKey()
 {
     local aptKeyRecord="${1:?}"; shift
-    addedAptKeyRecords+=("$aptKeyRecord")
+    addedAptKeyRecords["$aptKeyRecord"]=t
 }
 
 installAptKey()
 {
     [ ${#addedAptKeyRecords[@]} -gt 0 ] || return
-    local aptKeyRecord; for aptKeyRecord in "${addedAptKeyRecords[@]}"
+    local aptKeyRecord; for aptKeyRecord in "${!addedAptKeyRecords[@]}"
     do
 	local maxAge keyNameAndGlob keyUrl
 	IFS=: read -r maxAge keyNameAndGlob keyUrl <<<"$aptKeyRecord"

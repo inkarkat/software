@@ -37,6 +37,7 @@ ACTION is one of the following:
 HELPTEXT
 }
 
+typeset -A addedCustomActions=()
 hasCustom()
 {
     local customAction="${1#*:}"
@@ -47,6 +48,8 @@ hasCustom()
 	printf >&2 'ERROR: Invalid custom item: "custom:%s"\n' "$1"
 	exit 3
     fi
+
+    [ "${addedCustomActions["$customAction"]}" ] && return 0	# This custom action has already been selected for installation.
 
     if [ -x "${customActionsDirspec}/${customCheck}" ]; then
 	"${customActionsDirspec}/${customCheck}"
@@ -66,19 +69,18 @@ hasCustom()
     fi
 }
 
-typeset -a addedCustomActions=()
 addCustom()
 {
     # Note: Do not support pre-/postinstall hooks here, as we have no short
     # "name" that we could use.
-    addedCustomActions+=("${1#*:}")
+    addedCustomActions["${1#*:}"]=t
 }
 
 installCustom()
 {
     [ ${#addedCustomActions[@]} -gt 0 ] || return
 
-    local customAction; for customAction in "${addedCustomActions[@]}"
+    local customAction; for customAction in "${!addedCustomActions[@]}"
     do
 	local customActionWithoutSudo="${customAction#\$SUDO }"
 	local sudoPrefix="${customAction%"$customActionWithoutSudo"}"

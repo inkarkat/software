@@ -30,14 +30,17 @@ getInstalledFirefoxAddons()
 
     isInstalledFirefoxAddonsAvailable["$profileName"]=t
 }
+typeset -A addedFirefoxAddons=()
 hasFirefoxAddon()
 {
     local profileName addonId addonUrl
-    IFS=: read -r profileName addonId addonUrl <<<"$1"
+    IFS=: read -r profileName addonId addonUrl <<<"${1:?}"
     if [ -z "$addonId" -o -z "$addonUrl" ]; then
 	printf >&2 'ERROR: Invalid firefox item: "firefox:%s"\n' "$1"
 	exit 3
     fi
+
+    [ "${addedFirefoxAddons["$1"]}" ] && return 0	# This add-on has already been selected for installation.
 
     local _disabledNoGlob=
     case $- in
@@ -60,7 +63,6 @@ hasFirefoxAddon()
     ! getInstalledFirefoxAddons "$profileName" "$configDirspec" || [ "${installedFirefoxProfileAddonIds["${profileName} ${addonId}"]}" ]
 }
 
-typeset -a addedFirefoxAddons=()
 addFirefoxAddon()
 {
     local firefoxAddonRecord="${1:?}"; shift
@@ -68,7 +70,7 @@ addFirefoxAddon()
     exists firefox || return $?
 
     preinstallHook "$addonId"
-    addedFirefoxAddons+=("$firefoxAddonRecord")
+    addedFirefoxAddons["$firefoxAddonRecord"]=t
     postinstallHook "$addonId"
 }
 
@@ -82,7 +84,7 @@ isAvailableFirefoxAddon()
     [ -z "$queriedProfileName" ] && queriedProfileName="${firefoxDefaultProfileName:?}"
     [ "${installedFirefoxProfileAddonIds["$queriedProfileName $queriedId"]}" ] && return 0
 
-    local firefoxAddonRecord; for firefoxAddonRecord in "${addedFirefoxAddons[@]}"
+    local firefoxAddonRecord; for firefoxAddonRecord in "${!addedFirefoxAddons[@]}"
     do
 	local profileName addonId addonUrl
 	IFS=: read -r profileName addonId addonUrl <<<"$firefoxAddonRecord"
@@ -99,7 +101,7 @@ installFirefoxAddon()
     [ ${#addedFirefoxAddons[@]} -gt 0 ] || return
 
     typeset -A firefoxAddonUrlsByProfile=()
-    local firefoxAddonRecord; for firefoxAddonRecord in "${addedFirefoxAddons[@]}"
+    local firefoxAddonRecord; for firefoxAddonRecord in "${!addedFirefoxAddons[@]}"
     do
 	local profileName addonId addonUrl
 	IFS=: read -r profileName addonId addonUrl <<<"$firefoxAddonRecord"

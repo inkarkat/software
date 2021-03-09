@@ -16,22 +16,24 @@ will fail.
 HELPTEXT
 }
 
+typeset -A addedNotifyUrlRecords=()
 hasNotifyUrl()
 {
+    [ "${addedNotifyUrlRecords["${1:?}"]}" ] && return 0	# This notification file has already been selected for installation.
+
     return 1	# We cannot easily check for the notification file without downloading it. This item is meant to be used as a postinstall item, triggered by the installation of the main package, anyway.
 }
 
-typeset -a addedNotifyUrlRecords=()
 addNotifyUrl()
 {
     local notifyUrlRecord="${1:?}"; shift
-    addedNotifyUrlRecords+=("$notifyUrlRecord")
+    addedNotifyUrlRecords["$notifyUrlRecord"]=t
 }
 
 installNotifyUrl()
 {
     [ ${#addedNotifyUrlRecords[@]} -gt 0 ] || return
-    local notifyUrlRecord; for notifyUrlRecord in "${addedNotifyUrlRecords[@]}"
+    local notifyUrlRecord; for notifyUrlRecord in "${!addedNotifyUrlRecords[@]}"
     do
 	local maxAge notificationNameAndGlob notificationUrl
 	IFS=: read -r maxAge notificationNameAndGlob notificationUrl <<<"$notifyUrlRecord"

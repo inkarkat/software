@@ -16,6 +16,7 @@ and the package does not exist, the installation will fail.
 HELPTEXT
 }
 
+typeset -A addedWineUrlPackages=()
 hasWine()
 {
     if [[ ! "$1" =~ ^[^:]+\?:.+: ]]; then
@@ -24,6 +25,8 @@ hasWine()
     fi
     local checkGlob="${1%%:*}"
 
+    [ "${addedWineUrlPackages["$1"]}" ] && return 0	# This package has already been selected for installation.
+
     local -r wineDriveC=~/.wine/drive_c
     if [[ ! "$checkGlob" =~ ^/ ]] && [ -d "$wineDriveC" ]; then
 	which "${wineDriveC}/${checkGlob%\?}" >/dev/null 2>&1 || expandglob -- "${wineDriveC}/${checkGlob%\?}" >/dev/null 2>&1 && return 0
@@ -31,7 +34,6 @@ hasWine()
     which "${checkGlob%\?}" >/dev/null 2>&1 || expandglob -- "${checkGlob%\?}" >/dev/null 2>&1
 }
 
-typeset -a addedWineUrlPackages=()
 addWine()
 {
     local wineUrlRecord="${1:?}"; shift
@@ -52,7 +54,7 @@ addWine()
     packageOnlyName="${packageName##*/}"
 
     [ -z "$packageOnlyName" ] || preinstallHook "$packageOnlyName"
-    addedWineUrlPackages+=("$wineUrlRecord")
+    addedWineUrlPackages["$wineUrlRecord"]=t
     [ -z "$packageOnlyName" ] || postinstallHook "$packageOnlyName"
 }
 
@@ -65,7 +67,7 @@ isAvailableWine()
 
     hasWine "${queriedExecutableName}:${queriedPackageName}:" && return 0
 
-    local wineUrlRecord; for wineUrlRecord in "${addedWineUrlPackages[@]}"
+    local wineUrlRecord; for wineUrlRecord in "${!addedWineUrlPackages[@]}"
     do
 	local packageNameGlobUrl="${wineUrlRecord#*:}"
 	if [[ "$packageNameGlobUrl" =~ ^[0-9]+([smhdwyg]|mo): ]]; then
@@ -86,7 +88,7 @@ isAvailableWine()
 installWine()
 {
     [ ${#addedWineUrlPackages[@]} -gt 0 ] || return
-    local wineUrlRecord; for wineUrlRecord in "${addedWineUrlPackages[@]}"
+    local wineUrlRecord; for wineUrlRecord in "${!addedWineUrlPackages[@]}"
     do
 	local maxAge=
 	local packageNameGlobUrl="${wineUrlRecord#*:}"

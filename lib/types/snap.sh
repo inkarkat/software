@@ -26,19 +26,19 @@ getInstalledSnapPackages()
 
     isInstalledSnapPackagesAvailable=t
 }
+typeset -A addedSnapPackages=()
 hasSnap()
 {
-    ! getInstalledSnapPackages || [ "${installedSnapPackages["${1:?}"]}" ]
+    ! getInstalledSnapPackages || [ "${addedSnapPackages["${1:?}"]}" ] || [ "${installedSnapPackages["${1:?}"]}" ]
 }
 
-typeset -a addedSnapPackages=()
 addSnap()
 {
     local snapPackageName="${1:?}"; shift
     isAvailableOrUserAcceptsNative snap snapd || return $?
 
     preinstallHook "$snapPackageName"
-    addedSnapPackages+=("$snapPackageName")
+    addedSnapPackages["$snapPackageName"]=t
     postinstallHook "$snapPackageName"
 }
 
@@ -46,14 +46,14 @@ isAvailableSnap()
 {
     local snapPackageName="${1:?}"; shift
     getInstalledSnapPackages || return $?
-    [ "${installedSnapPackages["$snapPackageName"]}" ] || contains "$snapPackageName" "${addedSnapPackages[@]}"
+    [ "${installedSnapPackages["$snapPackageName"]}" ] || contains "$snapPackageName" "${!addedSnapPackages[@]}"
 }
 
 installSnap()
 {
     [ ${#addedSnapPackages[@]} -gt 0 ] || return
     local IFS=' '
-    toBeInstalledCommands+=("${SUDO}${SUDO:+ }snap install ${addedSnapPackages[*]}")
+    toBeInstalledCommands+=("${SUDO}${SUDO:+ }snap install ${!addedSnapPackages[*]}")
 }
 
 typeRegistry+=([snap:]=Snap)

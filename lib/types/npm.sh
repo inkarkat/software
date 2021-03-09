@@ -24,18 +24,18 @@ getInstalledNpmPackages()
 
     isInstalledNpmPackagesAvailable=t
 }
+typeset -A addedNpmPackages=()
 hasNpm()
 {
-    ! getInstalledNpmPackages || [ "${installedNpmPackages["${1:?}"]}" ]
+    ! getInstalledNpmPackages || [ "${addedNpmPackages["${1:?}"]}" ] || [ "${installedNpmPackages["${1:?}"]}" ]
 }
 
-typeset -a addedNpmPackages=()
 addNpm()
 {
     local npmPackageName="${1:?}"; shift
     isAvailableOrUserAcceptsNative npm npm 'NPM Node.js package manager' || return $?
     preinstallHook "$npmPackageName"
-    addedNpmPackages+=("$npmPackageName")
+    addedNpmPackages["$npmPackageName"]=t
     postinstallHook "$npmPackageName"
 }
 
@@ -43,14 +43,14 @@ isAvailableNpm()
 {
     local npmPackageName="${1:?}"; shift
     getInstalledNpmPackages || return $?
-    [ "${installedNpmPackages["$npmPackageName"]}" ] || contains "$npmPackageName" "${addedNpmPackages[@]}"
+    [ "${installedNpmPackages["$npmPackageName"]}" ] || contains "$npmPackageName" "${!addedNpmPackages[@]}"
 }
 
 installNpm()
 {
     [ ${#addedNpmPackages[@]} -gt 0 ] || return
     local IFS=' '
-    toBeInstalledCommands+=("${SUDO}${SUDO:+ }npm install --global ${addedNpmPackages[*]}")
+    toBeInstalledCommands+=("${SUDO}${SUDO:+ }npm install --global ${!addedNpmPackages[*]}")
 }
 
 typeRegistry+=([npm:]=Npm)
