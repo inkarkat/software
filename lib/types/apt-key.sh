@@ -11,13 +11,13 @@ If ${INSTALL_DIR}/(SUBDIR|*)/(NAME|*)/KEY-GLOB already exists
 [and if it is younger than MAX-AGE[SUFFIX]], it will be used; else, the APT key
 from URL will be downloaded (and put into ${INSTALL_DIR}/*
 if it exists).
-If no URL is given and the package does not exist, the installation will fail.
+If no URL is given and the key does not exist, the installation will fail.
 HELPTEXT
 }
 
 hasAptKey()
 {
-    return 1	# We cannot easily check for the imported key without downloading it. This item is meant to be used as a preinstall item, triggered by the non-existence of the main package, anyway.
+    return 1	# We cannot easily check for the imported key without downloading it. This item is meant to be used as a preinstall item, triggered by the installation of the main package, anyway.
 }
 
 typeset -a addedAptKeyRecords=()
