@@ -416,8 +416,9 @@ postInstall()
 {
     [ ${#addedPostinstallArgs[@]} -gt 0 ] || return
 
+    typeset -a executeArg=(); [ "$isExecute" ] || executeArg=(--execute)    # Directly execute any postinstall commands; these already were authorized by the user when they executed the recursive script invocation. It's cumbersome when the execution just prints yet another command-line to be captured and executed, and especially when an automatic capture and execution is used (redirection into a file, into the bag, etc.), this printing then happens outside of the capture.
     local quotedPostInstallCommand
-    printf -v quotedPostInstallCommand '%q ' "${scriptDir}/${scriptName}" "${recursiveArgs[@]}" "${addedPostinstallArgs[@]}"
+    printf -v quotedPostInstallCommand '%q ' "${scriptDir}/${scriptName}" "${executeArg[@]}" "${recursiveArgs[@]}" "${addedPostinstallArgs[@]}"
     toBeInstalledCommands+=("${quotedPostInstallCommand% }")
 }
 runPostInstallCheck()
