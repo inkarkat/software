@@ -30,7 +30,7 @@ isDefinitionAcceptedByRequire()
 	if type -t "$availabilityFunctionName" >/dev/null; then
 	    if ! eval "$availabilityFunctionName \"\$name\""; then
 		[ "$isVerbose" ] && printf >&2 'Skipping because requirement %s is not passed: %s\n' "$requirement" "$definition"
-		continue 2
+		return 1
 	    fi
 	else
 	    printf >&2 'ERROR: Type %s cannot be used for requirements checking.\n' "$prefix"
