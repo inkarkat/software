@@ -632,6 +632,7 @@ do
     done
 
     typeset -a missingItems=()
+    lastRealItem=
     lastMissingItem=
     let realItemCnt=0
     let missingRealItemCnt=0
@@ -642,7 +643,10 @@ do
 	if contains "$prefix" "${!definitionFilterTypeRegistry[@]}"; then
 	    continue    # Ignore; definition filters have already been handled.
 	elif contains "$prefix" preinstall: postinstall:; then
-	    if [ -n "$lastMissingItem" ]; then
+	    if [ -z "$lastRealItem" ]; then
+		printf >&2 'ERROR: No previous item before %s.\n' "$item"
+		exit 3
+	    elif [ "$lastRealItem" = "$lastMissingItem" ]; then
 		# The preinstall action will run when the previous item will
 		# be installed. The postinstall action will run when the
 		# installation of the previous item was successful. To be
@@ -651,6 +655,7 @@ do
 		missingItems+=("$item"$'\n'"$lastMissingItem")
 	    fi
 	else
+	    lastRealItem="$item"
 	    if hasItem "$item"; then
 		lastMissingItem=
 	    else
