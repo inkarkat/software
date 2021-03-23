@@ -547,15 +547,15 @@ do
 			    printf >&2 'ASSERT: No --action following after --pre %q.\n' "$item"; exit 3
 			fi
 			shift; action="$1"; shift
-			printf -v specialCommand '%q ' preInstall "$item" "$action"
-			specialHandlingCommands+=("${specialCommand% }")
+			printf -v specialCommand 'preInstall %q %q' "$item" "$action"
+			specialHandlingCommands+=("$specialCommand")
 			;;
 	--post)		shift; item="$1"; shift
 			if [ "$1" != '--action' ]; then
 			    printf >&2 'ASSERT: No --action following after --post %q.\n' "$item"; exit 3
 			fi
 			shift; action="$1"; shift
-			printf -v specialCommand '%q ' runPostInstallCheck "$item" "$action"
+			printf -v specialCommand 'runPostInstallCheck %q %q' "$item" "$action"
 			specialHandlingCommands+=("${specialCommand% }")
 			;;
 	--)		shift; break;;
