@@ -165,6 +165,11 @@ database()
     picoDB --base-type data --namespace setup-software --table "$@"
 }
 
+onceMarker()
+{
+    executionMarker --base-type data --namespace setup-software --group postinstall-or-once "$@"
+}
+
 typeset -A installedNativePackages=()
 isInstalledNativePackagesAvailable=
 getInstalledNativePackages()
@@ -266,8 +271,8 @@ Like a postinstall item, a postinstall-or-once item runs if the
 non-pre/postinstall item preceding it in the current definition was missing, but
 has been successfully installed by the installation commands. Additionally, if
 the non-pre/postinstall item preceding it already existed (e.g. it comes
-preinstalled), it will also run once; ID or ACTION itself is used for that
-uniqueness check.
+preinstalled), it will also run once (until it succeeds); ID or ACTION itself is
+used for that uniqueness check.
 HELPTEXT
 }
 
@@ -298,9 +303,11 @@ typeset -a addedPostinstallArgs=()
 addPostinstall()
 {
     local name="${1:?}"; shift
+    local recursiveCallArg="$1"; shift
+
     # Convert the "postinstall:ACTION\nITEM" to
     # --post "$ITEM" --action "$ACTION".
-    addedPostinstallArgs+=(--post "${name#*$'\n'}" --action "${name%%$'\n'*}")
+    addedPostinstallArgs+=("${recursiveCallArg:---post}" "${name#*$'\n'}" --action "${name%%$'\n'*}" "$@")
 }
 postinstallHook()
 {
@@ -558,6 +565,18 @@ do
 			printf -v specialCommand 'runPostInstallCheck %q %q' "$item" "$action"
 			specialHandlingCommands+=("${specialCommand% }")
 			;;
+	--post-or-once)	shift; item="$1"; shift
+			if [ "$1" != '--action' ]; then
+			    printf >&2 'ASSERT: No --action following after --post-or-once %q.\n' "$item"; exit 3
+			fi
+			shift; action="$1"; shift
+			if [ "$1" != '--id' ]; then
+			    printf >&2 'ASSERT: No --id following after --post-or-once %q.\n' "$item"; exit 3
+			fi
+			shift; id="$1"; shift
+			printf -v specialCommand 'runPostInstallCheck %q %q && onceMarker --update %q' "$item" "$action" "$id"
+			specialHandlingCommands+=("${specialCommand% }")
+			;;
 	--)		shift; break;;
 	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
 	*)		break;;
@@ -688,10 +707,15 @@ do
 	    elif hasItem "$lastRealItem"; then
 		rest="${name#*:}"
 		id="${name%"$rest"}"; id="${id%:}"; id="${id:-$rest}"
-		if once --quiet --id "$id"; then
-		    # The item already is installed, but the check did not run yet.
-		    addPostinstall "$rest"$'\n'"$lastRealItem"
-		fi
+		escapedId="${id//	/ }"
+		onceMarker --query "$escapedId"
+		case $? in
+		    0)	;;  # The item already is installed, and the check has been run already.
+		    1)	# The item already is installed, but the check did not run yet.
+			addPostinstall "$rest"$'\n'"$lastRealItem" --post-or-once --id "$escapedId"
+			;;
+		    *)	exit 3;;
+		esac
 	    elif [ -n "$lastMissingItem" ]; then
 		# The postinstall action will run when the installation of the
 		# previous item was successful. To be able to check that, we
