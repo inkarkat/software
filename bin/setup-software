@@ -89,6 +89,9 @@ printConfigUsageForTypes()
 	elif [ "$prefix" = postinstall ]; then
 	    printf "$padding"; padding=$'\n'
 	    configUsagePostinstall
+	elif [ "$prefix" = postinstall-or-once ]; then
+	    printf "$padding"; padding=$'\n'
+	    configUsagePostinstall
 	else
 	    printf >&2 'ERROR: Invalid type: %s\n' "$prefix"
 	    exit 3
@@ -160,6 +163,11 @@ addAllAcceptedGroups()
 database()
 {
     picoDB --base-type data --namespace setup-software --table "$@"
+}
+
+onceMarker()
+{
+    executionMarker --base-type data --namespace setup-software --group postinstall-or-once "$@"
 }
 
 typeset -A installedNativePackages=()
@@ -243,6 +251,30 @@ current definition was missing, but has been successfully installed by the
 installation commands.
 HELPTEXT
 }
+configUsagePostinstallOrOnce()
+{
+    cat <<'HELPTEXT'
+postinstall-or-once: items consist of [ID:]ACTION where the latter is one of the
+following:
+- an executable command (potentially followed by command-line arguments) in the
+  ./etc/postinstall directory tree that is invoked (prepend $SUDO if it needs to
+  be invoked as root) and should then perform the postinstallation steps
+- a text file in the ./etc/postinstall directory tree whose file name (without
+  extension) is taken as a notification title and contents as notification to be
+  displayed (presumably with instructions for manual post-installation steps)
+  immediately and on each login until the user acknowledges it
+- another ITEM (that is then executed as usual); for packages installed via the
+  distribution's package manager, use the special "native:" prefix here
+- a POSTINSTALL-EXPRESSION (whitespace must be escaped or the entire expression
+  quoted!) that is eval'd (prepend $SUDO if it needs to be invoked as root)
+Like a postinstall item, a postinstall-or-once item runs if the
+non-pre/postinstall item preceding it in the current definition was missing, but
+has been successfully installed by the installation commands. Additionally, if
+the non-pre/postinstall item preceding it already existed (e.g. it comes
+preinstalled), it will also run once (until it succeeds); ID or ACTION itself is
+used for that uniqueness check.
+HELPTEXT
+}
 
 addPreinstall()
 {
@@ -271,9 +303,11 @@ typeset -a addedPostinstallArgs=()
 addPostinstall()
 {
     local name="${1:?}"; shift
+    local recursiveCallArg="$1"; shift
+
     # Convert the "postinstall:ACTION\nITEM" to
     # --post "$ITEM" --action "$ACTION".
-    addedPostinstallArgs+=(--post "${name#*$'\n'}" --action "${name%%$'\n'*}")
+    addedPostinstallArgs+=("${recursiveCallArg:---post}" "${name#*$'\n'}" --action "${name%%$'\n'*}" "$@")
 }
 postinstallHook()
 {
@@ -355,8 +389,8 @@ hasOrAddItems()
     do
 	local name="${item#*:}"
 	local prefix="${item%"$name"}"
-	if contains "$prefix" "${!definitionFilterTypeRegistry[@]}" preinstall: postinstall:; then
-	    printf >&2 'ERROR: Cannot use a %s type within a preinstall / postinstall item.\n' "$prefix"
+	if contains "$prefix" "${!definitionFilterTypeRegistry[@]}" preinstall: postinstall: postinstall-or-once:; then
+	    printf >&2 'ERROR: Cannot use a %s type within a preinstall / postinstall[-or-once] item.\n' "$prefix"
 	    exit 3
 	fi
 
@@ -520,15 +554,27 @@ do
 			    printf >&2 'ASSERT: No --action following after --pre %q.\n' "$item"; exit 3
 			fi
 			shift; action="$1"; shift
-			printf -v specialCommand '%q ' preInstall "$item" "$action"
-			specialHandlingCommands+=("${specialCommand% }")
+			printf -v specialCommand 'preInstall %q %q' "$item" "$action"
+			specialHandlingCommands+=("$specialCommand")
 			;;
 	--post)		shift; item="$1"; shift
 			if [ "$1" != '--action' ]; then
 			    printf >&2 'ASSERT: No --action following after --post %q.\n' "$item"; exit 3
 			fi
 			shift; action="$1"; shift
-			printf -v specialCommand '%q ' runPostInstallCheck "$item" "$action"
+			printf -v specialCommand 'runPostInstallCheck %q %q' "$item" "$action"
+			specialHandlingCommands+=("${specialCommand% }")
+			;;
+	--post-or-once)	shift; item="$1"; shift
+			if [ "$1" != '--action' ]; then
+			    printf >&2 'ASSERT: No --action following after --post-or-once %q.\n' "$item"; exit 3
+			fi
+			shift; action="$1"; shift
+			if [ "$1" != '--id' ]; then
+			    printf >&2 'ASSERT: No --id following after --post-or-once %q.\n' "$item"; exit 3
+			fi
+			shift; id="$1"; shift
+			printf -v specialCommand 'runPostInstallCheck %q %q && onceMarker --update %q' "$item" "$action" "$id"
 			specialHandlingCommands+=("${specialCommand% }")
 			;;
 	--)		shift; break;;
@@ -632,6 +678,7 @@ do
     done
 
     typeset -a missingItems=()
+    lastRealItem=
     lastMissingItem=
     let realItemCnt=0
     let missingRealItemCnt=0
@@ -642,7 +689,10 @@ do
 	if contains "$prefix" "${!definitionFilterTypeRegistry[@]}"; then
 	    continue    # Ignore; definition filters have already been handled.
 	elif contains "$prefix" preinstall: postinstall:; then
-	    if [ -n "$lastMissingItem" ]; then
+	    if [ -z "$lastRealItem" ]; then
+		printf >&2 'ERROR: No previous item before %s.\n' "$item"
+		exit 3
+	    elif [ "$lastRealItem" = "$lastMissingItem" ]; then
 		# The preinstall action will run when the previous item will
 		# be installed. The postinstall action will run when the
 		# installation of the previous item was successful. To be
@@ -650,7 +700,30 @@ do
 		# it on a new line.
 		missingItems+=("$item"$'\n'"$lastMissingItem")
 	    fi
+	elif [ "$prefix" = postinstall-or-once: ]; then
+	    if [ -z "$lastRealItem" ]; then
+		printf >&2 'ERROR: No previous item before %s.\n' "$item"
+		exit 3
+	    elif hasItem "$lastRealItem"; then
+		rest="${name#*:}"
+		id="${name%"$rest"}"; id="${id%:}"; id="${id:-$rest}"
+		escapedId="${id//	/ }"
+		onceMarker --query "$escapedId"
+		case $? in
+		    0)	;;  # The item already is installed, and the check has been run already.
+		    1)	# The item already is installed, but the check did not run yet.
+			addPostinstall "$rest"$'\n'"$lastRealItem" --post-or-once --id "$escapedId"
+			;;
+		    *)	exit 3;;
+		esac
+	    elif [ -n "$lastMissingItem" ]; then
+		# The postinstall action will run when the installation of the
+		# previous item was successful. To be able to check that, we
+		# need that item as well, so append it on a new line.
+		missingItems+=("$item"$'\n'"$lastMissingItem")
+	    fi
 	else
+	    lastRealItem="$item"
 	    if hasItem "$item"; then
 		lastMissingItem=
 	    else
