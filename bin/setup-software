@@ -773,8 +773,8 @@ printInstallCommands && exit
 
 if [ "${#definitions[@]}" -gt 0 ]; then
     if [ $missingDefinitionCount -gt 0 ]; then
-	missingDefinitionCountPlural=s; [ $missingDefinitionCount -eq 1 ] && missingDefinitionCountPlural=
-	printf >&2 '%d not yet installed definition%s were declined.\n' "$missingDefinitionCount" "$missingDefinitionCountPlural"
+	missingDefinitionCountPlural=s; missingDefinitionCountAuxilliaryVerb=were; [ $missingDefinitionCount -eq 1 ] && { missingDefinitionCountPlural=; missingDefinitionCountAuxilliaryVerb=was; }
+	printf >&2 '%d not yet installed definition%s %s declined.\n' "$missingDefinitionCount" "$missingDefinitionCountPlural" "$missingDefinitionCountAuxilliaryVerb"
     else
 	definitionsVerb=are; definitionsPlural=s; [ ${#definitions[@]} -eq 1 ] && { definitionsVerb=is; definitionsPlural= ; }
 	printf >&2 '%d definition%s %s already installed.\n' "${#definitions[@]}" "$definitionsPlural" "$definitionsVerb"
