@@ -135,6 +135,8 @@ HELPTEXT
 	configUsagePreinstall
 	echo
 	configUsagePostinstall
+	echo
+	configUsagePostinstallOrOnce
     else
 	printConfigUsageForTypes "$@"
     fi
