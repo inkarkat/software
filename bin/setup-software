@@ -127,7 +127,7 @@ HELPTEXT
 	do
 	    prefixes+=("${mirroredTypeRegistry["${typeInstallOrder["$order"]}"]}")
 	done
-	typeset -a definitionFilterPrefixes="${!definitionFilterTypeRegistry[@]}"
+	typeset -a definitionFilterPrefixes=("${!definitionFilterTypeRegistry[@]}")
 
 	printConfigUsageForTypes "${prefixes[@]%:}" "${definitionFilterPrefixes[@]%:}"    # Show config help for all types (in the order in which the types are also installed).
 
