@@ -3,7 +3,8 @@
 configUsageCustom()
 {
     cat <<'HELPTEXT'
-custom: items consist of a CHECK:ACTION pair.
+custom: items consist of a CHECK:ACTION pair, where the latter will be chosen if
+the former does not succeed.
 CHECK can be one of the following (in decreasing precedence):
 - an EXECUTABLE-COMMAND in the ./etc/custom directory tree that is called and
   should succeed if the application already exists, and fail if it is missing;
@@ -24,6 +25,8 @@ CHECK can be one of the following (in decreasing precedence):
 	custom:'& --check':foo-installer
     or save repeated typing:
 	custom:&-check:foo-installer
+  Note: This cannot contain literal colons, as these would prematurely end the
+  TEST-EXPRESSION; you can use $(echo -e \\x3a) instead of : as a workaround.
 ACTION is one of the following:
 - an executable command (potentially followed by command-line arguments) in the
   ./etc/custom directory tree that is invoked (prepend $SUDO if it needs to be
