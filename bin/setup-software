@@ -300,12 +300,14 @@ addPreinstall()
 }
 preinstallHook()
 {
-    local name="${1:?}"; shift
-    local actionScript
-    for actionScript in "${preinstallActionsDirspec}/${name}"/*
-    do
-	[ -x "$actionScript" ] && "${scriptDir}/${scriptName}" "${recursiveArgs[@]}" --pre "$name" --action "${actionScript#"${preinstallActionsDirspec}/${name}/"}"
-    done
+    set +o noglob
+	local name="${1:?}"; shift
+	local actionScript
+	for actionScript in "${preinstallActionsDirspec}/${name}"/*
+	do
+	    [ -x "$actionScript" ] && "${scriptDir}/${scriptName}" "${recursiveArgs[@]}" --pre "$name" --action "${actionScript#"${preinstallActionsDirspec}/"}"
+	done
+    set -o noglob
 }
 typeset -a addedPostinstallArgs=()
 addPostinstall()
@@ -319,12 +321,14 @@ addPostinstall()
 }
 postinstallHook()
 {
-    local name="${1:?}"; shift
-    local actionScript
-    for actionScript in "${postinstallActionsDirspec}/${name}"/*
-    do
-	[ -x "$actionScript" ] && addedPostinstallArgs+=(--post "$name" --action "${actionScript#"${postinstallActionsDirspec}/${name}/"}")
-    done
+    set +o noglob
+	local name="${1:?}"; shift
+	local actionScript
+	for actionScript in "${postinstallActionsDirspec}/${name}"/*
+	do
+	    [ -x "$actionScript" ] && addedPostinstallArgs+=(--post "$name" --action "${actionScript#"${postinstallActionsDirspec}/"}")
+	done
+    set -o noglob
 }
 
 hasItem()
