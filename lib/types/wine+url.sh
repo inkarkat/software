@@ -104,7 +104,7 @@ installWine()
 
 	# Note: No sudo here, as downloading and installation will happen as the
 	# current user.
-	toBeInstalledCommands+=("wine-download-installer${packageName:+ --application-name "'"}${packageName}${packageName:+"'"} --expression '$packageGlob'${maxAge:+ --max-age }$maxAge --url '$packageUrl'")
+	toBeInstalledCommands+=("wine-download-installer${packageName:+ --application-name "'"}${packageName}${packageName:+"'"} --expression '$packageGlob'${maxAge:+ --max-age }$maxAge${packageUrl:+ --url '$packageUrl'}")
     done
 }
 
