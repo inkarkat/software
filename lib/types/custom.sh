@@ -41,6 +41,7 @@ HELPTEXT
 }
 
 typeset -A addedCustomActions=()
+typeset -a addedCustomActionList=()
 hasCustom()
 {
     local customAction="${1#*:}"
@@ -76,14 +77,17 @@ addCustom()
 {
     # Note: Do not support pre-/postinstall hooks here, as we have no short
     # "name" that we could use.
-    addedCustomActions["${1#*:}"]=t
+    local customAction="${1#*:}"
+    addedCustomActions["$customAction"]=t
+    addedCustomActionList+=("$customAction")
 }
 
 installCustom()
 {
-    [ ${#addedCustomActions[@]} -gt 0 ] || return
+    [ ${#addedCustomActions[@]} -eq ${#addedCustomActionList[@]} ] || { echo >&2 'ASSERT: Invalid whatever'; exit 3; }
+    [ ${#addedCustomActionList[@]} -gt 0 ] || return
 
-    local customAction; for customAction in "${!addedCustomActions[@]}"
+    local customAction; for customAction in "${addedCustomActionList[@]}"
     do
 	local customActionWithoutSudo="${customAction#\$SUDO }"
 	local sudoPrefix="${customAction%"$customActionWithoutSudo"}"
