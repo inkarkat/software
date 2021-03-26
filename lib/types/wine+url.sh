@@ -38,6 +38,7 @@ addWine()
 {
     local wineUrlRecord="${1:?}"; shift
     isAvailableOrUserAcceptsNative wine || return $?
+    isAvailableOrUserAcceptsNative wine32 || return $?
 
     # The best identifier for pre-/postinstall hooks is the package name
     # (without any [SUBDIR/]); unfortunately, it is optional and hard to parse,
