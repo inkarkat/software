@@ -1,5 +1,7 @@
 #!/bin/bash
 
+SUDO=sudo; [ $EUID -eq 0 ] && SUDO=''
+
 # Suppress this warning:
 # > WARNING: You are using pip version 21.0; however, version 21.0.1 is available.
 # > You should consider upgrading via the '/usr/bin/python3 -m pip install --upgrade pip' command.
