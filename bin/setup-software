@@ -160,12 +160,14 @@ set -o noglob
 typeset -a acceptedGroups=()
 addAllAcceptedGroups()
 {
-    local group; while IFS=$'\n' read -r group
+    typeset -a groups=() group
+    readarray -t groups < <(cd "${definitionDirspec:?}" && find . -type f -print | sort)
+    for group in "${groups[@]}"
     do
 	group="${group#./}"
 	memoizeDecision --memoize-group setup-software-groups --subject "$group" --verb 'is not' --state 'chosen' --action 'consider it' && \
 	    acceptedGroups+=("$group")
-    done < <(cd "${definitionDirspec:?}" && find . -type f -print | sort)
+    done
 }
 
 database()
