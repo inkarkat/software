@@ -161,10 +161,20 @@ typeset -a acceptedGroups=()
 addAllAcceptedGroups()
 {
     typeset -a groups=() group
-    readarray -t groups < <(cd "${definitionDirspec:?}" && find . -type f -print | sort)
+    readarray -t groups < <(cd "${definitionDirspec:?}" && find . -print | sort | sed -e 's#^\./##')
+    typeset -a filteredGroups=()
     for group in "${groups[@]}"
     do
-	group="${group#./}"
+	contains "$group" "${filteredGroups[@]}" && continue
+
+	if [ -d "${definitionDirspec}/${group}" ]; then
+	    groupDirectoryGroupCount=$(countGlob "${group}/*" "${groups[@]}")
+	    [ $groupDirectoryGroupCount -gt 1 ] || continue  # Ignore a group directory that has only one group in it; the query for the group itself will suffice.
+	    memoizeDecision --memoize-group setup-software-groups --subject "$group" --verb "directory (with $groupDirectoryGroupCount groups) is not" --state 'chosen' --action 'consider it' || \
+		readarray -O ${#filteredGroups[@]} -t filteredGroups < <(filterGlob "${group}/*" "${groups[@]}")
+	    continue
+	fi
+
 	memoizeDecision --memoize-group setup-software-groups --subject "$group" --verb 'is not' --state 'chosen' --action 'consider it' && \
 	    acceptedGroups+=("$group")
     done
