@@ -1,6 +1,8 @@
 #!/bin/bash source-this-script
 
 readonly APT_SOURCES_DIR=/etc/apt/sources.list.d
+readonly arch="$(dpkg --print-architecture)"
+readonly codename="$(lsb_release --short --codename)"
 
 configUsageAptRepo()
 {
@@ -8,7 +10,17 @@ configUsageAptRepo()
 apt-repo: items consist of a
     NAME:'DEB-LINE'
 pair, where DEB-LINE will be installed in ${APT_SOURCES_DIR}/NAME.list
+You can use %ARCH% to refer to the machine architecture (${arch}) and %CODENAME%
+to refer to the current release's codename (${codename}).
 HELPTEXT
+}
+
+expandDebLine()
+{
+    local debLine="${1:?}"; shift
+    debLine="${debLine//%ARCH%/$arch}"
+    debLine="${debLine//%CODENAME%/$codename}"
+    printf %s "$debLine"
 }
 
 typeset -A addedAptRepos=()
@@ -25,7 +37,7 @@ hasAptRepo()
 
     local aptSourceFilespec="${APT_SOURCES_DIR}/${name}.list"
     [ -e "$aptSourceFilespec" ] || return 1
-    grep --quiet --fixed-strings --line-regexp "$debLine" -- "$aptSourceFilespec"
+    grep --quiet --fixed-strings --line-regexp "$(expandDebLine "$debLine")" -- "$aptSourceFilespec"
 }
 
 addAptRepo()
@@ -34,7 +46,7 @@ addAptRepo()
     local name="${aptKeyRecord%%:*}"
     local debLine="${aptKeyRecord#"${name}:"}"
 
-    addedAptRepos["$name"]="$debLine"
+    addedAptRepos["$name"]="$(expandDebLine "$debLine")"
 }
 
 installAptRepo()
