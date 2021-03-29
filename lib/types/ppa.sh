@@ -31,7 +31,7 @@ hasPpa()
 addPpa()
 {
     local ppaRepoName="${1:?}"; shift
-    isAvailableOrUserAcceptsNative add-apt-repository software-properties-common 'apt repository abstraction' || return $?
+    isAvailableOrUserAcceptsNative --preinstall add-apt-repository software-properties-common 'apt repository abstraction' || return $?
 
     preinstallHook "$ppaRepoName"
     addedPpaRepositories["$ppaRepoName"]=t

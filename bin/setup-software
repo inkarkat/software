@@ -371,6 +371,7 @@ isAvailableNative()
 }
 isAvailableOrUserAcceptsNative()
 {
+    local isPreinstall; if [ "$1" = --preinstall ]; then shift; isPreinstall=t; fi
     local packageManagerExecutable="${1:?}"; shift
     local packageManagerPackageName="${1:-$packageManagerExecutable}"; shift
     local packageManagerSubject="${1:-$packageManagerPackageName}"; shift
@@ -380,7 +381,11 @@ isAvailableOrUserAcceptsNative()
     fi
 
     if askTo --subject "$packageManagerSubject" --verb 'is not yet' --state installed --action 'install it'; then
-	addNative "$packageManagerPackageName"
+	if [ "$isPreinstall" ]; then
+	    addPreinstall "native:${packageManagerPackageName}"$'\nppa'	# ppa is a dummy ITEM that is ignored for preinstall actions, anyway.
+	else
+	    addNative "$packageManagerPackageName"
+	fi
     else
 	return 1
     fi
