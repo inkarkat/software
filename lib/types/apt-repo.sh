@@ -12,6 +12,8 @@ apt-repo: items consist of a
 pair, where DEB-LINE will be installed in ${APT_SOURCES_DIR}/NAME.list
 You can use %ARCH% to refer to the machine architecture (${arch}) and %CODENAME%
 to refer to the current release's codename (${codename}).
+Note: As this is only used for installing, it's recommended to use this with a
+preinstall: prefix.
 HELPTEXT
 }
 

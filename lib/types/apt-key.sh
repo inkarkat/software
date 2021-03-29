@@ -12,6 +12,9 @@ If ${INSTALL_DIR}/(SUBDIR|*)/(NAME|*)/KEY-GLOB already exists
 from URL will be downloaded (and put into ${INSTALL_DIR}/*
 if it exists).
 If no URL is given and the key does not exist, the installation will fail.
+Note: As there's no checking whether the key has already been installed, it is
+recommended to be used with a preinstall: prefix, so it is only offered before
+the actual package has been installed.
 HELPTEXT
 }
 
