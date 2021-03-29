@@ -43,11 +43,15 @@ installNotifyUrl()
 	    printf >&2 'ERROR: Invalid notify+url item: "notify+url:%s"\n' "$notifyUrlRecord"
 	    exit 3
 	fi
+	local notificationOutputNameArg=; isglob "$notificationGlob" || printf -v notificationOutputNameArg %q "$notificationGlob"
+	printf -v notificationGlob %q "$notificationGlob"
 	notificationName="${notificationName%/}"
+	printf -v notificationName %q "$notificationName"
+	printf -v notificationUrl %q "$notificationUrl"
 
 	# Note: No sudo here, as the downloading will happen as the current user
 	# and only the installation itself will be done through sudo.
-	toBeInstalledCommands+=("login-notification-download --immediate --no-blocking-gui${notificationName:+ --application-name "'"}${notificationName}${notificationName:+"'"} --expression '$notificationGlob'${maxAge:+ --max-age }$maxAge --url '$notificationUrl'")
+	toBeInstalledCommands+=("login-notification-download --immediate --no-blocking-gui${notificationName:+ --application-name }${notificationName} --expression ${notificationGlob}${maxAge:+ --max-age }$maxAge --url }${notificationUrl}${notificationOutputNameArg:+ --output }${notificationOutputNameArg}")
     done
 }
 

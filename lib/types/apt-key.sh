@@ -42,11 +42,14 @@ installAptKey()
 	    printf >&2 'ERROR: Invalid apt-key item: "apt-key:%s"\n' "$aptKeyRecord"
 	    exit 3
 	fi
+	local keyOutputNameArg=; isglob "$keyGlob" || printf -v keyOutputNameArg %q "$keyGlob"
+	printf -v keyGlob %q "$keyGlob"
 	keyName="${keyName%/}"
+	printf -v keyUrl %q "$keyUrl"
 
 	# Note: No sudo here, as the downloading will happen as the current user
 	# and only the installation itself will be done through sudo.
-	toBeInstalledCommands+=("apt-key-download${keyName:+ --application-name "'"}${keyName}${keyName:+"'"} --expression '$keyGlob'${maxAge:+ --max-age }$maxAge${keyUrl:+ --url '$keyUrl'}")
+	toBeInstalledCommands+=("apt-key-download${keyName:+ --application-name "'"}${keyName}${keyName:+"'"} --expression ${keyGlob}${maxAge:+ --max-age }$maxAge${keyUrl:+ --url }${keyUrl}${keyOutputNameArg:+ --output }${keyOutputNameArg}")
     done
 }
 

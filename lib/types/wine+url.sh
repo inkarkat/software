@@ -101,11 +101,15 @@ installWine()
 	local packageNameAndGlob="${packageNameGlobUrl%:$packageUrl}"
 	local packageGlob="${packageNameAndGlob##*/}"
 	local packageName="${packageNameAndGlob%"$packageGlob"}"
+	local packageOutputNameArg=; isglob "$packageGlob" || printf -v packageOutputNameArg %q "$packageGlob"
+	printf -v packageGlob %q "$packageGlob"
 	packageName="${packageName%/}"
+	printf -v packageName %q "$packageName"
+	printf -v packageUrl %q "$packageUrl"
 
 	# Note: No sudo here, as downloading and installation will happen as the
 	# current user.
-	toBeInstalledCommands+=("wine-download-installer${packageName:+ --application-name "'"}${packageName}${packageName:+"'"} --expression '$packageGlob'${maxAge:+ --max-age }$maxAge${packageUrl:+ --url '$packageUrl'}")
+	toBeInstalledCommands+=("wine-download-installer${packageName:+ --application-name }${packageName} --expression ${packageGlob}${maxAge:+ --max-age }$maxAge${packageUrl:+ --url }${packageUrl}${packageOutputNameArg:+ --output }${packageOutputNameArg}")
     done
 }
 
