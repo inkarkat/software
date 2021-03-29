@@ -46,7 +46,7 @@ installAptKey()
 
 	# Note: No sudo here, as the downloading will happen as the current user
 	# and only the installation itself will be done through sudo.
-	toBeInstalledCommands+=("apt-key-download${keyName:+ --application-name "'"}${keyName}${keyName:+"'"} --expression '$keyGlob'${maxAge:+ --max-age }$maxAge --url '$keyUrl'")
+	toBeInstalledCommands+=("apt-key-download${keyName:+ --application-name "'"}${keyName}${keyName:+"'"} --expression '$keyGlob'${maxAge:+ --max-age }$maxAge${keyUrl:+ --url '$keyUrl'}")
     done
 }
 
