@@ -209,13 +209,13 @@ getInstalledNativePackages()
 
     isInstalledNativePackagesAvailable=t
 }
+typeset -a addedNativePackages=()
 hasNative()
 {
     # If a package retrieval fails, treat this as an existing item, so that
     # these are effectively skipped.
-    ! getInstalledNativePackages || [ "${installedNativePackages["${1:?}"]}" ]
+    ! getInstalledNativePackages || [ "${addedNativePackages["${1:?}"]}" ] || [ "${installedNativePackages["${1:?}"]}" ]
 }
-typeset -a addedNativePackages=()
 addNative()
 {
     local packageName="${1:?}"; shift
