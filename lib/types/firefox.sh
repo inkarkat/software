@@ -27,12 +27,7 @@ getInstalledFirefoxAddons()
 	installedFirefoxProfileAddonIds["$profileName $id"]=t
 	case ",${DEBUG:-}," in *,setup-software:firefox,*) echo >&2 "${PS4}setup-software (firefox): Found $id installed in profile $profileName";; esac
     done < <(jq --raw-output '.addons | .[] | .id' "$addonsConfigFilespec"; printf %d "$?")
-    if [ $exitStatus -ne 0 ]; then
-	echo >&2 "ERROR: Failed to obtain Firefox installed add-on list for profile ${profileName}."
-	return 1
-    fi
-
-    isInstalledFirefoxAddonsAvailable["$profileName"]=t
+    [ $exitStatus -eq 0 ] && isInstalledFirefoxAddonsAvailable["$profileName"]=t
 }
 typeset -A addedFirefoxAddons=()
 hasFirefoxAddon()
@@ -64,7 +59,10 @@ hasFirefoxAddon()
 	firefoxDefaultProfileName="$profileName"
     fi
 
-    getInstalledFirefoxAddons "$profileName" "$configDirspec" || return 99
+    if ! getInstalledFirefoxAddons "$profileName" "$configDirspec"; then
+	echo >&2 "ERROR: Failed to obtain Firefox installed add-on list for profile ${profileName}; skipping ${1}."
+	return 99
+    fi
     [ "${installedFirefoxProfileAddonIds["${profileName} ${addonId}"]}" ]
 }
 

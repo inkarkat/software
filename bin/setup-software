@@ -201,17 +201,16 @@ getInstalledNativePackages()
 	installedNativePackages["$package"]=t
 	case ",${DEBUG:-}," in *,setup-software:native,*) echo >&2 "${PS4}setup-software (native): Found $package";; esac
     done < <(dpkg-package-list; printf %d "$?")
-    if [ $exitStatus -ne 0 -o ${#installedNativePackages[@]} -eq 0 ]; then
-	echo >&2 'ERROR: Failed to obtain installed native package list.'
-	return 1
-    fi
-
-    isInstalledNativePackagesAvailable=t
+    [ $exitStatus -eq 0 -a ${#installedNativePackages[@]} -gt 0 ] && isInstalledNativePackagesAvailable=t
 }
 typeset -A addedNativePackages=()
 hasNative()
 {
-    getInstalledNativePackages || return 99
+    if ! getInstalledNativePackages; then
+	echo >&2 "ERROR: Failed to obtain installed native package list; skipping ${1}."
+	return 99
+    fi
+
     [ "${addedNativePackages["${1:?}"]}" ] || [ "${installedNativePackages["${1:?}"]}" ]
 }
 addNative()

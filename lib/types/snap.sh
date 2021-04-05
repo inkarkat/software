@@ -23,17 +23,15 @@ getInstalledSnapPackages()
 			    ;;
 	esac
     done < <(snap list --color=never --unicode=never 2>/dev/null; printf %d "$?")
-    if [ $exitStatus -ne 0 ]; then
-	echo >&2 'ERROR: Failed to obtain installed Snap store package list.'
-	return 1
-    fi
-
-    isInstalledSnapPackagesAvailable=t
+    [ $exitStatus -eq 0 ] && isInstalledSnapPackagesAvailable=t
 }
 typeset -A addedSnapPackages=()
 hasSnap()
 {
-    getInstalledSnapPackages || return 99
+    if ! getInstalledSnapPackages; then
+	echo >&2 "ERROR: Failed to obtain installed Snap store package list; skipping ${1}."
+	return 99
+    fi
     [ "${addedSnapPackages["${1:?}"]}" ] || [ "${installedSnapPackages["${1:?}"]}" ]
 }
 

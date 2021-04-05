@@ -24,7 +24,10 @@ getInstalledDebBuildDependencies()
 typeset -A addedDebBuildDependencies=()
 hasDebBuild()
 {
-    getInstalledDebBuildDependencies || return 99
+    if ! getInstalledDebBuildDependencies; then
+	echo >&2 "ERROR: Failed to obtain build dependencies list; skipping ${1}."
+	return 99
+    fi
     [ "${addedDebBuildDependencies["${1:?}"]}" ] || [ "${installedDebBuildDependencies["${1:?}"]}" ]
 }
 

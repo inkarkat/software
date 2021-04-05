@@ -27,12 +27,7 @@ getInstalledThunderbirdAddons()
 	installedThunderbirdProfileAddonIds["$profileName $id"]=t
 	case ",${DEBUG:-}," in *,setup-software:thunderbird,*) echo >&2 "${PS4}setup-software (thunderbird): Found $id installed in profile $profileName";; esac
     done < <(jq --raw-output '.addons | .[] | .id' "$addonsConfigFilespec"; printf %d "$?")
-    if [ $exitStatus -ne 0 ]; then
-	echo >&2 "ERROR: Failed to obtain Thunderbird installed add-on list for profile ${profileName}."
-	return 1
-    fi
-
-    isInstalledThunderbirdAddonsAvailable["$profileName"]=t
+    [ $exitStatus -eq 0 ] && isInstalledThunderbirdAddonsAvailable["$profileName"]=t
 }
 typeset -A addedThunderbirdAddons=()
 hasThunderbirdAddon()
@@ -64,7 +59,10 @@ hasThunderbirdAddon()
 	thunderbirdDefaultProfileName="$profileName"
     fi
 
-    getInstalledThunderbirdAddons "$profileName" "$configDirspec" || return 99
+    if ! getInstalledThunderbirdAddons "$profileName" "$configDirspec"; then
+	echo >&2 "ERROR: Failed to obtain Thunderbird installed add-on list for profile ${profileName}; skipping ${1}."
+	return 99
+    fi
     [ "${installedThunderbirdProfileAddonIds["${profileName} ${addonId}"]}" ]
 }
 

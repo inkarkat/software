@@ -21,17 +21,15 @@ getInstalledNpmPackages()
 	    case ",${DEBUG:-}," in *,setup-software:npm,*) echo >&2 "${PS4}setup-software (npm): Found installed ${packageName}";; esac
 	fi
     done < <(npm ls --global --parseable --depth 0 2>/dev/null; printf %d "$?")
-    if [ $exitStatus -ne 0 ]; then
-	echo >&2 'ERROR: Failed to obtain installed Node.js package list.'
-	return 1
-    fi
-
-    isInstalledNpmPackagesAvailable=t
+    [ $exitStatus -eq 0 ] && isInstalledNpmPackagesAvailable=t
 }
 typeset -A addedNpmPackages=()
 hasNpm()
 {
-    getInstalledNpmPackages || return 99
+    if ! getInstalledNpmPackages; then
+	echo >&2 "ERROR: Failed to obtain installed Node.js package list; skipping ${1}."
+	return 99
+    fi
     [ "${addedNpmPackages["${1:?}"]}" ] || [ "${installedNpmPackages["${1:?}"]}" ]
 }
 

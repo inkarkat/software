@@ -22,17 +22,15 @@ getInstalledPip3Packages()
 			    ;;
 	esac
     done < <(pip3 list 2>/dev/null; printf %d "$?")
-    if [ $exitStatus -ne 0 ]; then
-	echo >&2 'ERROR: Failed to obtain installed Python package list.'
-	return 1
-    fi
-
-    isInstalledPip3PackagesAvailable=t
+    [ $exitStatus -eq 0 ] && isInstalledPip3PackagesAvailable=t
 }
 typeset -A addedPip3Packages=()
 hasPip3()
 {
-    getInstalledPip3Packages || return 99
+    if ! getInstalledPip3Packages; then
+	echo >&2 "ERROR: Failed to obtain installed Python package list; skipping ${1}."
+	return 99
+    fi
     [ "${addedPip3Packages["${1:?}"]}" ] || [ "${installedPip3Packages["${1:?}"]}" ]
 }
 

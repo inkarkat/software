@@ -19,17 +19,15 @@ getInstalledPpaRepositories()
 	installedPpaRepositories["${repo#ppa:}"]=t
 	case ",${DEBUG:-}," in *,setup-software:ppa,*) echo >&2 "${PS4}setup-software (ppa): Found installed ppa:${repo}";; esac
     done < <(apt-list-repositories --ppa-only; printf %d "$?")
-    if [ $exitStatus -ne 0 ]; then
-	echo >&2 'ERROR: Failed to obtain installed Ubuntu personal package archives list.'
-	return 1
-    fi
-
-    isInstalledPpaRepositoriesAvailable=t
+    [ $exitStatus -eq 0 ] && isInstalledPpaRepositoriesAvailable=t
 }
 typeset -A addedPpaRepositories=()
 hasPpa()
 {
-    getInstalledPpaRepositories || return 99
+    if ! getInstalledPpaRepositories; then
+	echo >&2 "ERROR: Failed to obtain installed Ubuntu personal package archives list; skipping ${1}."
+	return 99
+    fi
     [ "${addedPpaRepositories["${1:?}"]}" ] || [ "${installedPpaRepositories["${1:?}"]}" ]
 }
 
