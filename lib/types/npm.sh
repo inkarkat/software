@@ -13,14 +13,18 @@ getInstalledNpmPackages()
 {
     [ "$isInstalledNpmPackagesAvailable" ] && return
 
-    local packageDirspec; while IFS=$'\n' read -r packageDirspec
+    local exitStatus packageDirspec; while IFS=$'\n' read -r packageDirspec || { exitStatus="$packageDirspec"; break; }	# Exit status from the process substitution (<(npm)) is lost; return the actual exit status via an incomplete (i.e. missing the newline) last line.
     do
 	local packageName; packageName="${packageDirspec##*/}"
 	if [ -n "$packageName" ]; then
 	    installedNpmPackages["$packageName"]=t
 	    case ",${DEBUG:-}," in *,setup-software:npm,*) echo >&2 "${PS4}setup-software (npm): Found installed ${packageName}";; esac
 	fi
-    done < <(npm ls --global --parseable --depth 0 2>/dev/null)
+    done < <(npm ls --global --parseable --depth 0 2>/dev/null; printf %d "$?")
+    if [ $exitStatus -ne 0 ]; then
+	echo >&2 'ERROR: Failed to obtain installed Node.js package list.'
+	return 1
+    fi
 
     isInstalledNpmPackagesAvailable=t
 }

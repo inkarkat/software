@@ -14,11 +14,15 @@ getInstalledPpaRepositories()
 {
     [ "$isInstalledPpaRepositoriesAvailable" ] && return
 
-    local repo; while IFS=$'\n' read -r repo
+    local exitStatus repo; while IFS=$'\n' read -r repo || { exitStatus="$repo"; break; }	# Exit status from the process substitution (<(apt-list-repositories)) is lost; return the actual exit status via an incomplete (i.e. missing the newline) last line.
     do
 	installedPpaRepositories["${repo#ppa:}"]=t
 	case ",${DEBUG:-}," in *,setup-software:ppa,*) echo >&2 "${PS4}setup-software (ppa): Found installed ppa:${repo}";; esac
-    done < <(apt-list-repositories --ppa-only)
+    done < <(apt-list-repositories --ppa-only; printf %d "$?")
+    if [ $exitStatus -ne 0 ]; then
+	echo >&2 'ERROR: Failed to obtain installed Ubuntu personal package archives list.'
+	return 1
+    fi
 
     isInstalledPpaRepositoriesAvailable=t
 }

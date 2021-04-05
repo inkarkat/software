@@ -196,15 +196,14 @@ getInstalledNativePackages()
 {
     [ "$isInstalledNativePackagesAvailable" ] && return
 
-    local package; while IFS=$'\n' read -r package
+    local exitStatus package; while IFS=$'\n' read -r package || { exitStatus="$package"; break; }	# Exit status from the process substitution (<(dpkg-package-list)) is lost; return the actual exit status via an incomplete (i.e. missing the newline) last line.
     do
 	installedNativePackages["$package"]=t
-	case ",${DEBUG:-}," in *,setup-software:pkg,*) echo >&2 "${PS4}setup-software (pkg): Found installed ${package}";; esac
-    done < <(dpkg-package-list)
-
-    if [ ${#installedNativePackages[@]} -eq 0 ]; then
-	echo >&2 'ERROR: Failed to obtain installed package list.'
-	exit 3
+	case ",${DEBUG:-}," in *,setup-software:native,*) echo >&2 "${PS4}setup-software (native): Found $package";; esac
+    done < <(dpkg-package-list; printf %d "$?")
+    if [ $exitStatus -ne 0 -o ${#installedNativePackages[@]} -eq 0 ]; then
+	echo >&2 'ERROR: Failed to obtain installed native package list.'
+	return 1
     fi
 
     isInstalledNativePackagesAvailable=t
