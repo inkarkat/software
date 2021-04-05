@@ -23,6 +23,11 @@ hasWine()
 	printf >&2 'ERROR: Invalid wine+url item: "wine+url:%s"\n' "$1"
 	exit 3
     fi
+    if ! "${projectDir:?}/etc/require/intel-architecture"; then
+	echo >&2 "Note: Wine is not available on non-Intel architectures; skipping ${1}."
+	return 99
+    fi
+
     local checkGlob="${1%%:*}"
 
     [ "${addedWineUrlPackages["$1"]}" ] && return 0	# This package has already been selected for installation.
