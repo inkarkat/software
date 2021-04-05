@@ -45,7 +45,7 @@ isAvailablePip3()
 {
     local pip3PackageName="${1:?}"; shift
     getInstalledPip3Packages || return $?
-    [ "${installedPip3Packages["$pip3PackageName"]}" ] || contains "$pip3PackageName" "${!addedPip3Packages[@]}"
+    [ "${installedPip3Packages["$pip3PackageName"]}" ] || [ "${addedPip3Packages["$pip3PackageName"]}" ]
 }
 
 installPip3()

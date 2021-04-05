@@ -42,7 +42,7 @@ isAvailablePpa()
 {
     local ppaRepoName="${1:?}"; shift
     getInstalledPpaRepositories || return $?
-    [ "${installedPpaRepositories["$ppaRepoName"]}" ] || contains "$ppaRepoName" "${!addedPpaRepositories[@]}"
+    [ "${installedPpaRepositories["$ppaRepoName"]}" ] || [ "${addedPpaRepositories["$ppaRepoName"]}" ]
 }
 
 installPpa()
