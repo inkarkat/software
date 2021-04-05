@@ -14,7 +14,7 @@ getInstalledSnapPackages()
 {
     [ "$isInstalledSnapPackagesAvailable" ] && return
 
-    local packageName remainder; while IFS=' ' read -r packageName remainder
+    local exitStatus packageName remainder; while IFS=' ' read -r packageName remainder || { exitStatus="$packageName"; break; }	# Exit status from the process substitution (<(snap)) is lost; return the actual exit status via an incomplete (i.e. missing the newline) last line.
     do
 	case "$packageName" in
 	    Name)	    continue;;	# Skip single-line header
@@ -22,14 +22,19 @@ getInstalledSnapPackages()
 			    case ",${DEBUG:-}," in *,setup-software:snap,*) echo >&2 "${PS4}setup-software (snap): Found installed ${packageName}";; esac
 			    ;;
 	esac
-    done < <(snap list --color=never --unicode=never 2>/dev/null)
+    done < <(snap list --color=never --unicode=never 2>/dev/null; printf %d "$?")
+    if [ $exitStatus -ne 0 ]; then
+	echo >&2 'ERROR: Failed to obtain installed Snap store package list.'
+	return 1
+    fi
 
     isInstalledSnapPackagesAvailable=t
 }
 typeset -A addedSnapPackages=()
 hasSnap()
 {
-    ! getInstalledSnapPackages || [ "${addedSnapPackages["${1:?}"]}" ] || [ "${installedSnapPackages["${1:?}"]}" ]
+    getInstalledSnapPackages || return 99
+    [ "${addedSnapPackages["${1:?}"]}" ] || [ "${installedSnapPackages["${1:?}"]}" ]
 }
 
 addSnap()

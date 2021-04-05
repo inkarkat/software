@@ -14,7 +14,7 @@ getInstalledDebBuildDependencies()
 {
     [ "$isInstalledDebBuildDependenciesAvailable" ] && return
 
-    eval "$(database debBuildDependencies --get-as-dictionary installedDebBuildDependencies --omit-declaration)" || exit 3
+    eval "$(database debBuildDependencies --get-as-dictionary installedDebBuildDependencies --omit-declaration)" || return 1
 
     [ ${#installedDebBuildDependencies[@]} -gt 0 ] &&
 	case ",${DEBUG:-}," in *,setup-software:deb-build,*) echo >&2 "${PS4}setup-software (deb-build): Found installed ${!installedDebBuildDependencies[*]}";; esac
@@ -24,7 +24,8 @@ getInstalledDebBuildDependencies()
 typeset -A addedDebBuildDependencies=()
 hasDebBuild()
 {
-    ! getInstalledDebBuildDependencies || [ "${addedDebBuildDependencies["${1:?}"]}" ] || [ "${installedDebBuildDependencies["${1:?}"]}" ]
+    getInstalledDebBuildDependencies || return 99
+    [ "${addedDebBuildDependencies["${1:?}"]}" ] || [ "${installedDebBuildDependencies["${1:?}"]}" ]
 }
 
 hasDebSrc()

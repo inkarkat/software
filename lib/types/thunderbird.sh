@@ -22,11 +22,15 @@ getInstalledThunderbirdAddons()
     [ "${isInstalledThunderbirdAddonsAvailable["$profileName"]}" ] && return
     local addonsConfigFilespec="${1:?}/addons.json"; shift
 
-    while IFS=$'\n' read -r id
+    local exitStatus id; while IFS=$'\n' read -r id || { exitStatus="$id"; break; }	# Exit status from the process substitution (<(jq)) is lost; return the actual exit status via an incomplete (i.e. missing the newline) last line.
     do
 	installedThunderbirdProfileAddonIds["$profileName $id"]=t
 	case ",${DEBUG:-}," in *,setup-software:thunderbird,*) echo >&2 "${PS4}setup-software (thunderbird): Found $id installed in profile $profileName";; esac
-    done < <(jq --raw-output '.addons | .[] | .id' "$addonsConfigFilespec")
+    done < <(jq --raw-output '.addons | .[] | .id' "$addonsConfigFilespec"; printf %d "$?")
+    if [ $exitStatus -ne 0 ]; then
+	echo >&2 "ERROR: Failed to obtain Thunderbird installed add-on list for profile ${profileName}."
+	return 1
+    fi
 
     isInstalledThunderbirdAddonsAvailable["$profileName"]=t
 }
@@ -54,13 +58,14 @@ hasThunderbirdAddon()
     [ "${_disabledNoGlob:-}" ] && set -f; unset _disabledNoGlob
 
     local configDirspec="${existingProfileDirspecs[0]}"
-    [ -d "$configDirspec" ] || return 0 # No such Thunderbird profile.
+    [ -d "$configDirspec" ] || return 99 # No such Thunderbird profile.
     if [ -z "$profileName" ]; then
 	profileName="${configDirspec##*.}"
 	thunderbirdDefaultProfileName="$profileName"
     fi
 
-    ! getInstalledThunderbirdAddons "$profileName" "$configDirspec" || [ "${installedThunderbirdProfileAddonIds["${profileName} ${addonId}"]}" ]
+    getInstalledThunderbirdAddons "$profileName" "$configDirspec" || return 99
+    [ "${installedThunderbirdProfileAddonIds["${profileName} ${addonId}"]}" ]
 }
 
 addThunderbirdAddon()

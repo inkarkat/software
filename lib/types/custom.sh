@@ -18,10 +18,11 @@ CHECK can be one of the following (in decreasing precedence):
   derived from the whole definition) user's answer
 - a TEST-EXPRESSION (whitespace must be escaped or the entire expression
   quoted!) that is eval'd and should succeed if the application already
-  exists, and fail if it is missing; if TEST-EXPRESSION starts with a &, this
-  is replaced by the following ACTION (without a $SUDO prefix and without its
-  command-line arguments), allowing you to re-use the same script for checking
-  and installing:
+  exists, and fail if it is missing, fail with 99 if the entire definition
+  should be skipped; if TEST-EXPRESSION starts with a &, this is replaced by the
+  following ACTION (without a $SUDO prefix and without its command-line
+  arguments), allowing you to re-use the same script for checking and
+  installing:
 	custom:'& --check':foo-installer
     or save repeated typing:
 	custom:&-check:foo-installer

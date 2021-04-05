@@ -196,15 +196,14 @@ getInstalledNativePackages()
 {
     [ "$isInstalledNativePackagesAvailable" ] && return
 
-    local package; while IFS=$'\n' read -r package
+    local exitStatus package; while IFS=$'\n' read -r package || { exitStatus="$package"; break; }	# Exit status from the process substitution (<(dpkg-package-list)) is lost; return the actual exit status via an incomplete (i.e. missing the newline) last line.
     do
 	installedNativePackages["$package"]=t
-	case ",${DEBUG:-}," in *,setup-software:pkg,*) echo >&2 "${PS4}setup-software (pkg): Found installed ${package}";; esac
-    done < <(dpkg-package-list)
-
-    if [ ${#installedNativePackages[@]} -eq 0 ]; then
-	echo >&2 'ERROR: Failed to obtain installed package list.'
-	exit 3
+	case ",${DEBUG:-}," in *,setup-software:native,*) echo >&2 "${PS4}setup-software (native): Found $package";; esac
+    done < <(dpkg-package-list; printf %d "$?")
+    if [ $exitStatus -ne 0 -o ${#installedNativePackages[@]} -eq 0 ]; then
+	echo >&2 'ERROR: Failed to obtain installed native package list.'
+	return 1
     fi
 
     isInstalledNativePackagesAvailable=t
@@ -212,9 +211,8 @@ getInstalledNativePackages()
 typeset -A addedNativePackages=()
 hasNative()
 {
-    # If a package retrieval fails, treat this as an existing item, so that
-    # these are effectively skipped.
-    ! getInstalledNativePackages || [ "${addedNativePackages["${1:?}"]}" ] || [ "${installedNativePackages["${1:?}"]}" ]
+    getInstalledNativePackages || return 99
+    [ "${addedNativePackages["${1:?}"]}" ] || [ "${installedNativePackages["${1:?}"]}" ]
 }
 addNative()
 {
@@ -366,7 +364,7 @@ askTo()
 isAvailableNative()
 {
     local packageManagerPackageName="${1:-?}"; shift
-    getInstalledNativePackages || return $?
+    getInstalledNativePackages || return 99
     [ "${installedNativePackages["$packageManagerPackageName"]}" ] || [ "${addedNativePackages["$packageManagerPackageName"]}" ]
 }
 isAvailableOrUserAcceptsNative()
@@ -423,7 +421,12 @@ hasOrAddItems()
 	    exit 3
 	fi
 
-	hasItem "$item" || missingItems+=("$item")
+	hasItem "$item"
+	case $? in
+	    0)	;;
+	    99)	;;
+	    *) missingItems+=("$item");;
+	esac
     done
 
     [ ${#missingItems[@]} -eq 0 ] && return 1
@@ -733,33 +736,42 @@ do
 	    if [ -z "$lastRealItem" ]; then
 		printf >&2 'ERROR: No previous item before %s.\n' "$item"
 		exit 3
-	    elif hasItem "$lastRealItem"; then
-		rest="${name#*:}"
-		id="${name%"$rest"}"; id="${id%:}"; id="${id:-$rest}"
-		escapedId="${id//	/ }"
-		onceMarker --query "$escapedId"
+	    else
+		hasItem "$lastRealItem"
 		case $? in
-		    0)	;;  # The item already is installed, and the check has been run already.
-		    1)	# The item already is installed, but the check did not run yet.
-			addPostinstall "$rest"$'\n'"$lastRealItem" --post-or-once --id "$escapedId"
+		    0)	rest="${name#*:}"
+			id="${name%"$rest"}"; id="${id%:}"; id="${id:-$rest}"
+			escapedId="${id//	/ }"
+			onceMarker --query "$escapedId"
+			case $? in
+			    0)	;;  # The item already is installed, and the check has been run already.
+			    1)	# The item already is installed, but the check did not run yet.
+				addPostinstall "$rest"$'\n'"$lastRealItem" --post-or-once --id "$escapedId"
+				;;
+			    *)	exit 3;;
+			esac
 			;;
-		    *)	exit 3;;
+		    99)	;;
+		    *)	if [ -n "$lastMissingItem" ]; then
+			    # The postinstall action will run when the installation of the
+			    # previous item was successful. To be able to check that, we
+			    # need that item as well, so append it on a new line.
+			    missingItems+=("postinstall:${name}"$'\n'"$lastMissingItem")
+			fi
+			;;
 		esac
-	    elif [ -n "$lastMissingItem" ]; then
-		# The postinstall action will run when the installation of the
-		# previous item was successful. To be able to check that, we
-		# need that item as well, so append it on a new line.
-		missingItems+=("postinstall:${name}"$'\n'"$lastMissingItem")
 	    fi
 	else
 	    lastRealItem="$item"
-	    if hasItem "$item"; then
-		lastMissingItem=
-	    else
-		missingItems+=("$item")
-		lastMissingItem="$item"
-		let missingRealItemCnt+=1
-	    fi
+	    hasItem "$item"
+	    case $? in
+		0)  lastMissingItem=;;
+		99) break;;	# If one item's state cannot not be determined, the entire definition should be skipped, as we cannot ensure the correct installation.
+		*)  missingItems+=("$item")
+		    lastMissingItem="$item"
+		    let missingRealItemCnt+=1
+		    ;;
+	    esac
 	    let realItemCnt+=1
 	fi
     done

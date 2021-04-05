@@ -13,7 +13,7 @@ getInstalledPip3Packages()
 {
     [ "$isInstalledPip3PackagesAvailable" ] && return
 
-    local packageName remainder; while IFS=' ' read -r packageName remainder
+    local exitStatus packageName remainder; while IFS=' ' read -r packageName remainder || { exitStatus="$packageName"; break; }	# Exit status from the process substitution (<(pip3)) is lost; return the actual exit status via an incomplete (i.e. missing the newline) last line.
     do
 	case "$packageName" in
 	    Package|+(-))   continue;;	# Skip 2-line header
@@ -21,14 +21,19 @@ getInstalledPip3Packages()
 			    case ",${DEBUG:-}," in *,setup-software:pip3,*) echo >&2 "${PS4}setup-software (pip3): Found installed ${packageName}";; esac
 			    ;;
 	esac
-    done < <(pip3 list 2>/dev/null)
+    done < <(pip3 list 2>/dev/null; printf %d "$?")
+    if [ $exitStatus -ne 0 ]; then
+	echo >&2 'ERROR: Failed to obtain installed Python package list.'
+	return 1
+    fi
 
     isInstalledPip3PackagesAvailable=t
 }
 typeset -A addedPip3Packages=()
 hasPip3()
 {
-    ! getInstalledPip3Packages || [ "${addedPip3Packages["${1:?}"]}" ] || [ "${installedPip3Packages["${1:?}"]}" ]
+    getInstalledPip3Packages || return 99
+    [ "${addedPip3Packages["${1:?}"]}" ] || [ "${installedPip3Packages["${1:?}"]}" ]
 }
 
 addPip3()
