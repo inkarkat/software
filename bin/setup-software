@@ -209,7 +209,7 @@ getInstalledNativePackages()
 
     isInstalledNativePackagesAvailable=t
 }
-typeset -a addedNativePackages=()
+typeset -A addedNativePackages=()
 hasNative()
 {
     # If a package retrieval fails, treat this as an existing item, so that
@@ -220,7 +220,7 @@ addNative()
 {
     local packageName="${1:?}"; shift
     preinstallHook "$packageName"
-    addedNativePackages+=("$packageName")
+    addedNativePackages["$packageName"]=t
     postinstallHook "$packageName"
 }
 
@@ -367,7 +367,7 @@ isAvailableNative()
 {
     local packageManagerPackageName="${1:-?}"; shift
     getInstalledNativePackages || return $?
-    [ "${installedNativePackages["$packageManagerPackageName"]}" ] || contains "$packageManagerPackageName" "${addedNativePackages[@]}"
+    [ "${installedNativePackages["$packageManagerPackageName"]}" ] || contains "$packageManagerPackageName" "${!addedNativePackages[@]}"
 }
 isAvailableOrUserAcceptsNative()
 {
@@ -435,7 +435,7 @@ installNative()
 {
     [ ${#addedNativePackages[@]} -gt 0 ] || return
     local IFS=' '
-    toBeInstalledCommands+=("${SUDO}${SUDO:+ }apt install ${addedNativePackages[*]}")
+    toBeInstalledCommands+=("${SUDO}${SUDO:+ }apt install ${!addedNativePackages[*]}")
 }
 
 preInstall()
