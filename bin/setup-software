@@ -749,7 +749,7 @@ do
 		# The postinstall action will run when the installation of the
 		# previous item was successful. To be able to check that, we
 		# need that item as well, so append it on a new line.
-		missingItems+=("$item"$'\n'"$lastMissingItem")
+		missingItems+=("postinstall:${name}"$'\n'"$lastMissingItem")
 	    fi
 	else
 	    lastRealItem="$item"
