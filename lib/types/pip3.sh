@@ -28,7 +28,8 @@ getInstalledPip3Packages()
 typeset -A addedPip3Packages=()
 hasPip3()
 {
-    ! getInstalledPip3Packages || [ "${addedPip3Packages["${1:?}"]}" ] || [ "${installedPip3Packages["${1:?}"]}" ]
+    getInstalledPip3Packages || return 99
+    [ "${addedPip3Packages["${1:?}"]}" ] || [ "${installedPip3Packages["${1:?}"]}" ]
 }
 
 addPip3()

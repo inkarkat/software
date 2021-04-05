@@ -27,7 +27,8 @@ getInstalledNpmPackages()
 typeset -A addedNpmPackages=()
 hasNpm()
 {
-    ! getInstalledNpmPackages || [ "${addedNpmPackages["${1:?}"]}" ] || [ "${installedNpmPackages["${1:?}"]}" ]
+    getInstalledNpmPackages || return 99
+    [ "${addedNpmPackages["${1:?}"]}" ] || [ "${installedNpmPackages["${1:?}"]}" ]
 }
 
 addNpm()

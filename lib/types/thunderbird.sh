@@ -60,7 +60,8 @@ hasThunderbirdAddon()
 	thunderbirdDefaultProfileName="$profileName"
     fi
 
-    ! getInstalledThunderbirdAddons "$profileName" "$configDirspec" || [ "${installedThunderbirdProfileAddonIds["${profileName} ${addonId}"]}" ]
+    getInstalledThunderbirdAddons "$profileName" "$configDirspec" || return 99
+    [ "${installedThunderbirdProfileAddonIds["${profileName} ${addonId}"]}" ]
 }
 
 addThunderbirdAddon()

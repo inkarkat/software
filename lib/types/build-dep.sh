@@ -24,7 +24,8 @@ getInstalledDebBuildDependencies()
 typeset -A addedDebBuildDependencies=()
 hasDebBuild()
 {
-    ! getInstalledDebBuildDependencies || [ "${addedDebBuildDependencies["${1:?}"]}" ] || [ "${installedDebBuildDependencies["${1:?}"]}" ]
+    getInstalledDebBuildDependencies || return 99
+    [ "${addedDebBuildDependencies["${1:?}"]}" ] || [ "${installedDebBuildDependencies["${1:?}"]}" ]
 }
 
 hasDebSrc()

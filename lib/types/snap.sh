@@ -29,7 +29,8 @@ getInstalledSnapPackages()
 typeset -A addedSnapPackages=()
 hasSnap()
 {
-    ! getInstalledSnapPackages || [ "${addedSnapPackages["${1:?}"]}" ] || [ "${installedSnapPackages["${1:?}"]}" ]
+    getInstalledSnapPackages || return 99
+    [ "${addedSnapPackages["${1:?}"]}" ] || [ "${installedSnapPackages["${1:?}"]}" ]
 }
 
 addSnap()

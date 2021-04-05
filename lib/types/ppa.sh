@@ -25,7 +25,8 @@ getInstalledPpaRepositories()
 typeset -A addedPpaRepositories=()
 hasPpa()
 {
-    ! getInstalledPpaRepositories || [ "${addedPpaRepositories["${1:?}"]}" ] || [ "${installedPpaRepositories["${1:?}"]}" ]
+    getInstalledPpaRepositories || return 99
+    [ "${addedPpaRepositories["${1:?}"]}" ] || [ "${installedPpaRepositories["${1:?}"]}" ]
 }
 
 addPpa()

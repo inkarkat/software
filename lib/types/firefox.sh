@@ -60,7 +60,8 @@ hasFirefoxAddon()
 	firefoxDefaultProfileName="$profileName"
     fi
 
-    ! getInstalledFirefoxAddons "$profileName" "$configDirspec" || [ "${installedFirefoxProfileAddonIds["${profileName} ${addonId}"]}" ]
+    getInstalledFirefoxAddons "$profileName" "$configDirspec" || return 99
+    [ "${installedFirefoxProfileAddonIds["${profileName} ${addonId}"]}" ]
 }
 
 addFirefoxAddon()
