@@ -7,11 +7,12 @@ apt: items refer to Debian packages installed via apt.
 HELPTEXT
 }
 
-nativeRegistry+=(Apt)
 typeRegistry+=([apt:]=Apt)
 typeInstallOrder+=([11]=Apt)
 
-if ! exists apt; then
+if exists apt; then
+    nativeRegistry+=(Apt)
+else
     hasApt() { return 98; }
     installApt() { :; }
     return
