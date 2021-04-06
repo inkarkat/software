@@ -36,6 +36,8 @@ ACTION is one of the following:
   extension) is taken as a notification title and contents as notification to be
   displayed (presumably with instructions for manual installation steps)
   immediately and on each login until the user acknowledges it
+- another ITEM (that is then executed as usual); for packages installed via the
+  distribution's package manager, use the special "native:" prefix here
 - an INSTALL-EXPRESSION (whitespace must be escaped or the entire expression
   quoted!) that is eval'd (prepend $SUDO if it needs to be invoked as root)
 HELPTEXT
@@ -46,7 +48,7 @@ typeset -a addedCustomActionList=()
 hasCustom()
 {
     local customAction="${1#*:}"
-    local customCheck="${1%:$customAction}"
+    local customCheck="${1%":$customAction"}"
     local customActionWithoutSudoAndArgs="${customAction#\$SUDO }"; customActionWithoutSudoAndArgs="${customActionWithoutSudoAndArgs%% *}"
 
     if [ -z "$customAction" -o -z "$customCheck" ]; then
@@ -74,6 +76,7 @@ hasCustom()
     fi
 }
 
+typeset -A itemActions=()
 addCustom()
 {
     # Note: Do not support pre-/postinstall hooks here, as we have no short
@@ -81,6 +84,23 @@ addCustom()
     local customAction="${1#*:}"
     addedCustomActions["$customAction"]=t
     addedCustomActionList+=("$customAction")
+
+    local customActionWithoutSudo="${customAction#\$SUDO }"
+    if [ ! -x "${customActionsDirspec}/${customActionWithoutSudo%% *}" ] && \
+	[ ! -e "${customActionsDirspec}/${customAction}" ]; then
+	local name="${customAction#*:}"
+	local prefix="${customAction%"$name"}"
+	# Note: Native packages would be indistinguishable from the
+	# INSTALL-EXPRESSION, as they have no prefix, so use a special
+	# "native:" prefix.
+	if [ -n "$prefix" ]; then
+	    local typeFunction="${typeRegistry["${prefix}"]}"
+	    if [ -n "$typeFunction" ]; then
+		itemActions["$customAction"]=t
+		eval "add${typeFunction} \"\$name\""
+	    fi
+	fi
+    fi
 }
 
 installCustom()
@@ -93,7 +113,11 @@ installCustom()
 	local customActionWithoutSudo="${customAction#\$SUDO }"
 	local sudoPrefix="${customAction%"$customActionWithoutSudo"}"
 
-	if [ -x "${customActionsDirspec}/${customActionWithoutSudo%% *}" ]; then
+	if [ "${itemActions["$customAction"]}" ]; then
+	    # The corresponding action item has already been added to the item's
+	    # type; do nothing here.
+	    continue
+	elif [ -x "${customActionsDirspec}/${customActionWithoutSudo%% *}" ]; then
 	    customActionWithoutSudo="${customActionsDirspec}/${customActionWithoutSudo}"
 	elif [ -e "${customActionsDirspec}/${customAction}" ]; then
 	    local quotedCustomNotification; printf -v quotedCustomNotification %s "${customActionsDirspec}/${customAction}"
