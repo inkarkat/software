@@ -17,12 +17,13 @@ typeset -A addedAptPackages=()
 
 hasApt()
 {
+    local packageName="${1:?}"; shift
     if ! getInstalledAptPackages; then
-	echo >&2 "ERROR: Failed to obtain installed native package list; skipping ${1}."
+	echo >&2 "ERROR: Failed to obtain installed native package list; skipping ${packageName}."
 	return 99
     fi
 
-    [ "${addedAptPackages["${1:?}"]}" ] || [ "${installedAptPackages["${1:?}"]}" ]
+    [ "${installedAptPackages["$packageName"]}" ] || [ "${addedAptPackages["$packageName"]}" ]
 }
 
 addApt()
@@ -35,9 +36,7 @@ addApt()
 
 isAvailableApt()
 {
-    local packageManagerPackageName="${1:-?}"; shift
-    getInstalledAptPackages || return 99
-    [ "${installedAptPackages["$packageManagerPackageName"]}" ] || [ "${addedAptPackages["$packageManagerPackageName"]}" ]
+    hasApt "$@" 2>/dev/null
 }
 
 installApt()

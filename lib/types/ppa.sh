@@ -33,11 +33,12 @@ getInstalledPpaRepositories()
 typeset -A addedPpaRepositories=()
 hasPpa()
 {
+    local ppaRepoName="${1:?}"; shift
     if ! getInstalledPpaRepositories; then
-	echo >&2 "ERROR: Failed to obtain installed Ubuntu personal package archives list; skipping ${1}."
+	echo >&2 "ERROR: Failed to obtain installed Ubuntu personal package archives list; skipping ${ppaRepoName}."
 	return 99
     fi
-    [ "${addedPpaRepositories["${1:?}"]}" ] || [ "${installedPpaRepositories["${1:?}"]}" ]
+    [ "${installedPpaRepositories["$ppaRepoName"]}" ] || [ "${addedPpaRepositories["$ppaRepoName"]}" ]
 }
 
 addPpa()
@@ -52,9 +53,7 @@ addPpa()
 
 isAvailablePpa()
 {
-    local ppaRepoName="${1:?}"; shift
-    getInstalledPpaRepositories || return $?
-    [ "${installedPpaRepositories["$ppaRepoName"]}" ] || [ "${addedPpaRepositories["$ppaRepoName"]}" ]
+    hasPpa "$@" 2>/dev/null
 }
 
 installPpa()

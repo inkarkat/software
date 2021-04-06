@@ -27,11 +27,12 @@ getInstalledPip3Packages()
 typeset -A addedPip3Packages=()
 hasPip3()
 {
+    local pip3PackageName="${1:?}"; shift
     if ! getInstalledPip3Packages; then
-	echo >&2 "ERROR: Failed to obtain installed Python package list; skipping ${1}."
+	echo >&2 "ERROR: Failed to obtain installed Python package list; skipping ${pip3PackageName}."
 	return 99
     fi
-    [ "${addedPip3Packages["${1:?}"]}" ] || [ "${installedPip3Packages["${1:?}"]}" ]
+    [ "${installedPip3Packages["$pip3PackageName"]}" ] || [ "${addedPip3Packages["$pip3PackageName"]}" ]
 }
 
 addPip3()
@@ -46,9 +47,7 @@ addPip3()
 
 isAvailablePip3()
 {
-    local pip3PackageName="${1:?}"; shift
-    getInstalledPip3Packages || return $?
-    [ "${installedPip3Packages["$pip3PackageName"]}" ] || [ "${addedPip3Packages["$pip3PackageName"]}" ]
+    hasPip3 "$@" 2>/dev/null
 }
 
 installPip3()
