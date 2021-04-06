@@ -190,20 +190,21 @@ onceMarker()
     executionMarker --base-type data --namespace setup-software --group postinstall-or-once "$@"
 }
 
+readonly nativePackageManager=Apt
 hasNative()
 {
-    hasApt "$@"
+    has$nativePackageManager "$@"
 }
 addNative()
 {
-    addApt "$@"
+    add$nativePackageManager "$@"
 }
 
 configUsageNative()
 {
     cat <<'HELPTEXT'
 Items without a prefix refer to packages installed via the distribution's
-package manager (apt).
+package manager (${nativePackageManager,}).
 HELPTEXT
 }
 configUsagePreinstall()
@@ -340,7 +341,7 @@ askTo()
 
 isAvailableNative()
 {
-    isAvailableApt "$@"
+    isAvailable$nativePackageManager "$@"
 }
 isAvailableOrUserAcceptsNative()
 {
@@ -412,7 +413,7 @@ hasOrAddItems()
 
 installNative()
 {
-    installApt "$@"
+    install$nativePackageManager "$@"
 }
 
 preInstall()
