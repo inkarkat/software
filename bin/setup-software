@@ -419,7 +419,10 @@ hasOrAddItems()
 
 installNative()
 {
-    install$nativePackageManager "$@"
+    # Do not invoke install$nativePackageManager(); as native types are
+    # registered separately, their install function is invoked anyway, and that
+    # will then process both native and prefixed items together.
+    :
 }
 
 preInstall()
