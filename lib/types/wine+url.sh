@@ -16,16 +16,25 @@ and the package does not exist, the installation will fail.
 HELPTEXT
 }
 
+typeRegistry+=([wine+url:]=Wine)
+typeInstallOrder+=([400]=Wine)
+
+if ! "${projectDir:?}/etc/require/intel-architecture"; then
+    hasWine()
+    {
+	echo >&2 "Note: Wine is not available on non-Intel architectures; skipping ${1}."
+	return 99
+    }
+    installWine() { :; }
+    return
+fi
+
 typeset -A addedWineUrlPackages=()
 hasWine()
 {
     if [[ ! "$1" =~ ^[^:]+\?:.+: ]]; then
 	printf >&2 'ERROR: Invalid wine+url item: "wine+url:%s"\n' "$1"
 	exit 3
-    fi
-    if ! "${projectDir:?}/etc/require/intel-architecture"; then
-	echo >&2 "Note: Wine is not available on non-Intel architectures; skipping ${1}."
-	return 99
     fi
 
     local checkGlob="${1%%:*}"
@@ -117,6 +126,3 @@ installWine()
 	toBeInstalledCommands+=("wine-download-installer${packageName:+ --application-name }${packageName} --expression ${packageGlob}${maxAge:+ --max-age }$maxAge${packageUrl:+ --url }${packageUrl}${packageOutputNameArg:+ --output }${packageOutputNameArg}")
     done
 }
-
-typeRegistry+=([wine+url:]=Wine)
-typeInstallOrder+=([400]=Wine)
