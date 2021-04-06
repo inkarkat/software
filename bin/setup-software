@@ -148,8 +148,9 @@ HELPTEXT
     fi
 }
 
+typeset -a nativeRegistry=()
 typeset -A typeRegistry=([native:]=Native)
-typeset -A typeInstallOrder=([10]=Native)
+typeset -A typeInstallOrder=([100]=Native)
 typeset -A definitionFilterTypeRegistry=()
 for typeLib in "${typeDir}"/*.sh
 do
@@ -190,42 +191,26 @@ onceMarker()
     executionMarker --base-type data --namespace setup-software --group postinstall-or-once "$@"
 }
 
-typeset -A installedNativePackages=()
-isInstalledNativePackagesAvailable=
-getInstalledNativePackages()
-{
-    [ "$isInstalledNativePackagesAvailable" ] && return
-
-    local exitStatus package; while IFS=$'\n' read -r package || { exitStatus="$package"; break; }	# Exit status from the process substitution (<(dpkg-package-list)) is lost; return the actual exit status via an incomplete (i.e. missing the newline) last line.
-    do
-	installedNativePackages["$package"]=t
-	case ",${DEBUG:-}," in *,setup-software:native,*) echo >&2 "${PS4}setup-software (native): Found $package";; esac
-    done < <(dpkg-package-list; printf %d "$?")
-    [ $exitStatus -eq 0 -a ${#installedNativePackages[@]} -gt 0 ] && isInstalledNativePackagesAvailable=t
-}
-typeset -A addedNativePackages=()
+case ${#nativeRegistry[@]} in
+    0)	echo >&2 'ERROR: No native package management found.'; exit 3;;
+    1)	readonly nativePackageManager="${nativeRegistry[0]}";;
+    *)	printf >&2 'ERROR: Multiple native package managers found: %s\n' "$(joinBy ', ' "${nativeRegistry[@]}")"; exit 3;;
+esac
 hasNative()
 {
-    if ! getInstalledNativePackages; then
-	echo >&2 "ERROR: Failed to obtain installed native package list; skipping ${1}."
-	return 99
-    fi
-
-    [ "${addedNativePackages["${1:?}"]}" ] || [ "${installedNativePackages["${1:?}"]}" ]
+    has$nativePackageManager "$@"
 }
 addNative()
 {
-    local packageName="${1:?}"; shift
-    preinstallHook "$packageName"
-    addedNativePackages["$packageName"]=t
-    postinstallHook "$packageName"
+    add$nativePackageManager "$@"
 }
 
 configUsageNative()
 {
-    cat <<'HELPTEXT'
+    # Note: Do not delegate to configUsage$nativePackageManager().
+    cat <<HELPTEXT
 Items without a prefix refer to packages installed via the distribution's
-package manager (apt).
+package manager (${nativePackageManager,}).
 HELPTEXT
 }
 configUsagePreinstall()
@@ -362,9 +347,7 @@ askTo()
 
 isAvailableNative()
 {
-    local packageManagerPackageName="${1:-?}"; shift
-    getInstalledNativePackages || return 99
-    [ "${installedNativePackages["$packageManagerPackageName"]}" ] || [ "${addedNativePackages["$packageManagerPackageName"]}" ]
+    isAvailable$nativePackageManager "$@"
 }
 isAvailableOrUserAcceptsNative()
 {
@@ -436,9 +419,10 @@ hasOrAddItems()
 
 installNative()
 {
-    [ ${#addedNativePackages[@]} -gt 0 ] || return
-    local IFS=' '
-    toBeInstalledCommands+=("${SUDO}${SUDO:+ }apt install ${!addedNativePackages[*]}")
+    # Do not invoke install$nativePackageManager(); as native types are
+    # registered separately, their install function is invoked anyway, and that
+    # will then process both native and prefixed items together.
+    :
 }
 
 preInstall()

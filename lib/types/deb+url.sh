@@ -16,7 +16,7 @@ HELPTEXT
 }
 
 typeRegistry+=([deb+url:]=DebUrl)
-typeInstallOrder+=([30]=DebUrl)
+typeInstallOrder+=([131]=DebUrl)
 
 if ! exists deb; then
     hasDebUrl() { return 98; }

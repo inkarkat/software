@@ -26,11 +26,12 @@ getInstalledNpmPackages()
 typeset -A addedNpmPackages=()
 hasNpm()
 {
+    local npmPackageName="${1:?}"; shift
     if ! getInstalledNpmPackages; then
-	echo >&2 "ERROR: Failed to obtain installed Node.js package list; skipping ${1}."
+	echo >&2 "ERROR: Failed to obtain installed Node.js package list; skipping ${npmPackageName}."
 	return 99
     fi
-    [ "${addedNpmPackages["${1:?}"]}" ] || [ "${installedNpmPackages["${1:?}"]}" ]
+    [ "${installedNpmPackages["$npmPackageName"]}" ] || [ "${addedNpmPackages["$npmPackageName"]}" ]
 }
 
 addNpm()
@@ -44,9 +45,7 @@ addNpm()
 
 isAvailableNpm()
 {
-    local npmPackageName="${1:?}"; shift
-    getInstalledNpmPackages || return $?
-    [ "${installedNpmPackages["$npmPackageName"]}" ] || [ "${addedNpmPackages["$npmPackageName"]}" ]
+    hasNpm "$@" 2>/dev/null
 }
 
 installNpm()
@@ -57,4 +56,4 @@ installNpm()
 }
 
 typeRegistry+=([npm:]=Npm)
-typeInstallOrder+=([300]=Npm)
+typeInstallOrder+=([400]=Npm)

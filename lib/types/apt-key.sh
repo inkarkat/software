@@ -19,7 +19,7 @@ HELPTEXT
 }
 
 typeRegistry+=([apt-key:]=AptKey)
-typeInstallOrder+=([8]=AptKey)
+typeInstallOrder+=([21]=AptKey)
 
 if ! exists apt-key; then
     hasAptKey() { return 98; }

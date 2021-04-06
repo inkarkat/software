@@ -14,6 +14,8 @@ require: items consist of a CHECK that can be:
   requirements are not fulfilled.
 - a REQUIREMENT-EXPRESSION (whitespace must be escaped or the entire expression
   quoted!) that is eval'd and should fail if the requirements are not fulfilled.
+If the CHECK fails, the entire definition (both preceding and following items)
+will be skipped.
 HELPTEXT
 }
 

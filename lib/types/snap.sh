@@ -9,7 +9,7 @@ HELPTEXT
 }
 
 typeRegistry+=([snap:]=Snap)
-typeInstallOrder+=([100]=Snap)
+typeInstallOrder+=([200]=Snap)
 
 if ! exists snap; then
     hasSnap() { return 98; }
@@ -37,11 +37,12 @@ getInstalledSnapPackages()
 typeset -A addedSnapPackages=()
 hasSnap()
 {
+    local snapPackageName="${1:?}"; shift
     if ! getInstalledSnapPackages; then
-	echo >&2 "ERROR: Failed to obtain installed Snap store package list; skipping ${1}."
+	echo >&2 "ERROR: Failed to obtain installed Snap store package list; skipping ${snapPackageName}."
 	return 99
     fi
-    [ "${addedSnapPackages["${1:?}"]}" ] || [ "${installedSnapPackages["${1:?}"]}" ]
+    [ "${installedSnapPackages["$snapPackageName"]}" ] || [ "${addedSnapPackages["$snapPackageName"]}" ]
 }
 
 addSnap()
@@ -56,9 +57,7 @@ addSnap()
 
 isAvailableSnap()
 {
-    local snapPackageName="${1:?}"; shift
-    getInstalledSnapPackages || return $?
-    [ "${installedSnapPackages["$snapPackageName"]}" ] || [ "${addedSnapPackages["$snapPackageName"]}" ]
+    hasSnap "$@" 2>/dev/null
 }
 
 installSnap()

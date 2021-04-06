@@ -9,7 +9,7 @@ HELPTEXT
 }
 
 typeRegistry+=([build-dep:]=DebBuild)
-typeInstallOrder+=([20]=DebBuild)
+typeInstallOrder+=([121]=DebBuild)
 
 if ! exists apt-get; then
     hasDebBuild() { return 98; }
@@ -33,11 +33,12 @@ getInstalledDebBuildDependencies()
 typeset -A addedDebBuildDependencies=()
 hasDebBuild()
 {
+    local debBuildName="${1:?}"; shift
     if ! getInstalledDebBuildDependencies; then
-	echo >&2 "ERROR: Failed to obtain build dependencies list; skipping ${1}."
+	echo >&2 "ERROR: Failed to obtain build dependencies list; skipping ${debBuildName}."
 	return 99
     fi
-    [ "${addedDebBuildDependencies["${1:?}"]}" ] || [ "${installedDebBuildDependencies["${1:?}"]}" ]
+    [ "${installedDebBuildDependencies["$debBuildName"]}" ] || [ "${addedDebBuildDependencies["$debBuildName"]}" ]
 }
 
 hasDebSrc()
@@ -64,9 +65,7 @@ addDebBuild()
 
 isAvailableDebBuild()
 {
-    local debBuildName="${1:?}"; shift
-    getInstalledDebBuildDependencies || return $?
-    [ "${installedDebBuildDependencies["$debBuildName"]}" ] || [ "${addedDebBuildDependencies["$debBuildName"]}" ]
+    hasDebBuild "$@" 2>/dev/null
 }
 
 installDebBuild()
