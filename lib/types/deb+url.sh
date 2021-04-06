@@ -15,6 +15,15 @@ If no URL is given and the package does not exist, the installation will fail.
 HELPTEXT
 }
 
+typeRegistry+=([deb+url:]=DebUrl)
+typeInstallOrder+=([30]=DebUrl)
+
+if ! exists deb; then
+    hasDebUrl() { return 98; }
+    installDebUrl() { :; }
+    return
+fi
+
 typeset -A addedDebUrlPackages=()
 hasDebUrl()
 {
@@ -57,6 +66,3 @@ installDebUrl()
 	toBeInstalledCommands+=("deb-download-installer${packageName:+ --application-name }${packageName} --expression ${packageGlob}${maxAge:+ --max-age }$maxAge${packageUrl:+ --url }${packageUrl}${packageOutputNameArg:+ --output }${packageOutputNameArg}")
     done
 }
-
-typeRegistry+=([deb+url:]=DebUrl)
-typeInstallOrder+=([30]=DebUrl)

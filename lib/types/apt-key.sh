@@ -18,6 +18,15 @@ the actual package has been installed.
 HELPTEXT
 }
 
+typeRegistry+=([apt-key:]=AptKey)
+typeInstallOrder+=([8]=AptKey)
+
+if ! exists apt-key; then
+    hasAptKey() { return 98; }
+    installAptKey() { :; }
+    return
+fi
+
 typeset -A addedAptKeyRecords=()
 hasAptKey()
 {
@@ -55,6 +64,3 @@ installAptKey()
 	toBeInstalledCommands+=("apt-key-download${keyName:+ --application-name "'"}${keyName}${keyName:+"'"} --expression ${keyGlob}${maxAge:+ --max-age }$maxAge${keyUrl:+ --url }${keyUrl}${keyOutputNameArg:+ --output }${keyOutputNameArg}")
     done
 }
-
-typeRegistry+=([apt-key:]=AptKey)
-typeInstallOrder+=([8]=AptKey)

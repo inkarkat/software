@@ -8,6 +8,15 @@ packages (or other versions) to be installed through apt.
 HELPTEXT
 }
 
+typeRegistry+=([ppa:]=Ppa)
+typeInstallOrder+=([1]=Ppa)
+
+if ! exists add-apt-repository; then
+    hasPpa() { return 98; }
+    installPpa() { :; }
+    return
+fi
+
 typeset -A installedPpaRepositories=()
 isInstalledPpaRepositoriesAvailable=
 getInstalledPpaRepositories()
@@ -57,6 +66,3 @@ installPpa()
     done
     toBeInstalledCommands+=("${SUDO}${SUDO:+ }apt update")
 }
-
-typeRegistry+=([ppa:]=Ppa)
-typeInstallOrder+=([1]=Ppa)

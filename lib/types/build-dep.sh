@@ -8,6 +8,15 @@ source package.
 HELPTEXT
 }
 
+typeRegistry+=([build-dep:]=DebBuild)
+typeInstallOrder+=([20]=DebBuild)
+
+if ! exists apt-get; then
+    hasDebBuild() { return 98; }
+    installDebBuild() { :; }
+    return
+fi
+
 typeset -A installedDebBuildDependencies=()
 isInstalledDebBuildDependenciesAvailable=
 getInstalledDebBuildDependencies()
@@ -70,6 +79,3 @@ installDebBuild()
 	toBeInstalledCommands+=("${SUDO}${SUDO:+ }apt-get build-dep $buildDep && ${databaseUpdate}${isVerbose:+ --verbose} --database debBuildDependencies --add $buildDep")
     done
 }
-
-typeRegistry+=([build-dep:]=DebBuild)
-typeInstallOrder+=([20]=DebBuild)

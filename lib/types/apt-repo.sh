@@ -17,6 +17,15 @@ preinstall: prefix.
 HELPTEXT
 }
 
+typeRegistry+=([apt-repo:]=AptRepo)
+typeInstallOrder+=([9]=AptRepo)
+
+if ! exists apt; then
+    hasAptRepo() { return 98; }
+    installAptRepo() { :; }
+    return
+fi
+
 expandDebLine()
 {
     local debLine="${1:?}"; shift
@@ -62,6 +71,3 @@ installAptRepo()
     done
     toBeInstalledCommands+=("${SUDO}${SUDO:+ }apt update")
 }
-
-typeRegistry+=([apt-repo:]=AptRepo)
-typeInstallOrder+=([9]=AptRepo)
