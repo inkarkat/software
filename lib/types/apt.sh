@@ -1,5 +1,22 @@
 #!/bin/bash source-this-script
 
+configUsageApt()
+{
+    cat <<'HELPTEXT'
+apt: items refer to Debian packages installed via apt.
+HELPTEXT
+}
+
+nativeRegistry+=(Apt)
+typeRegistry+=([apt:]=Apt)
+typeInstallOrder+=([11]=Apt)
+
+if ! exists apt; then
+    hasApt() { return 98; }
+    installApt() { :; }
+    return
+fi
+
 typeset -A installedAptPackages=()
 isInstalledAptPackagesAvailable=
 getInstalledAptPackages()

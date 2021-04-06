@@ -148,6 +148,7 @@ HELPTEXT
     fi
 }
 
+typeset -a nativeRegistry=()
 typeset -A typeRegistry=([native:]=Native)
 typeset -A typeInstallOrder=([10]=Native)
 typeset -A definitionFilterTypeRegistry=()
@@ -190,7 +191,11 @@ onceMarker()
     executionMarker --base-type data --namespace setup-software --group postinstall-or-once "$@"
 }
 
-readonly nativePackageManager=Apt
+case ${#nativeRegistry[@]} in
+    0)	echo >&2 'ERROR: No native package management found.'; exit 3;;
+    1)	readonly nativePackageManager="${nativeRegistry[0]}";;
+    *)	printf >&2 'ERROR: Multiple native package managers found: %s\n' "$(joinBy ', ' "${nativeRegistry[@]}")"; exit 3;;
+esac
 hasNative()
 {
     has$nativePackageManager "$@"
@@ -202,7 +207,8 @@ addNative()
 
 configUsageNative()
 {
-    cat <<'HELPTEXT'
+    # Note: Do not delegate to configUsage$nativePackageManager().
+    cat <<HELPTEXT
 Items without a prefix refer to packages installed via the distribution's
 package manager (${nativePackageManager,}).
 HELPTEXT
