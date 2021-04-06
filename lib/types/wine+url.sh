@@ -17,7 +17,7 @@ HELPTEXT
 }
 
 typeRegistry+=([wine+url:]=Wine)
-typeInstallOrder+=([400]=Wine)
+typeInstallOrder+=([700]=Wine)
 
 if ! "${projectDir:?}/etc/require/intel-architecture"; then
     hasWine()

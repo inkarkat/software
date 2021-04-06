@@ -8,7 +8,7 @@ HELPTEXT
 }
 
 typeRegistry+=([apt:]=Apt)
-typeInstallOrder+=([11]=Apt)
+typeInstallOrder+=([101]=Apt)
 
 if exists apt; then
     nativeRegistry+=(Apt)

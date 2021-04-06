@@ -8,7 +8,7 @@ HELPTEXT
 }
 
 typeRegistry+=([yum:]=Yum)
-typeInstallOrder+=([12]=Yum)
+typeInstallOrder+=([102]=Yum)
 
 if exists yum; then
     nativeRegistry+=(Yum)

@@ -9,7 +9,7 @@ HELPTEXT
 }
 
 typeRegistry+=([build-dep:]=DebBuild)
-typeInstallOrder+=([20]=DebBuild)
+typeInstallOrder+=([121]=DebBuild)
 
 if ! exists apt-get; then
     hasDebBuild() { return 98; }

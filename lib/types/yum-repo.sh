@@ -13,7 +13,7 @@ HELPTEXT
 }
 
 typeRegistry+=([yum-repo:]=YumRepo)
-typeInstallOrder+=([7]=YumRepo)
+typeInstallOrder+=([82]=YumRepo)
 
 if ! exists yum; then
     hasYumRepo() { return 98; }

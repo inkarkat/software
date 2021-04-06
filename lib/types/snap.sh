@@ -9,7 +9,7 @@ HELPTEXT
 }
 
 typeRegistry+=([snap:]=Snap)
-typeInstallOrder+=([100]=Snap)
+typeInstallOrder+=([200]=Snap)
 
 if ! exists snap; then
     hasSnap() { return 98; }

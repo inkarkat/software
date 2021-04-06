@@ -150,7 +150,7 @@ HELPTEXT
 
 typeset -a nativeRegistry=()
 typeset -A typeRegistry=([native:]=Native)
-typeset -A typeInstallOrder=([10]=Native)
+typeset -A typeInstallOrder=([100]=Native)
 typeset -A definitionFilterTypeRegistry=()
 for typeLib in "${typeDir}"/*.sh
 do

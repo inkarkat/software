@@ -16,7 +16,7 @@ HELPTEXT
 }
 
 typeRegistry+=([apt-repo:]=AptRepo)
-typeInstallOrder+=([9]=AptRepo)
+typeInstallOrder+=([81]=AptRepo)
 
 if ! exists apt; then
     hasAptRepo() { return 98; }

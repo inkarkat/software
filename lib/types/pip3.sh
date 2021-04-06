@@ -58,4 +58,4 @@ installPip3()
 }
 
 typeRegistry+=([pip3:]=Pip3)
-typeInstallOrder+=([200]=Pip3)
+typeInstallOrder+=([300]=Pip3)
