@@ -423,6 +423,7 @@ hasOrAddItems()
 	hasItem "$item"
 	case $? in
 	    0)	;;
+	    98)	;;
 	    99)	;;
 	    *) missingItems+=("$item");;
 	esac
@@ -750,6 +751,7 @@ do
 			    *)	exit 3;;
 			esac
 			;;
+		    98)	;;
 		    99)	;;
 		    *)	if [ -n "$lastMissingItem" ]; then
 			    # The postinstall action will run when the installation of the
@@ -765,6 +767,7 @@ do
 	    hasItem "$item"
 	    case $? in
 		0)  lastMissingItem=;;
+		98) continue;;	# Just skip this item.
 		99) break;;	# If one item's state cannot not be determined, the entire definition should be skipped, as we cannot ensure the correct installation.
 		*)  missingItems+=("$item")
 		    lastMissingItem="$item"
