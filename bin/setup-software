@@ -171,24 +171,24 @@ addAllAcceptedGroups()
 	if [ -d "${definitionDirspec}/${group}" ]; then
 	    groupDirectoryGroupCount=$(countGlob "${group}/*" "${groups[@]}")
 	    [ $groupDirectoryGroupCount -gt 1 ] || continue  # Ignore a group directory that has only one group in it; the query for the group itself will suffice.
-	    memoizeDecision --memoize-group setup-software-groups --subject "$group" --verb "directory (with $groupDirectoryGroupCount groups) is not" --state 'chosen' --action 'consider it' || \
+	    memoizeDecision --memoize-group "${setupName}-groups" --subject "$group" --verb "directory (with $groupDirectoryGroupCount groups) is not" --state 'chosen' --action 'consider it' || \
 		readarray -O ${#filteredGroups[@]} -t filteredGroups < <(filterGlob "${group}/*" "${groups[@]}")
 	    continue
 	fi
 
-	memoizeDecision --memoize-group setup-software-groups --subject "$group" --verb 'is not' --state 'chosen' --action 'consider it' && \
+	memoizeDecision --memoize-group "${setupName}-groups" --subject "$group" --verb 'is not' --state 'chosen' --action 'consider it' && \
 	    acceptedGroups+=("$group")
     done
 }
 
 database()
 {
-    picoDB --base-type data --namespace setup-software --table "$@"
+    picoDB --base-type data --namespace "$setupName" --table "$@"
 }
 
 onceMarker()
 {
-    executionMarker --base-type data --namespace setup-software --group postinstall-or-once "$@"
+    executionMarker --base-type data --namespace "$setupName" --group postinstall-or-once "$@"
 }
 
 case ${#nativeRegistry[@]} in
@@ -342,7 +342,7 @@ hasItem()
 
 askTo()
 {
-    memoizeDecision --memoize-group setup-software "$@"
+    memoizeDecision --memoize-group "$setupName" "$@"
 }
 
 isAvailableNative()
@@ -598,11 +598,12 @@ do
 	*)		break;;
     esac
 done
-customActionsDirspec="${baseDir}/custom"
-requireActionsDirspec="${baseDir}/require"
-preinstallActionsDirspec="${baseDir}/preinstall"
-postinstallActionsDirspec="${baseDir}/postinstall"
-definitionDirspec="${baseDir}/definitions"
+readonly customActionsDirspec="${baseDir}/custom"
+readonly requireActionsDirspec="${baseDir}/require"
+readonly preinstallActionsDirspec="${baseDir}/preinstall"
+readonly postinstallActionsDirspec="${baseDir}/postinstall"
+readonly definitionDirspec="${baseDir}/definitions"
+readonly setupName=setup-software
 
 if [ "$isAddAll" ]; then
     addAllAcceptedGroups
