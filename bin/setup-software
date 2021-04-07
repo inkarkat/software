@@ -352,6 +352,10 @@ askTo()
 {
     memoizeDecision --memoize-group "$setupName" "$@"
 }
+askToInstall()
+{
+    askTo --subject "${1:?}" --verb 'is not yet' --state installed --action 'install it'
+}
 
 isAvailableNative()
 {
@@ -368,7 +372,7 @@ isAvailableOrUserAcceptsNative()
 	return
     fi
 
-    if askTo --subject "$packageManagerSubject" --verb 'is not yet' --state installed --action 'install it'; then
+    if askToInstall "$packageManagerSubject"; then
 	if [ "$isPreinstall" ]; then
 	    addPreinstall "native:${packageManagerPackageName}"$'\nppa'	# ppa is a dummy ITEM that is ignored for preinstall actions, anyway.
 	else
