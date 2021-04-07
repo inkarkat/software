@@ -63,6 +63,6 @@ installDebUrl()
 
 	# Note: No sudo here, as the downloading will happen as the current user
 	# and only the installation itself will be done through sudo.
-	toBeInstalledCommands+=("deb-download-installer${packageName:+ --application-name }${packageName} --expression ${packageGlob}${maxAge:+ --max-age }$maxAge${packageUrl:+ --url }${packageUrl}${packageOutputNameArg:+ --output }${packageOutputNameArg}")
+	toBeInstalledCommands+=("deb-download-installer${isBatch:+ --batch}${packageName:+ --application-name }${packageName} --expression ${packageGlob}${maxAge:+ --max-age }$maxAge${packageUrl:+ --url }${packageUrl}${packageOutputNameArg:+ --output }${packageOutputNameArg}")
     done
 }
