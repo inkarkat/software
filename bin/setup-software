@@ -279,6 +279,7 @@ used for that uniqueness check.
 HELPTEXT
 }
 
+typeset -a addedPreinstallArgs=()
 addPreinstall()
 {
     local name="${1:?}"; shift
@@ -290,7 +291,7 @@ addPreinstall()
 	# ITEM will populate all the addedITEM* arrays, and everything will be
 	# intermingled and later printed type by type in the static order, but
 	# the purpose of preinstall is to execute stuff before anything else.
-	"${scriptDir}/${scriptName}" "${recursiveArgs[@]}" --pre "${name#*$'\n'}" --action "${name%%$'\n'*}"
+	addedPreinstallArgs+=(--pre "${name#*$'\n'}" --action "${name%%$'\n'*}")
     fi
 }
 preinstallHook()
@@ -300,7 +301,7 @@ preinstallHook()
 	local actionScript
 	for actionScript in "${preinstallActionsDirspec}/${name}"/*
 	do
-	    [ -x "$actionScript" ] && "${scriptDir}/${scriptName}" "${recursiveArgs[@]}" --pre "$name" --action "${actionScript#"${preinstallActionsDirspec}/"}"
+	    [ -x "$actionScript" ] && addedPreinstallArgs+=(--pre "$name" --action "${actionScript#"${preinstallActionsDirspec}/"}")
 	done
     set -o noglob
 }
@@ -428,6 +429,12 @@ installNative()
 
 preInstall()
 {
+    [ ${#addedPreinstallArgs[@]} -gt 0 ] || return
+
+    "${scriptDir}/${scriptName}" "${recursiveArgs[@]}" "${addedPreinstallArgs[@]}"
+}
+runPreInstallCheck()
+{
     local item="${1:?}"; shift
     local action="${1:?}"; shift
 
@@ -516,14 +523,16 @@ runPostInstallCheck()
 
 generateInstallCommands()
 {
-    typeset -a typeOrdering=("${!typeInstallOrder[@]}")
-    readarray -t typeOrdering < <(printf '%s\n' "${typeOrdering[@]}" | sort -n)
+    preInstall
 
-    local order; for order in "${typeOrdering[@]}"
-    do
-	local typeFunction="${typeInstallOrder["$order"]}"
-	eval "install${typeFunction}"
-    done
+	typeset -a typeOrdering=("${!typeInstallOrder[@]}")
+	readarray -t typeOrdering < <(printf '%s\n' "${typeOrdering[@]}" | sort -n)
+
+	local order; for order in "${typeOrdering[@]}"
+	do
+	    local typeFunction="${typeInstallOrder["$order"]}"
+	    eval "install${typeFunction}"
+	done
 
     postInstall
 }
@@ -573,7 +582,7 @@ do
 			    printf >&2 'ASSERT: No --action following after --pre %q.\n' "$item"; exit 3
 			fi
 			shift; action="$1"; shift
-			printf -v specialCommand 'preInstall %q %q' "$item" "$action"
+			printf -v specialCommand 'runPreInstallCheck %q %q' "$item" "$action"
 			specialHandlingCommands+=("$specialCommand")
 			;;
 	--post)		shift; item="$1"; shift
