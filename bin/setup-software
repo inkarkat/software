@@ -18,8 +18,12 @@ printShortUsage()
     echo
     printf 'Usage: %q %s\n' "$(basename "$1")" '-e|--execute [...]'
     echo
-    echo '(For automation in a script:)'
+    echo 'Suggestions for automation in a script:'
+    echo
     printf 'Usage: packageInstallCommandLine="$(%q %s)" && eval "$packageInstallCommandLine"\n' "$(basename "$1")" '--yes --batch [--select DEFINITION] (--base-dir BASE-DIR -a|--all|GROUP-NAME | GROUP-FILESPEC)'
+    echo
+    printf 'Usage: %q %s | runWithPrompt --exit-on-failure\n' "$(basename "$1")" '--yes --batch [--select DEFINITION] (--base-dir BASE-DIR -a|--all|GROUP-NAME | GROUP-FILESPEC)'
+    echo
     printf 'Usage: %q %s\n' "$(basename "$1")" '--execute --yes --batch [--select DEFINITION] (--base-dir BASE-DIR -a|--all|GROUP-NAME | GROUP-FILESPEC)'
 }
 printUsage()
