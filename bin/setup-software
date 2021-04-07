@@ -456,18 +456,15 @@ runPreInstallCheck()
 	    # special "native:" prefix should it be necessary to install a
 	    # package via the distribution's package manager before the main
 	    # installation.
-	    hasOrAddItems "${action#native:}" && \
-		generateInstallCommands
+	    hasOrAddItems "${action#native:}" || \
+		printf >&2 'Skipping preinstall action, because %s indicated that no action is needed.\n' "$action"
 	elif [ -n "$prefix" ] && [ -n "${typeRegistry["$prefix"]}" ]; then
-	    hasOrAddItems "$action" && \
-		generateInstallCommands
+	    hasOrAddItems "$action" || \
+		printf >&2 'Skipping preinstall action, because %s indicated that no action is needed.\n' "$action"
 	else
 	    toBeInstalledCommands+=("${sudoPrefix:+${SUDO}${SUDO:+ }}${actionWithoutSudo}")
 	fi
     fi
-
-    printInstallCommands || \
-	printf >&2 'Skipping preinstall action, because %s indicated that no action is needed.\n' "$action"
 }
 
 postInstall()
@@ -549,6 +546,11 @@ printInstallCommands()
 	printf '%s\n' "${toBeInstalledCommands[@]}"
     fi
 }
+generateAndPrintInstallCommands()
+{
+    generateInstallCommands
+    printInstallCommands
+}
 
 
 setupName=
@@ -556,6 +558,7 @@ obtainSelection=askTo
 isAddAll=
 typeset -a selections=()
 typeset -a specialHandlingCommands=()
+specialHandlingFinalCommand=
 isExecute=
 isVerbose=
 typeset -a recursiveArgs=()
@@ -584,6 +587,7 @@ do
 			shift; action="$1"; shift
 			printf -v specialCommand 'runPreInstallCheck %q %q' "$item" "$action"
 			specialHandlingCommands+=("$specialCommand")
+			specialHandlingFinalCommand='generateAndPrintInstallCommands'
 			;;
 	--post)		shift; item="$1"; shift
 			if [ "$1" != '--action' ]; then
@@ -637,6 +641,7 @@ if [ ${#specialHandlingCommands[@]} -gt 0 ]; then
     do
 	eval "$specialCommand" || status=1
     done
+    eval "$specialHandlingFinalCommand" || status=1
     exit $status
 elif [ $# -eq 0 ]; then
     printUsage "$0" >&2
@@ -803,8 +808,7 @@ done
 
 
 
-generateInstallCommands
-printInstallCommands && exit
+generateAndPrintInstallCommands && exit
 
 if [ "${#definitions[@]}" -gt 0 ]; then
     if [ $missingDefinitionCount -gt 0 ]; then
