@@ -18,11 +18,28 @@ else
     return
 fi
 
+didRepoqueryCheck=
+haveRepoquery()
+{
+    # repoquery is provided by the optional yum-utils package; it may not be
+    # there yet. Unlike with pip3 or npm, its non-existence does not imply that
+    # no packages have yet been installed, so we need to have this dependency to
+    # do any Yum install operations.
+    exists repoquery && return 0
+    if [ ! "$didRepoqueryCheck" ]; then
+	didRepoqueryCheck=t
+	askToInstall 'yum-utils' || return 1
+	$SUDO yum${isBatch:+ --assumeyes} install yum-utils
+    fi
+    exists repoquery
+}
+
 typeset -A installedYumPackages=()
 isInstalledYumPackagesAvailable=
 getInstalledYumPackages()
 {
     [ "$isInstalledYumPackagesAvailable" ] && return
+    haveRepoquery || return 1
 
     local exitStatus package; while IFS=$'\n' read -r package || { exitStatus="$package"; break; }	# Exit status from the process substitution (<(repoquery)) is lost; return the actual exit status via an incomplete (i.e. missing the newline) last line.
     do
