@@ -443,10 +443,10 @@ runPreInstallCheck()
     local actionWithoutSudoAndArgs="${actionWithoutSudo%% *}"
     if [ -x "${preinstallActionsDirspec}/${actionWithoutSudoAndArgs}" ]; then
 	actionWithoutSudo="${preinstallActionsDirspec}/${actionWithoutSudo}"
-	toBeInstalledCommands+=("${sudoPrefix:+${SUDO}${SUDO:+ }}${actionWithoutSudo}")
+	addUniqueToBeInstalledCommand "${sudoPrefix:+${SUDO}${SUDO:+ }}${actionWithoutSudo}"
     elif [ -e "${preinstallActionsDirspec}/${action}" ]; then
 	local quotedPreinstallNotification; printf -v quotedPreinstallNotification %s "${preinstallActionsDirspec}/${action}"
-	toBeInstalledCommands+=("addLoginNotification --file $quotedPreinstallNotification --immediate --no-blocking-gui")
+	addUniqueToBeInstalledCommand "addLoginNotification --file $quotedPreinstallNotification --immediate --no-blocking-gui"
     else
 	local name="${action#*:}"
 	local prefix="${action%"$name"}"
@@ -462,7 +462,7 @@ runPreInstallCheck()
 	    hasOrAddItems "$action" || \
 		printf >&2 'Skipping preinstall action, because %s indicated that no action is needed.\n' "$action"
 	else
-	    toBeInstalledCommands+=("${sudoPrefix:+${SUDO}${SUDO:+ }}${actionWithoutSudo}")
+	    addUniqueToBeInstalledCommand "${sudoPrefix:+${SUDO}${SUDO:+ }}${actionWithoutSudo}"
 	fi
     fi
 }
@@ -474,7 +474,7 @@ postInstall()
     typeset -a executeArg=(); [ "$isExecute" ] || executeArg=(--execute)    # Directly execute any postinstall commands; these already were authorized by the user when they executed the recursive script invocation. It's cumbersome when the execution just prints yet another command-line to be captured and executed, and especially when an automatic capture and execution is used (redirection into a file, into the bag, etc.), this printing then happens outside of the capture.
     local quotedPostInstallCommand
     printf -v quotedPostInstallCommand '%q ' "${scriptDir}/${scriptName}" "${executeArg[@]}" "${recursiveArgs[@]}" "${addedPostinstallArgs[@]}"
-    toBeInstalledCommands+=("${quotedPostInstallCommand% }")
+    addUniqueToBeInstalledCommand "${quotedPostInstallCommand% }"
 }
 runPostInstallCheck()
 {
@@ -518,6 +518,13 @@ runPostInstallCheck()
     fi
 }
 
+typeset -a toBeInstalledCommands=()
+addUniqueToBeInstalledCommand()
+{
+    local command="${1:?}"; shift
+    contains "$command" "${toBeInstalledCommands[@]}" && return 1
+    toBeInstalledCommands+=("$command")
+}
 generateInstallCommands()
 {
     preInstall
