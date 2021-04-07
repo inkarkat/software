@@ -354,7 +354,7 @@ askTo()
 }
 askToInstall()
 {
-    askTo --subject "${1:?}" --verb 'is not yet' --state installed --action 'install it'
+    $obtainSelection --subject "${1:?}" --verb 'is not yet' --state installed --action 'install it'
 }
 
 isAvailableNative()
