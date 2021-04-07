@@ -279,6 +279,7 @@ used for that uniqueness check.
 HELPTEXT
 }
 
+typeset -a addedPreinstallArgs=()
 addPreinstall()
 {
     local name="${1:?}"; shift
@@ -290,7 +291,7 @@ addPreinstall()
 	# ITEM will populate all the addedITEM* arrays, and everything will be
 	# intermingled and later printed type by type in the static order, but
 	# the purpose of preinstall is to execute stuff before anything else.
-	"${scriptDir}/${scriptName}" "${recursiveArgs[@]}" --pre "${name#*$'\n'}" --action "${name%%$'\n'*}"
+	addedPreinstallArgs+=(--pre "${name#*$'\n'}" --action "${name%%$'\n'*}")
     fi
 }
 preinstallHook()
@@ -300,7 +301,7 @@ preinstallHook()
 	local actionScript
 	for actionScript in "${preinstallActionsDirspec}/${name}"/*
 	do
-	    [ -x "$actionScript" ] && "${scriptDir}/${scriptName}" "${recursiveArgs[@]}" --pre "$name" --action "${actionScript#"${preinstallActionsDirspec}/"}"
+	    [ -x "$actionScript" ] && addedPreinstallArgs+=(--pre "$name" --action "${actionScript#"${preinstallActionsDirspec}/"}")
 	done
     set -o noglob
 }
@@ -428,6 +429,12 @@ installNative()
 
 preInstall()
 {
+    [ ${#addedPreinstallArgs[@]} -gt 0 ] || return
+
+    "${scriptDir}/${scriptName}" "${recursiveArgs[@]}" "${addedPreinstallArgs[@]}"
+}
+runPreInstallCheck()
+{
     local item="${1:?}"; shift
     local action="${1:?}"; shift
 
@@ -436,10 +443,10 @@ preInstall()
     local actionWithoutSudoAndArgs="${actionWithoutSudo%% *}"
     if [ -x "${preinstallActionsDirspec}/${actionWithoutSudoAndArgs}" ]; then
 	actionWithoutSudo="${preinstallActionsDirspec}/${actionWithoutSudo}"
-	toBeInstalledCommands+=("${sudoPrefix:+${SUDO}${SUDO:+ }}${actionWithoutSudo}")
+	addUniqueToBeInstalledCommand "${sudoPrefix:+${SUDO}${SUDO:+ }}${actionWithoutSudo}"
     elif [ -e "${preinstallActionsDirspec}/${action}" ]; then
 	local quotedPreinstallNotification; printf -v quotedPreinstallNotification %s "${preinstallActionsDirspec}/${action}"
-	toBeInstalledCommands+=("addLoginNotification --file $quotedPreinstallNotification --immediate --no-blocking-gui")
+	addUniqueToBeInstalledCommand "addLoginNotification --file $quotedPreinstallNotification --immediate --no-blocking-gui"
     else
 	local name="${action#*:}"
 	local prefix="${action%"$name"}"
@@ -449,18 +456,13 @@ preInstall()
 	    # special "native:" prefix should it be necessary to install a
 	    # package via the distribution's package manager before the main
 	    # installation.
-	    hasOrAddItems "${action#native:}" && \
-		generateInstallCommands
+	    hasOrAddItems "${action#native:}"
 	elif [ -n "$prefix" ] && [ -n "${typeRegistry["$prefix"]}" ]; then
-	    hasOrAddItems "$action" && \
-		generateInstallCommands
+	    hasOrAddItems "$action"
 	else
-	    toBeInstalledCommands+=("${sudoPrefix:+${SUDO}${SUDO:+ }}${actionWithoutSudo}")
+	    addUniqueToBeInstalledCommand "${sudoPrefix:+${SUDO}${SUDO:+ }}${actionWithoutSudo}"
 	fi
-    fi
-
-    printInstallCommands || \
-	printf >&2 'Skipping preinstall action, because %s indicated that no action is needed.\n' "$action"
+    fi || printf >&2 'Skipping preinstall action, because %s indicated that no action is needed.\n' "$action"
 }
 
 postInstall()
@@ -470,7 +472,7 @@ postInstall()
     typeset -a executeArg=(); [ "$isExecute" ] || executeArg=(--execute)    # Directly execute any postinstall commands; these already were authorized by the user when they executed the recursive script invocation. It's cumbersome when the execution just prints yet another command-line to be captured and executed, and especially when an automatic capture and execution is used (redirection into a file, into the bag, etc.), this printing then happens outside of the capture.
     local quotedPostInstallCommand
     printf -v quotedPostInstallCommand '%q ' "${scriptDir}/${scriptName}" "${executeArg[@]}" "${recursiveArgs[@]}" "${addedPostinstallArgs[@]}"
-    toBeInstalledCommands+=("${quotedPostInstallCommand% }")
+    addUniqueToBeInstalledCommand "${quotedPostInstallCommand% }"
 }
 runPostInstallCheck()
 {
@@ -514,16 +516,25 @@ runPostInstallCheck()
     fi
 }
 
+typeset -a toBeInstalledCommands=()
+addUniqueToBeInstalledCommand()
+{
+    local command="${1:?}"; shift
+    contains "$command" "${toBeInstalledCommands[@]}" && return 1
+    toBeInstalledCommands+=("$command")
+}
 generateInstallCommands()
 {
-    typeset -a typeOrdering=("${!typeInstallOrder[@]}")
-    readarray -t typeOrdering < <(printf '%s\n' "${typeOrdering[@]}" | sort -n)
+    preInstall
 
-    local order; for order in "${typeOrdering[@]}"
-    do
-	local typeFunction="${typeInstallOrder["$order"]}"
-	eval "install${typeFunction}"
-    done
+	typeset -a typeOrdering=("${!typeInstallOrder[@]}")
+	readarray -t typeOrdering < <(printf '%s\n' "${typeOrdering[@]}" | sort -n)
+
+	local order; for order in "${typeOrdering[@]}"
+	do
+	    local typeFunction="${typeInstallOrder["$order"]}"
+	    eval "install${typeFunction}"
+	done
 
     postInstall
 }
@@ -540,6 +551,11 @@ printInstallCommands()
 	printf '%s\n' "${toBeInstalledCommands[@]}"
     fi
 }
+generateAndPrintInstallCommands()
+{
+    generateInstallCommands
+    printInstallCommands
+}
 
 
 setupName=
@@ -547,6 +563,7 @@ obtainSelection=askTo
 isAddAll=
 typeset -a selections=()
 typeset -a specialHandlingCommands=()
+specialHandlingFinalCommand=
 isExecute=
 isVerbose=
 typeset -a recursiveArgs=()
@@ -573,8 +590,9 @@ do
 			    printf >&2 'ASSERT: No --action following after --pre %q.\n' "$item"; exit 3
 			fi
 			shift; action="$1"; shift
-			printf -v specialCommand 'preInstall %q %q' "$item" "$action"
+			printf -v specialCommand 'runPreInstallCheck %q %q' "$item" "$action"
 			specialHandlingCommands+=("$specialCommand")
+			specialHandlingFinalCommand='generateAndPrintInstallCommands'
 			;;
 	--post)		shift; item="$1"; shift
 			if [ "$1" != '--action' ]; then
@@ -628,6 +646,7 @@ if [ ${#specialHandlingCommands[@]} -gt 0 ]; then
     do
 	eval "$specialCommand" || status=1
     done
+    eval "$specialHandlingFinalCommand" || status=1
     exit $status
 elif [ $# -eq 0 ]; then
     printUsage "$0" >&2
@@ -794,8 +813,7 @@ done
 
 
 
-generateInstallCommands
-printInstallCommands && exit
+generateAndPrintInstallCommands && exit
 
 if [ "${#definitions[@]}" -gt 0 ]; then
     if [ $missingDefinitionCount -gt 0 ]; then
