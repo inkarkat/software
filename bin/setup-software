@@ -14,7 +14,7 @@ printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s | tee install-script.sh && sh install-script.sh\n' "$(basename "$1")" '[-v|--verbose] [-y|--yes] [-s|--select DEFINITION [-s ...]] [--base-dir BASE-DIR] -a|--all|GROUP-NAME|GROUP-FILESPEC [...] [-?|-h|--help]|[-H|--config-help [TYPE]]'
+    printf 'Usage: %q %s | tee install-script.sh && sh install-script.sh\n' "$(basename "$1")" '[-v|--verbose] [-y|--yes] [-s|--select DEFINITION [-s ...]] [--base-dir BASE-DIR] [--name NAME] -a|--all|GROUP-NAME|GROUP-FILESPEC [...] [-?|-h|--help]|[-H|--config-help [TYPE]]'
     echo
     printf 'Usage: %q %s\n' "$(basename "$1")" '-e|--execute [...]'
     echo
@@ -60,6 +60,7 @@ HELPDESCRIPTION
     --base-dir BASE-DIR	Reference definitions, custom actions, pre-, and
 			post-install actions from BASE-DIR instead of using
 			those bundled with this project.
+    --name NAME		Use NAME for storing the user's choices.
     --all|-a		Consider definitions from all existing definition
 			groups.
     GROUP-NAME		Consider definitions from GROUP-NAME, as stored inside
@@ -541,6 +542,7 @@ printInstallCommands()
 }
 
 
+setupName=
 obtainSelection=askTo
 isAddAll=
 typeset -a selections=()
@@ -564,6 +566,7 @@ do
 	--yes|-y)	shift; obtainSelection=true;;
 	--select|-s)	shift; selections+=("$1"); shift;;
 	--all|-a)	shift; isAddAll=t;;
+	--name)		shift; setupName="${1:?}"; shift;;
 	--database)	shift; database "$@"; exit $?;;
 	--pre)		shift; item="$1"; shift
 			if [ "$1" != '--action' ]; then
@@ -603,7 +606,10 @@ readonly requireActionsDirspec="${baseDir}/require"
 readonly preinstallActionsDirspec="${baseDir}/preinstall"
 readonly postinstallActionsDirspec="${baseDir}/postinstall"
 readonly definitionDirspec="${baseDir}/definitions"
-readonly setupName=setup-software
+if [ -z "$setupName" ]; then
+    setupName="$(basename -- "$(dirname -- "$(simplifyPath "$baseDir")")")"
+    setupName="setup-${setupName#setup-}"
+fi
 
 if [ "$isAddAll" ]; then
     addAllAcceptedGroups
