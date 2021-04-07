@@ -456,15 +456,13 @@ runPreInstallCheck()
 	    # special "native:" prefix should it be necessary to install a
 	    # package via the distribution's package manager before the main
 	    # installation.
-	    hasOrAddItems "${action#native:}" || \
-		printf >&2 'Skipping preinstall action, because %s indicated that no action is needed.\n' "$action"
+	    hasOrAddItems "${action#native:}"
 	elif [ -n "$prefix" ] && [ -n "${typeRegistry["$prefix"]}" ]; then
-	    hasOrAddItems "$action" || \
-		printf >&2 'Skipping preinstall action, because %s indicated that no action is needed.\n' "$action"
+	    hasOrAddItems "$action"
 	else
 	    addUniqueToBeInstalledCommand "${sudoPrefix:+${SUDO}${SUDO:+ }}${actionWithoutSudo}"
 	fi
-    fi
+    fi || printf >&2 'Skipping preinstall action, because %s indicated that no action is needed.\n' "$action"
 }
 
 postInstall()
