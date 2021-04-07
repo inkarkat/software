@@ -12,6 +12,11 @@ isInstalledNpmPackagesAvailable=
 getInstalledNpmPackages()
 {
     [ "$isInstalledNpmPackagesAvailable" ] && return
+    if ! exists npm; then
+	# A missing npm means that no Node.js packages have been installed yet.
+	isInstalledNpmPackagesAvailable=t
+	return
+    fi
 
     local exitStatus packageDirspec; while IFS=$'\n' read -r packageDirspec || { exitStatus="$packageDirspec"; break; }	# Exit status from the process substitution (<(npm)) is lost; return the actual exit status via an incomplete (i.e. missing the newline) last line.
     do

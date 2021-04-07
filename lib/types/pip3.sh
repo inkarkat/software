@@ -12,6 +12,11 @@ isInstalledPip3PackagesAvailable=
 getInstalledPip3Packages()
 {
     [ "$isInstalledPip3PackagesAvailable" ] && return
+    if ! exists pip3; then
+	# A missing pip3 means that no Python packages have been installed yet.
+	isInstalledPip3PackagesAvailable=t
+	return
+    fi
 
     local exitStatus packageName remainder; while IFS=' ' read -r packageName remainder || { exitStatus="$packageName"; break; }	# Exit status from the process substitution (<(pip3)) is lost; return the actual exit status via an incomplete (i.e. missing the newline) last line.
     do

@@ -22,6 +22,11 @@ isInstalledSnapPackagesAvailable=
 getInstalledSnapPackages()
 {
     [ "$isInstalledSnapPackagesAvailable" ] && return
+    if ! exists snap; then
+	# A missing snap means that no Snap packages have been installed yet.
+	isInstalledSnapPackagesAvailable=t
+	return
+    fi
 
     local exitStatus packageName remainder; while IFS=' ' read -r packageName remainder || { exitStatus="$packageName"; break; }	# Exit status from the process substitution (<(snap)) is lost; return the actual exit status via an incomplete (i.e. missing the newline) last line.
     do
