@@ -161,10 +161,10 @@ set -o noglob
 typeset -a acceptedGroups=()
 addAllAcceptedGroups()
 {
-    typeset -a groups=() group
+    typeset -a groups=()
     readarray -t groups < <(cd "${definitionDirspec:?}" && find . -print | sort | sed -e 's#^\./##')
     typeset -a filteredGroups=()
-    for group in "${groups[@]}"
+    local group; for group in "${groups[@]}"
     do
 	contains "$group" "${filteredGroups[@]}" && continue
 
