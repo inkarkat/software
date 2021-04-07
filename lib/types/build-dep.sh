@@ -75,6 +75,6 @@ installDebBuild()
     local databaseUpdate; printf -v databaseUpdate %q "${scriptDir}/${scriptName}"
     local buildDep; for buildDep in "${!addedDebBuildDependencies[@]}"
     do
-	toBeInstalledCommands+=("${SUDO}${SUDO:+ }apt-get build-dep $buildDep && ${databaseUpdate}${isVerbose:+ --verbose} --database debBuildDependencies --add $buildDep")
+	toBeInstalledCommands+=("${SUDO}${SUDO:+ }apt-get${isBatch:+ --assume-yes} build-dep $buildDep && ${databaseUpdate}${isVerbose:+ --verbose} --database debBuildDependencies --add $buildDep")
     done
 }

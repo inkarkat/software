@@ -70,5 +70,5 @@ installAptRepo()
 
 	toBeInstalledCommands+=("printf %s\\\\n $quotedDebLine|${SUDO}${SUDO:+ }tee ${APT_SOURCES_DIR}/${name}.list")
     done
-    toBeInstalledCommands+=("${SUDO}${SUDO:+ }apt update")
+    toBeInstalledCommands+=("${SUDO}${SUDO:+ }apt${isBatch:+ --assume-yes} update")
 }

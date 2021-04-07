@@ -51,7 +51,7 @@ installNotifyUrl()
 
 	# Note: No sudo here, as the downloading will happen as the current user
 	# and only the installation itself will be done through sudo.
-	toBeInstalledCommands+=("login-notification-download --immediate --no-blocking-gui${notificationName:+ --application-name }${notificationName} --expression ${notificationGlob}${maxAge:+ --max-age }$maxAge --url }${notificationUrl}${notificationOutputNameArg:+ --output }${notificationOutputNameArg}")
+	toBeInstalledCommands+=("login-notification-download${isBatch:+ --batch} --immediate --no-blocking-gui${notificationName:+ --application-name }${notificationName} --expression ${notificationGlob}${maxAge:+ --max-age }$maxAge --url }${notificationUrl}${notificationOutputNameArg:+ --output }${notificationOutputNameArg}")
     done
 }
 
