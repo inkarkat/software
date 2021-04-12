@@ -30,7 +30,9 @@ getInstalledPpaRepositories()
     done < <(apt-list-repositories --ppa-only; printf %d "$?")
     [ $exitStatus -eq 0 ] && isInstalledPpaRepositoriesAvailable=t
 }
+
 typeset -A addedPpaRepositories=()
+typeset -A externallyAddedPpaRepositories=()
 hasPpa()
 {
     local ppaRepoName="${1:?}"; shift
@@ -38,7 +40,7 @@ hasPpa()
 	echo >&2 "ERROR: Failed to obtain installed Ubuntu personal package archives list; skipping ${ppaRepoName}."
 	return 99
     fi
-    [ "${installedPpaRepositories["$ppaRepoName"]}" ] || [ "${addedPpaRepositories["$ppaRepoName"]}" ]
+    [ "${installedPpaRepositories["$ppaRepoName"]}" ] || [ "${addedPpaRepositories["$ppaRepoName"]}" ] || [ "${externallyAddedPpaRepositories["$ppaRepoName"]}" ]
 }
 
 addPpa()

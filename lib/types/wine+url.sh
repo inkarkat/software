@@ -30,6 +30,7 @@ if ! "${projectDir:?}/etc/require/intel-architecture"; then
 fi
 
 typeset -A addedWineUrlPackages=()
+typeset -A externallyAddedWineUrlPackages=()
 hasWine()
 {
     if [[ ! "$1" =~ ^[^:]+\?:.+: ]]; then
@@ -40,6 +41,7 @@ hasWine()
     local checkGlob="${1%%:*}"
 
     [ "${addedWineUrlPackages["$1"]}" ] && return 0	# This package has already been selected for installation.
+    [ "${externallyAddedWineUrlPackages["$1"]}" ] && return 0
 
     local -r wineDriveC=~/.wine/drive_c
     if [[ ! "$checkGlob" =~ ^/ ]] && [ -d "$wineDriveC" ]; then

@@ -29,7 +29,9 @@ getInstalledPip3Packages()
     done < <(pip3 list 2>/dev/null; printf %d "$?")
     [ $exitStatus -eq 0 ] && isInstalledPip3PackagesAvailable=t
 }
+
 typeset -A addedPip3Packages=()
+typeset -A externallyAddedPip3Packages=()
 hasPip3()
 {
     local pip3PackageName="${1:?}"; shift
@@ -37,7 +39,7 @@ hasPip3()
 	echo >&2 "ERROR: Failed to obtain installed Python package list; skipping ${pip3PackageName}."
 	return 99
     fi
-    [ "${installedPip3Packages["$pip3PackageName"]}" ] || [ "${addedPip3Packages["$pip3PackageName"]}" ]
+    [ "${installedPip3Packages["$pip3PackageName"]}" ] || [ "${addedPip3Packages["$pip3PackageName"]}" ] || [ "${externallyAddedPip3Packages["$pip3PackageName"]}" ]
 }
 
 addPip3()

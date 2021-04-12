@@ -39,7 +39,9 @@ getInstalledSnapPackages()
     done < <(snap list --color=never --unicode=never 2>/dev/null; printf %d "$?")
     [ $exitStatus -eq 0 ] && isInstalledSnapPackagesAvailable=t
 }
+
 typeset -A addedSnapPackages=()
+typeset -A externallyAddedSnapPackages=()
 hasSnap()
 {
     local snapPackageName="${1:?}"; shift
@@ -47,7 +49,7 @@ hasSnap()
 	echo >&2 "ERROR: Failed to obtain installed Snap store package list; skipping ${snapPackageName}."
 	return 99
     fi
-    [ "${installedSnapPackages["$snapPackageName"]}" ] || [ "${addedSnapPackages["$snapPackageName"]}" ]
+    [ "${installedSnapPackages["$snapPackageName"]}" ] || [ "${addedSnapPackages["$snapPackageName"]}" ] || [ "${externallyAddedSnapPackages["$snapPackageName"]}" ]
 }
 
 addSnap()

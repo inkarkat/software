@@ -28,7 +28,9 @@ getInstalledNpmPackages()
     done < <(npm ls --global --parseable --depth 0 2>/dev/null; printf %d "$?")
     [ $exitStatus -eq 0 ] && isInstalledNpmPackagesAvailable=t
 }
+
 typeset -A addedNpmPackages=()
+typeset -A externallyAddedNpmPackages=()
 hasNpm()
 {
     local npmPackageName="${1:?}"; shift
@@ -36,7 +38,7 @@ hasNpm()
 	echo >&2 "ERROR: Failed to obtain installed Node.js package list; skipping ${npmPackageName}."
 	return 99
     fi
-    [ "${installedNpmPackages["$npmPackageName"]}" ] || [ "${addedNpmPackages["$npmPackageName"]}" ]
+    [ "${installedNpmPackages["$npmPackageName"]}" ] || [ "${addedNpmPackages["$npmPackageName"]}" ] || [ "${externallyAddedNpmPackages["$npmPackageName"]}" ]
 }
 
 addNpm()
