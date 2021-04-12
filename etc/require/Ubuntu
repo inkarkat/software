@@ -6,15 +6,11 @@ printUsage()
 Test for Ubuntu release; succeeds if at least one passed requirement is true.
 HELPTEXT
     echo
-    printf 'Usage: %q %s\n' "$(basename "$1")" '-YY.MM|YY.MM|YY.MM+|YY.MM-YY.MM|YY.MM%YY.MM [...] [-?|-h|--help]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[-YY.MM|YY.MM|YY.MM+|YY.MM-YY.MM|YY.MM%YY.MM [...]] [-?|-h|--help]'
 }
 case "$1" in
     --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
 esac
-if [ $# -eq 0 ]; then
-    printUsage "$0" >&2
-    exit 2
-fi
 
 [ "$(lsb_release -is 2>/dev/null)" = Ubuntu ] || exit 3
 
