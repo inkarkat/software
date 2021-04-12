@@ -3,7 +3,8 @@
 configUsageTryout()
 {
     cat <<'HELPTEXT'
-tryout: items will only be considered if the environment variable TRYOUT is set.
+tryout: the entire definition (both preceding and following items) will only be
+considered if the environment variable TRYOUT is set.
 HELPTEXT
 }
 
