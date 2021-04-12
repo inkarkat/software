@@ -31,8 +31,9 @@ getInstalledAptPackages()
     done < <(dpkg-package-list; printf %d "$?")
     [ $exitStatus -eq 0 -a ${#installedAptPackages[@]} -gt 0 ] && isInstalledAptPackagesAvailable=t
 }
-typeset -A addedAptPackages=()
 
+typeset -A addedAptPackages=()
+typeset -A externallyAddedAptPackages=()
 hasApt()
 {
     local packageName="${1:?}"; shift
@@ -41,7 +42,7 @@ hasApt()
 	return 99
     fi
 
-    [ "${installedAptPackages["$packageName"]}" ] || [ "${addedAptPackages["$packageName"]}" ]
+    [ "${installedAptPackages["$packageName"]}" ] || [ "${addedAptPackages["$packageName"]}" ] || [ "${externallyAddedAptPackages["$packageName"]}" ]
 }
 
 addApt()

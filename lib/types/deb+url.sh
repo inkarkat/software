@@ -37,6 +37,7 @@ addDebUrl()
 
     preinstallHook "$packageName"
     addedDebUrlPackages["$debUrlRecord"]=t
+    externallyAddedAptPackages["$packageName"]=t
     postinstallHook "$packageName"
 }
 
