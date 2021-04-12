@@ -27,7 +27,7 @@ fi
 typeset -A addedDebUrlPackages=()
 hasDebUrl()
 {
-    hasNative "${1%%:*}" || [ "${addedDebUrlPackages["${1:?}"]}" ]
+    hasApt "${1%%:*}" || [ "${addedDebUrlPackages["${1:?}"]}" ]
 }
 
 addDebUrl()
