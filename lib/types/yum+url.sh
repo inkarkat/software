@@ -52,7 +52,9 @@ addYumUrl()
     local name="${yumKeyRecord%%:*}"
     local yumUrl="${yumKeyRecord#"${name}:"}"
 
+    preinstallHook "$name"
     addedYumUrls["$name"]="$(expandYumUrl "$yumUrl")"
+    postinstallHook "$name"
 }
 
 installYumUrl()
