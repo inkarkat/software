@@ -54,6 +54,7 @@ addYumUrl()
 
     preinstallHook "$packageName"
     addedYumUrls["$packageName"]="$(expandYumUrl "$yumUrl")"
+    externallyAddedYumPackages["$packageName"]=t
     postinstallHook "$packageName"
 }
 

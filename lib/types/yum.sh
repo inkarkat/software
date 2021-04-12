@@ -48,8 +48,9 @@ getInstalledYumPackages()
     done < <(repoquery --qf '%{name}' --installed -a; printf %d "$?")
     [ $exitStatus -eq 0 -a ${#installedYumPackages[@]} -gt 0 ] && isInstalledYumPackagesAvailable=t
 }
-typeset -A addedYumPackages=()
 
+typeset -A addedYumPackages=()
+typeset -A externallyAddedYumPackages=()
 hasYum()
 {
     local packageName="${1:?}"; shift
@@ -58,7 +59,7 @@ hasYum()
 	return 99
     fi
 
-    [ "${installedYumPackages["$packageName"]}" ] || [ "${addedYumPackages["$packageName"]}" ]
+    [ "${installedYumPackages["$packageName"]}" ] || [ "${addedYumPackages["$packageName"]}" ] || [ "${externallyAddedYumPackages["$packageName"]}" ]
 }
 
 addYum()
