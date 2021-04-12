@@ -34,27 +34,27 @@ expandYumUrl()
 typeset -A addedYumUrls=()
 hasYumUrl()
 {
-    local name="${1%%:*}"
-    local yumUrl="${1#"${name}:"}"
-    if [ -z "$name" -o -z "$yumUrl" ]; then
+    local packageName="${1%%:*}"
+    local yumUrl="${1#"${packageName}:"}"
+    if [ -z "$packageName" -o -z "$yumUrl" ]; then
 	printf >&2 'ERROR: Invalid yum+url item: "yum+url:%s"\n' "$1"
 	exit 3
     fi
 
-    [ "${addedYumUrls["$name"]}" ] && return 0	# This repo has already been selected for installation.
+    [ "${addedYumUrls["$packageName"]}" ] && return 0	# This repo has already been selected for installation.
 
-    hasYum "$name"
+    hasYum "$packageName"
 }
 
 addYumUrl()
 {
     local yumKeyRecord="${1:?}"; shift
-    local name="${yumKeyRecord%%:*}"
-    local yumUrl="${yumKeyRecord#"${name}:"}"
+    local packageName="${yumKeyRecord%%:*}"
+    local yumUrl="${yumKeyRecord#"${packageName}:"}"
 
-    preinstallHook "$name"
-    addedYumUrls["$name"]="$(expandYumUrl "$yumUrl")"
-    postinstallHook "$name"
+    preinstallHook "$packageName"
+    addedYumUrls["$packageName"]="$(expandYumUrl "$yumUrl")"
+    postinstallHook "$packageName"
 }
 
 installYumUrl()
