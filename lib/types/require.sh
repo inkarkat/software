@@ -9,7 +9,8 @@ require: items consist of a CHECK that can be:
   the special "native:" prefix here. The check passes if that ITEM has already
   been installed or has already been selected by the user in the current
   session.
-- an executable command (potentially followed by command-line arguments) in the
+- an executable command (potentially prefixed with ! (which negates the status,
+  just as in the shell) and/or followed by command-line arguments) in the
   ./etc/require directory tree that is invoked and should fail if the
   requirements are not fulfilled.
 - a REQUIREMENT-EXPRESSION (whitespace must be escaped or the entire expression
@@ -45,9 +46,14 @@ isDefinitionAcceptedByRequire()
 	local requirementWithoutArgs="${requirement%% *}"
 	if ! if [ -x "${requireActionsDirspec}/${requirement}" ]; then
 	    "${requireActionsDirspec}/${requirement}"
+	elif [ -x "${requireActionsDirspec}/${requirement#!}" ]; then
+	    ! "${requireActionsDirspec}/${requirement#!}"
 	elif [ -x "${requireActionsDirspec}/${requirementWithoutArgs}" ]; then
 	    requirementArgs="${requirement#"${requirementWithoutArgs}"}"
 	    "${requireActionsDirspec}/${requirementWithoutArgs}" $requirementArgs
+	elif [ -x "${requireActionsDirspec}/${requirementWithoutArgs#!}" ]; then
+	    requirementArgs="${requirement#"${requirementWithoutArgs}"}"
+	    ! "${requireActionsDirspec}/${requirementWithoutArgs#!}" $requirementArgs
 	else
 	    eval "$requirement"
 	fi; then
