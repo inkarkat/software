@@ -8,15 +8,6 @@ different Linux distributions, are segregated and update automatically.
 HELPTEXT
 }
 
-typeRegistry+=([snap:]=Snap)
-typeInstallOrder+=([200]=Snap)
-
-if ! exists snap; then
-    hasSnap() { return 98; }
-    installSnap() { :; }
-    return
-fi
-
 typeset -A installedSnapPackages=()
 isInstalledSnapPackagesAvailable=
 getInstalledSnapPackages()
@@ -73,3 +64,6 @@ installSnap()
     local IFS=' '
     toBeInstalledCommands+=("${SUDO}${SUDO:+ }snap install ${!addedSnapPackages[*]}")
 }
+
+typeRegistry+=([snap:]=Snap)
+typeInstallOrder+=([200]=Snap)
