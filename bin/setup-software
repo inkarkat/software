@@ -443,17 +443,12 @@ preInstall()
 
     "${scriptDir}/${scriptName}" "${recursiveArgs[@]}" "${addedPreinstallArgs[@]}"
 }
-getPreinstallExecutable()
+getPreinstallFilespec()
 {
+    local compareOp="${1:?}"; shift
     local preinstallAction="${1:?}"; shift
     local preinstallFilespec="${preinstallActionsDirspec}/${preinstallAction}"
-    [ -x "$preinstallFilespec" ] && printf %s "$preinstallFilespec"
-}
-getPreinstallFile()
-{
-    local preinstallAction="${1:?}"; shift
-    local preinstallFilespec="${preinstallActionsDirspec}/${preinstallAction}"
-    [ -e "$preinstallFilespec" ] && printf %s "$preinstallFilespec"
+    [ $compareOp "$preinstallFilespec" ] && printf %s "$preinstallFilespec"
 }
 runPreInstallCheck()
 {
@@ -464,10 +459,10 @@ runPreInstallCheck()
     local sudoPrefix="${action%"$actionWithoutSudo"}"
     local actionWithoutSudoAndArgs="${actionWithoutSudo%% *}"
     local actionFilespec
-    if actionFilespec="$(getPreinstallExecutable "${actionWithoutSudoAndArgs}")"; then
+    if actionFilespec="$(getPreinstallFilespec -x "${actionWithoutSudoAndArgs}")"; then
 	actionWithoutSudo="${actionFilespec}/${actionWithoutSudo#"$actionWithoutSudoAndArgs"}"
 	addUniqueToBeInstalledCommand "${sudoPrefix:+${SUDO}${SUDO:+ }}${actionWithoutSudo}"
-    elif actionFilespec="$(getPreinstallFile "${action}")"; then
+    elif actionFilespec="$(getPreinstallFilespec -e "${action}")"; then
 	local quotedPreinstallNotification; printf -v quotedPreinstallNotification %s "$actionFilespec"
 	addUniqueToBeInstalledCommand "addLoginNotification --file $quotedPreinstallNotification --immediate --no-blocking-gui"
     else
@@ -497,17 +492,12 @@ postInstall()
     printf -v quotedPostInstallCommand '%q ' "${scriptDir}/${scriptName}" "${executeArg[@]}" "${recursiveArgs[@]}" "${addedPostinstallArgs[@]}"
     addUniqueToBeInstalledCommand "${quotedPostInstallCommand% }"
 }
-getPostinstallExecutable()
+getPostinstallFilespec()
 {
+    local compareOp="${1:?}"; shift
     local postinstallAction="${1:?}"; shift
     local postinstallFilespec="${postinstallActionsDirspec}/${postinstallAction}"
-    [ -x "$postinstallFilespec" ] && printf %s "$postinstallFilespec"
-}
-getPostinstallFile()
-{
-    local postinstallAction="${1:?}"; shift
-    local postinstallFilespec="${postinstallActionsDirspec}/${postinstallAction}"
-    [ -e "$postinstallFilespec" ] && printf %s "$postinstallFilespec"
+    [ $compareOp "$postinstallFilespec" ] && printf %s "$postinstallFilespec"
 }
 runPostInstallCheck()
 {
@@ -518,12 +508,12 @@ runPostInstallCheck()
     local actionWithoutSudoAndArgs="${actionWithoutSudo%% *}"
     local actionFilespec
     if hasItem "$item"; then
-	if actionFilespec="$(getPostinstallExecutable "${action}")"; then
+	if actionFilespec="$(getPostinstallFilespec -x "${action}")"; then
 	    "$actionFilespec"
-	elif actionFilespec="$(getPostinstallExecutable "${actionWithoutSudoAndArgs}")"; then
+	elif actionFilespec="$(getPostinstallFilespec -x "${actionWithoutSudoAndArgs}")"; then
 	    local actionArgs="${actionWithoutSudo#"${actionWithoutSudoAndArgs}"}"
 	    ${sudoPrefix:+$SUDO} "$actionFilespec" $actionArgs
-	elif actionFilespec="$(getPostinstallFile "${action}")"; then
+	elif actionFilespec="$(getPostinstallFilespec -e "${action}")"; then
 	    addLoginNotification --file "$actionFilespec" --immediate
 	else
 	    local name="${action#*:}"
