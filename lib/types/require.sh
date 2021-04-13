@@ -23,8 +23,15 @@ HELPTEXT
 getRequirementExecutable()
 {
     local requirement="${1:?}"; shift
-    local requirementFilespec="${requireActionsDirspec}/${requirement}"
-    [ -x "$requirementFilespec" ] && printf %s "$requirementFilespec"
+    local dirspec; for dirspec in "${requireActionsDirspecs[@]}"
+    do
+	local requirementFilespec="${dirspec}/${requirement}"
+	if [ -x "$requirementFilespec" ]; then
+	    printf %s "$requirementFilespec"
+	    return 0
+	fi
+    done
+    return 1
 }
 
 isDefinitionAcceptedByRequire()

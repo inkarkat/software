@@ -47,8 +47,15 @@ getCustomFilespec()
 {
     local compareOp="${1:?}"; shift
     local customAction="${1:?}"; shift
-    local customFilespec="${customActionsDirspec}/${customAction}"
-    [ $compareOp "$customFilespec" ] && printf %s "$customFilespec"
+    local dirspec; for dirspec in "${customActionsDirspec[@]}"
+    do
+	local customFilespec="${dirspec}/${customAction}"
+	if [ $compareOp "$customFilespec" ]; then
+	    printf %s "$customFilespec"
+	    return 0
+	fi
+    done
+    return 1
 }
 
 typeset -A addedCustomActions=()
