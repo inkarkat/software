@@ -59,5 +59,5 @@ installAmazonExtras()
 {
     [ ${#addedAmazonExtrasPackages[@]} -gt 0 ] || return
     local IFS=' '
-    toBeInstalledCommands+=("${SUDO}${SUDO:+ }amazon-linux-extras install${isBatch:+ --yes} ${!addedAmazonExtrasPackages[*]}")
+    toBeInstalledCommands+=("${SUDO}${SUDO:+ }amazon-linux-extras install${isBatch:+ -y} ${!addedAmazonExtrasPackages[*]}")
 }
