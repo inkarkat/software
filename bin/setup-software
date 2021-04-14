@@ -169,17 +169,30 @@ do
 done
 set -o noglob
 
+isDefinitionGroupDir()
+{
+    local group="${1:?}"; shift
+    local dirspec; for dirspec in "${definitionDirspecs[@]}"
+    do
+	[ -d "${dirspec}/${group}" ] && return 0
+    done
+    return 1
+}
 typeset -a acceptedGroups=()
 addAllAcceptedGroups()
 {
     typeset -a groups=()
-    readarray -t groups < <(cd "${definitionDirspecs[0]}" && find . -print | sort | sed -e 's#^\./##')
+    readarray -t groups < <(for dirspec in "${definitionDirspecs[@]}"
+	do
+	    cd "$dirspec" && find . -print
+	done | sort | sed -e 's#^\./##'
+    )
     typeset -a filteredGroups=()
     local group; for group in "${groups[@]}"
     do
 	contains "$group" "${filteredGroups[@]}" && continue
 
-	if [ -d "${definitionDirspecs[0]}/${group}" ]; then
+	if isDefinitionGroupDir "${group}"; then
 	    groupDirectoryGroupCount=$(countGlob "${group}/*" "${groups[@]}")
 	    [ $groupDirectoryGroupCount -gt 1 ] || continue  # Ignore a group directory that has only one group in it; the query for the group itself will suffice.
 	    memoizeDecision --memoize-group "${setupName}-groups" --subject "$group" --verb "directory (with $groupDirectoryGroupCount groups) is not" --state 'chosen' --action 'consider it' || \
@@ -716,12 +729,26 @@ elif [ $# -eq 0 ]; then
     exit 2
 fi
 
+getDefinitionFilespec()
+{
+    local definitionFile="${1:?}"; shift
+    local dirspec; for dirspec in "${definitionDirspecs[@]}"
+    do
+	local definitionFilespec="${dirspec}/${definitionFile}"
+	if [ -f "$definitionFilespec" ]; then
+	    printf %s "$definitionFilespec"
+	    return 0
+	fi
+    done
+    return 1
+}
+
 IFS=' '
 typeset -a definitions=()
 for definitionFile
 do
-    if [ -f "${definitionDirspecs[0]}/${definitionFile}" -a "${definitionFile:0:1}" != '.' ]; then
-	definitionFilespec="${definitionDirspecs[0]}/${definitionFile}"
+    if [ "${definitionFile:0:1}" != '.' ] && definitionFilespec="$(getDefinitionFilespec "$definitionFile")"; then
+	:
     elif [ -f "${definitionFile}" ]; then
 	definitionFilespec="$definitionFile"
     else
