@@ -215,6 +215,12 @@ onceMarker()
     executionMarker --base-type data --namespace "$setupName" --group postinstall-or-once "$@"
 }
 
+createSetupName()
+{
+    setupName="$(basename -- "$(dirname -- "$(simplifyPath "$baseDir")")")"
+    setupName="setup-${setupName#setup-}"
+}
+
 case ${#nativeRegistry[@]} in
     0)	echo >&2 'ERROR: No native package management found.'; exit 3;;
     1)	readonly nativePackageManager="${nativeRegistry[0]}";;
@@ -700,10 +706,7 @@ do
     [ -d "${dirspec}/postinstall" ] && postinstallActionsDirspecs+=("${dirspec}/postinstall")
     [ -d "${dirspec}/definitions" ] && definitionDirspecs+=("${dirspec}/definitions")
 done
-if [ -z "$setupName" ]; then
-    setupName="$(basename -- "$(dirname -- "$(simplifyPath "$baseDir")")")"
-    setupName="setup-${setupName#setup-}"
-fi
+[ -n "$setupName" ] || createSetupName
 
 if [ "$isAddAll" ]; then
     addAllAcceptedGroups
