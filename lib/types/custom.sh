@@ -47,7 +47,7 @@ getCustomFilespec()
 {
     local compareOp="${1:?}"; shift
     local customAction="${1:?}"; shift
-    local dirspec; for dirspec in "${customActionsDirspec[@]}"
+    local dirspec; for dirspec in "${customActionsDirspecs[@]}"
     do
 	local customFilespec="${dirspec}/${customAction}"
 	if [ $compareOp "$customFilespec" ]; then
