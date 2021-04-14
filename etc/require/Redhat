@@ -1,0 +1,43 @@
+#!/bin/bash
+
+printUsage()
+{
+    cat <<HELPTEXT
+Test for Redhat variant and/or release; succeeds if at least one passed requirement is true.
+HELPTEXT
+    echo
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[--variant centos|fedora|rhel|amzn|...] [-N|N|N+|N-M|N%M [...]] [-?|-h|--help]'
+}
+variantRequirement=
+case "$1" in
+    --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+    --variant)		shift; variantRequirement="$1"; shift;;
+esac
+
+source /etc/os-release || exit 3
+[ -n "$ID" -a -n "$VERSION_ID" ] || exit 3
+redhatVersion="$VERSION_ID"
+
+contains rhel $ID_LIKE || exit 3
+[ -z "$variantRequirement" ] || [ "$ID" = "$variantRequirement" ] || exit 1
+
+[ $# -eq 0 ] && exit 0
+
+for versionRequirement
+do
+    versionRequirement="${versionRequirement//./}"
+    case "$versionRequirement" in
+	-*)	[ $redhatVersion -le ${versionRequirement#-} ] && exit 0;;
+	*+)	[ $redhatVersion -ge ${versionRequirement%+} ] && exit 0;;
+	*-*)	minVersion=${versionRequirement%-*}
+		maxVersion=${versionRequirement#*-}
+		[ $redhatVersion -ge $minVersion -a $redhatVersion -le $maxVersion ] && exit 0
+		;;
+	*%*)	minVersion=${versionRequirement%\%*}
+		maxVersion=${versionRequirement#*%}
+		[ $redhatVersion -lt $minVersion -o $redhatVersion -gt $maxVersion ] && exit 0
+		;;
+	*)	[ $redhatVersion -eq $versionRequirement ] && exit 0;;
+    esac
+done
+exit 1
