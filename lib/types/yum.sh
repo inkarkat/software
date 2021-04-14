@@ -15,6 +15,7 @@ if exists yum; then
 else
     hasYum() { return 98; }
     installYum() { :; }
+    isAvailableYum() { return 98; }
     return
 fi
 

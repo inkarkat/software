@@ -13,6 +13,7 @@ typeInstallOrder+=([500]=AmazonExtras)
 if ! exists amazon-linux-extras; then
     hasAmazonExtras() { return 98; }
     installAmazonExtras() { :; }
+    isAvailableAmazonExtras() { return 98; }
     return
 fi
 

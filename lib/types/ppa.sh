@@ -14,6 +14,7 @@ typeInstallOrder+=([11]=Ppa)
 if ! exists add-apt-repository; then
     hasPpa() { return 98; }
     installPpa() { :; }
+    isAvailablePpa() { return 98; }
     return
 fi
 

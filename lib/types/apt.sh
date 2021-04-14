@@ -15,6 +15,7 @@ if exists apt; then
 else
     hasApt() { return 98; }
     installApt() { :; }
+    isAvailableApt() { return 98; }
     return
 fi
 

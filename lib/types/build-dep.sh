@@ -14,6 +14,7 @@ typeInstallOrder+=([121]=DebBuild)
 if ! exists apt-get; then
     hasDebBuild() { return 98; }
     installDebBuild() { :; }
+    isAvailableDebBuild() { return 98; }
     return
 fi
 
