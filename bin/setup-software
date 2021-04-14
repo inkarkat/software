@@ -217,7 +217,7 @@ onceMarker()
 
 createSetupName()
 {
-    setupName="$(basename -- "$(dirname -- "$(simplifyPath "$baseDir")")")"
+    setupName="$(basename -- "$(dirname -- "$(simplifyPath "${1:?}")")")"
     setupName="setup-${setupName#setup-}"
 }
 
@@ -706,7 +706,7 @@ do
     [ -d "${dirspec}/postinstall" ] && postinstallActionsDirspecs+=("${dirspec}/postinstall")
     [ -d "${dirspec}/definitions" ] && definitionDirspecs+=("${dirspec}/definitions")
 done
-[ -n "$setupName" ] || createSetupName
+[ -n "$setupName" ] || createSetupName "${additionalBaseDirs[@]}" "$baseDir"
 
 if [ "$isAddAll" ]; then
     addAllAcceptedGroups
