@@ -20,6 +20,20 @@ will be skipped.
 HELPTEXT
 }
 
+getRequirementExecutable()
+{
+    local requirement="${1:?}"; shift
+    local dirspec; for dirspec in "${requireActionsDirspecs[@]}"
+    do
+	local requirementFilespec="${dirspec}/${requirement}"
+	if [ -x "$requirementFilespec" ]; then
+	    printf %s "$requirementFilespec"
+	    return 0
+	fi
+    done
+    return 1
+}
+
 isDefinitionAcceptedByRequire()
 {
     local requirement="${1:?}"; shift
@@ -43,17 +57,17 @@ isDefinitionAcceptedByRequire()
 	printf >&2 'ERROR: Invalid type: %s\n' "$prefix"
 	exit 3
     else
-	local requirementWithoutArgs="${requirement%% *}"
-	if ! if [ -x "${requireActionsDirspec}/${requirement}" ]; then
-	    "${requireActionsDirspec}/${requirement}"
-	elif [ -x "${requireActionsDirspec}/${requirement#!}" ]; then
-	    ! "${requireActionsDirspec}/${requirement#!}"
-	elif [ -x "${requireActionsDirspec}/${requirementWithoutArgs}" ]; then
+	local requirementFilespec requirementWithoutArgs="${requirement%% *}"
+	if ! if requirementFilespec="$(getRequirementExecutable "$requirement")"; then
+	    "$requirementFilespec"
+	elif requirementFilespec="$(getRequirementExecutable "${requirement#!}")"; then
+	    ! "$requirementFilespec"
+	elif requirementFilespec="$(getRequirementExecutable "${requirementWithoutArgs}")"; then
 	    requirementArgs="${requirement#"${requirementWithoutArgs}"}"
-	    "${requireActionsDirspec}/${requirementWithoutArgs}" $requirementArgs
-	elif [ -x "${requireActionsDirspec}/${requirementWithoutArgs#!}" ]; then
+	    "$requirementFilespec" $requirementArgs
+	elif requirementFilespec="$(getRequirementExecutable "${requirementWithoutArgs#!}")"; then
 	    requirementArgs="${requirement#"${requirementWithoutArgs}"}"
-	    ! "${requireActionsDirspec}/${requirementWithoutArgs#!}" $requirementArgs
+	    ! "$requirementFilespec" $requirementArgs
 	else
 	    eval "$requirement"
 	fi; then

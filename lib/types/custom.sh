@@ -43,6 +43,21 @@ ACTION is one of the following:
 HELPTEXT
 }
 
+getCustomFilespec()
+{
+    local compareOp="${1:?}"; shift
+    local customAction="${1:?}"; shift
+    local dirspec; for dirspec in "${customActionsDirspec[@]}"
+    do
+	local customFilespec="${dirspec}/${customAction}"
+	if [ $compareOp "$customFilespec" ]; then
+	    printf %s "$customFilespec"
+	    return 0
+	fi
+    done
+    return 1
+}
+
 typeset -A addedCustomActions=()
 typeset -a addedCustomActionList=()
 hasCustom()
@@ -58,16 +73,17 @@ hasCustom()
 
     [ "${addedCustomActions["$customAction"]}" ] && return 0	# This custom action has already been selected for installation.
 
-    if [ -x "${customActionsDirspec}/${customCheck}" ]; then
-	"${customActionsDirspec}/${customCheck}"
-    elif [[ "$customCheck" =~ \?$ ]] && local customCheckLikeAction="${customActionsDirspec}/${customActionWithoutSudoAndArgs}${customCheck#\&}" && [ -x "$customCheckLikeAction" ]; then
-	"$customCheckLikeAction"
+    local customFilespec
+    if customFilespec="$(getCustomFilespec -x "${customCheck}")"; then
+	"$customFilespec"
+    elif [[ "$customCheck" =~ \?$ ]] && customFilespec="$(getCustomFilespec -x "${customActionWithoutSudoAndArgs}${customCheck#\&}")"; then
+	"$customFilespec"
     elif [[ "$customCheck" =~ \?$ ]]; then
 	which "${customCheck%\?}" >/dev/null 2>&1 || expandglob -- "${customCheck%\?}" >/dev/null 2>&1
     else
 	if [[ "$customCheck" =~ ^\& ]]; then
-	    if [ -x "${customActionsDirspec}/${customActionWithoutSudoAndArgs}" ]; then
-		customActionWithoutSudoAndArgs="${customActionsDirspec}/${customActionWithoutSudoAndArgs}"
+	    if customFilespec="$(getCustomFilespec -x "${customActionWithoutSudoAndArgs}")"; then
+		customActionWithoutSudoAndArgs="$customFilespec"
 	    fi
 	    customCheck="${customActionWithoutSudoAndArgs}${customCheck#\&}"
 	fi
@@ -86,8 +102,8 @@ addCustom()
     addedCustomActionList+=("$customAction")
 
     local customActionWithoutSudo="${customAction#\$SUDO }"
-    if [ ! -x "${customActionsDirspec}/${customActionWithoutSudo%% *}" ] && \
-	[ ! -e "${customActionsDirspec}/${customAction}" ]; then
+    if ! getCustomFilespec -x "${customActionWithoutSudo%% *}" >/dev/null && \
+	! getCustomFilespec -e "${customAction}" >/dev/null; then
 	local name="${customAction#*:}"
 	local prefix="${customAction%"$name"}"
 	# Note: Native packages would be indistinguishable from the
@@ -111,16 +127,18 @@ installCustom()
     local customAction; for customAction in "${addedCustomActionList[@]}"
     do
 	local customActionWithoutSudo="${customAction#\$SUDO }"
+	local customActionWithoutSudoAndArgs="${customActionWithoutSudo%% *}"
 	local sudoPrefix="${customAction%"$customActionWithoutSudo"}"
+	local customFilespec
 
 	if [ "${itemActions["$customAction"]}" ]; then
 	    # The corresponding action item has already been added to the item's
 	    # type; do nothing here.
 	    continue
-	elif [ -x "${customActionsDirspec}/${customActionWithoutSudo%% *}" ]; then
-	    customActionWithoutSudo="${customActionsDirspec}/${customActionWithoutSudo}"
-	elif [ -e "${customActionsDirspec}/${customAction}" ]; then
-	    local quotedCustomNotification; printf -v quotedCustomNotification %s "${customActionsDirspec}/${customAction}"
+	elif customFilespec="$(getCustomFilespec -x "${customActionWithoutSudoAndArgs}")"; then
+	    customActionWithoutSudo="${customFilespec}/${customActionWithoutSudo#"$customActionWithoutSudoAndArgs"}"
+	elif customFilespec="$(getCustomFilespec -e "${customAction}")"; then
+	    local quotedCustomNotification; printf -v quotedCustomNotification %s "$customFilespec"
 	    toBeInstalledCommands+=("addLoginNotification --file $quotedCustomNotification --immediate")
 	    continue
 	fi

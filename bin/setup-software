@@ -24,7 +24,7 @@ printShortUsage()
     echo
     printf 'Usage: %q %s | runWithPrompt --exit-on-failure\n' "$(basename "$1")" '--yes --batch [--select DEFINITION] (--base-dir BASE-DIR -a|--all|GROUP-NAME | GROUP-FILESPEC)'
     echo
-    printf 'Usage: %q %s\n' "$(basename "$1")" '--execute --yes --batch [--select DEFINITION] (--base-dir BASE-DIR -a|--all|GROUP-NAME | GROUP-FILESPEC)'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '--execute --yes --batch [--select DEFINITION] [--add-base-dir BASE-DIR] (--base-dir BASE-DIR -a|--all|GROUP-NAME | GROUP-FILESPEC)'
 }
 printUsage()
 {
@@ -63,9 +63,13 @@ HELPDESCRIPTION
 			(with definitions broken over multiple lines already
 			joined), instead of considering all from the passed
 			GROUP(s).
-    --base-dir BASE-DIR	Reference definitions, custom actions, pre-, and
-			post-install actions from BASE-DIR instead of using
-			those bundled with this project.
+    --base-dir BASE-DIR Consider definitions, custom actions, requirements,
+			pre-, and post-install actions from BASE-DIR instead of
+			using those bundled with this project.
+    --add-base-dir BASE-DIR
+			Also consider definitions, custom actions, requirements,
+			pre-, and post-install actions from BASE-DIR (with
+			higher preference than those bundled with this project).
     --name NAME		Use NAME for storing the user's choices.
     --all|-a		Consider definitions from all existing definition
 			groups.
@@ -165,17 +169,30 @@ do
 done
 set -o noglob
 
+isDefinitionGroupDir()
+{
+    local group="${1:?}"; shift
+    local dirspec; for dirspec in "${definitionDirspecs[@]}"
+    do
+	[ -d "${dirspec}/${group}" ] && return 0
+    done
+    return 1
+}
 typeset -a acceptedGroups=()
 addAllAcceptedGroups()
 {
     typeset -a groups=()
-    readarray -t groups < <(cd "${definitionDirspec:?}" && find . -print | sort | sed -e 's#^\./##')
+    readarray -t groups < <(for dirspec in "${definitionDirspecs[@]}"
+	do
+	    cd "$dirspec" && find . -print
+	done | sort | sed -e 's#^\./##'
+    )
     typeset -a filteredGroups=()
     local group; for group in "${groups[@]}"
     do
 	contains "$group" "${filteredGroups[@]}" && continue
 
-	if [ -d "${definitionDirspec}/${group}" ]; then
+	if isDefinitionGroupDir "${group}"; then
 	    groupDirectoryGroupCount=$(countGlob "${group}/*" "${groups[@]}")
 	    [ $groupDirectoryGroupCount -gt 1 ] || continue  # Ignore a group directory that has only one group in it; the query for the group itself will suffice.
 	    memoizeDecision --memoize-group "${setupName}-groups" --subject "$group" --verb "directory (with $groupDirectoryGroupCount groups) is not" --state 'chosen' --action 'consider it' || \
@@ -305,9 +322,12 @@ preinstallHook()
     set +o noglob
 	local name="${1:?}"; shift
 	local actionScript
-	for actionScript in "${preinstallActionsDirspec}/${name}"/*
+	local dirspec; for dirspec in "${preinstallActionsDirspecs[@]}"
 	do
-	    [ -x "$actionScript" ] && addedPreinstallArgs+=(--pre "$name" --action "${actionScript#"${preinstallActionsDirspec}/"}")
+	    for actionScript in "${dirspec}/${name}"/*
+	    do
+		[ -x "$actionScript" ] && addedPreinstallArgs+=(--pre "$name" --action "${actionScript#"${dirspec}/"}")
+	    done
 	done
     set -o noglob
 }
@@ -326,9 +346,12 @@ postinstallHook()
     set +o noglob
 	local name="${1:?}"; shift
 	local actionScript
-	for actionScript in "${postinstallActionsDirspec}/${name}"/*
+	local dirspec; for dirspec in "${postinstallActionsDirspecs[@]}"
 	do
-	    [ -x "$actionScript" ] && addedPostinstallArgs+=(--post "$name" --action "${actionScript#"${postinstallActionsDirspec}/"}")
+	    for actionScript in "${dirspec}/${name}"/*
+	    do
+		[ -x "$actionScript" ] && addedPostinstallArgs+=(--post "$name" --action "${actionScript#"${dirspec}/"}")
+	    done
 	done
     set -o noglob
 }
@@ -443,6 +466,20 @@ preInstall()
 
     "${scriptDir}/${scriptName}" "${recursiveArgs[@]}" "${addedPreinstallArgs[@]}"
 }
+getPreinstallFilespec()
+{
+    local compareOp="${1:?}"; shift
+    local preinstallAction="${1:?}"; shift
+    local dirspec; for dirspec in "${preinstallActionsDirspecs[@]}"
+    do
+	local preinstallFilespec="${dirspec}/${preinstallAction}"
+	if [ $compareOp "$preinstallFilespec" ]; then
+	    printf %s "$preinstallFilespec"
+	    return 0
+	fi
+    done
+    return 1
+}
 runPreInstallCheck()
 {
     local item="${1:?}"; shift
@@ -451,11 +488,12 @@ runPreInstallCheck()
     local actionWithoutSudo="${action#\$SUDO }"
     local sudoPrefix="${action%"$actionWithoutSudo"}"
     local actionWithoutSudoAndArgs="${actionWithoutSudo%% *}"
-    if [ -x "${preinstallActionsDirspec}/${actionWithoutSudoAndArgs}" ]; then
-	actionWithoutSudo="${preinstallActionsDirspec}/${actionWithoutSudo}"
+    local actionFilespec
+    if actionFilespec="$(getPreinstallFilespec -x "${actionWithoutSudoAndArgs}")"; then
+	actionWithoutSudo="${actionFilespec}/${actionWithoutSudo#"$actionWithoutSudoAndArgs"}"
 	addUniqueToBeInstalledCommand "${sudoPrefix:+${SUDO}${SUDO:+ }}${actionWithoutSudo}"
-    elif [ -e "${preinstallActionsDirspec}/${action}" ]; then
-	local quotedPreinstallNotification; printf -v quotedPreinstallNotification %s "${preinstallActionsDirspec}/${action}"
+    elif actionFilespec="$(getPreinstallFilespec -e "${action}")"; then
+	local quotedPreinstallNotification; printf -v quotedPreinstallNotification %s "$actionFilespec"
 	addUniqueToBeInstalledCommand "addLoginNotification --file $quotedPreinstallNotification --immediate --no-blocking-gui"
     else
 	local name="${action#*:}"
@@ -484,6 +522,20 @@ postInstall()
     printf -v quotedPostInstallCommand '%q ' "${scriptDir}/${scriptName}" "${executeArg[@]}" "${recursiveArgs[@]}" "${addedPostinstallArgs[@]}"
     addUniqueToBeInstalledCommand "${quotedPostInstallCommand% }"
 }
+getPostinstallFilespec()
+{
+    local compareOp="${1:?}"; shift
+    local postinstallAction="${1:?}"; shift
+    local dirspec; for dirspec in "${postinstallActionsDirspecs[@]}"
+    do
+	local postinstallFilespec="${dirspec}/${postinstallAction}"
+	if [ $compareOp "$postinstallFilespec" ]; then
+	    printf %s "$postinstallFilespec"
+	    return 0
+	fi
+    done
+    return 1
+}
 runPostInstallCheck()
 {
     local item="${1:?}"; shift
@@ -491,14 +543,15 @@ runPostInstallCheck()
     local actionWithoutSudo="${action#\$SUDO }"
     local sudoPrefix="${action%"$actionWithoutSudo"}"
     local actionWithoutSudoAndArgs="${actionWithoutSudo%% *}"
+    local actionFilespec
     if hasItem "$item"; then
-	if [ -x "${postinstallActionsDirspec}/${action}" ]; then
-	    "${postinstallActionsDirspec}/${action}"
-	elif [ -x "${postinstallActionsDirspec}/${actionWithoutSudoAndArgs}" ]; then
+	if actionFilespec="$(getPostinstallFilespec -x "${action}")"; then
+	    "$actionFilespec"
+	elif actionFilespec="$(getPostinstallFilespec -x "${actionWithoutSudoAndArgs}")"; then
 	    local actionArgs="${actionWithoutSudo#"${actionWithoutSudoAndArgs}"}"
-	    ${sudoPrefix:+$SUDO} "${postinstallActionsDirspec}/${actionWithoutSudoAndArgs}" $actionArgs
-	elif [ -e "${postinstallActionsDirspec}/${action}" ]; then
-	    addLoginNotification --file "${postinstallActionsDirspec}/${action}" --immediate
+	    ${sudoPrefix:+$SUDO} "$actionFilespec" $actionArgs
+	elif actionFilespec="$(getPostinstallFilespec -e "${action}")"; then
+	    addLoginNotification --file "$actionFilespec" --immediate
 	else
 	    local name="${action#*:}"
 	    local prefix="${action%"$name"}"
@@ -578,6 +631,7 @@ isBatch=
 isExecute=
 isVerbose=
 typeset -a recursiveArgs=()
+typeset -a additionalBaseDirs=()
 while [ $# -ne 0 ]
 do
     case "$1" in
@@ -589,6 +643,7 @@ do
 			exit 0
 			;;
 	--base-dir)	recursiveArgs+=("$1" "$2"); shift; baseDir="${1:?}"; shift;;
+	--add-base-dir)	recursiveArgs+=("$1" "$2"); shift; additionalBaseDirs=("${1:?}" "${additionalBaseDirs[@]}"); shift;;
 	--execute|-e)	recursiveArgs+=("$1"); shift; isExecute=t;;
 	--verbose|-v)	recursiveArgs+=("$1"); shift; isVerbose=t;;
 	--yes|-y)	shift; obtainSelection=true;;
@@ -631,11 +686,20 @@ do
 	*)		break;;
     esac
 done
-readonly customActionsDirspec="${baseDir}/custom"
-readonly requireActionsDirspec="${baseDir}/require"
-readonly preinstallActionsDirspec="${baseDir}/preinstall"
-readonly postinstallActionsDirspec="${baseDir}/postinstall"
-readonly definitionDirspec="${baseDir}/definitions"
+typeset -a customActionsDirspecs=()
+typeset -a requireActionsDirspecs=()
+typeset -a preinstallActionsDirspecs=()
+typeset -a postinstallActionsDirspecs=()
+typeset -a definitionDirspecs=()
+
+for dirspec in "${additionalBaseDirs[@]}" "$baseDir"
+do
+    [ -d "${dirspec}/custom" ]      && customActionsDirspecs+=("${dirspec}/custom")
+    [ -d "${dirspec}/require" ]     && requireActionsDirspecs+=("${dirspec}/require")
+    [ -d "${dirspec}/preinstall" ]  && preinstallActionsDirspecs+=("${dirspec}/preinstall")
+    [ -d "${dirspec}/postinstall" ] && postinstallActionsDirspecs+=("${dirspec}/postinstall")
+    [ -d "${dirspec}/definitions" ] && definitionDirspecs+=("${dirspec}/definitions")
+done
 if [ -z "$setupName" ]; then
     setupName="$(basename -- "$(dirname -- "$(simplifyPath "$baseDir")")")"
     setupName="setup-${setupName#setup-}"
@@ -665,12 +729,26 @@ elif [ $# -eq 0 ]; then
     exit 2
 fi
 
+getDefinitionFilespec()
+{
+    local definitionFile="${1:?}"; shift
+    local dirspec; for dirspec in "${definitionDirspecs[@]}"
+    do
+	local definitionFilespec="${dirspec}/${definitionFile}"
+	if [ -f "$definitionFilespec" ]; then
+	    printf %s "$definitionFilespec"
+	    return 0
+	fi
+    done
+    return 1
+}
+
 IFS=' '
 typeset -a definitions=()
 for definitionFile
 do
-    if [ -f "${definitionDirspec}/${definitionFile}" -a "${definitionFile:0:1}" != '.' ]; then
-	definitionFilespec="${definitionDirspec}/${definitionFile}"
+    if [ "${definitionFile:0:1}" != '.' ] && definitionFilespec="$(getDefinitionFilespec "$definitionFile")"; then
+	:
     elif [ -f "${definitionFile}" ]; then
 	definitionFilespec="$definitionFile"
     else
