@@ -102,6 +102,9 @@ printConfigUsageForTypes()
 	elif [ -n "$definitionFilterFunction" ]; then
 	    printf "$padding"
 	    eval "configUsage${definitionFilterFunction}" | highlightPrefix
+	elif [ "$prefix" = config ]; then
+	    printf "$padding"
+	    configUsageConfig | highlightPrefix
 	elif [ "$prefix" = preinstall ]; then
 	    printf "$padding"
 	    configUsagePreinstall | highlightPrefix
@@ -151,6 +154,8 @@ HELPTEXT
 
 	printConfigUsageForTypes "${prefixes[@]%:}" "${definitionFilterPrefixes[@]%:}"    # Show config help for all types (in the order in which the types are also installed).
 
+	echo
+	configUsageConfig | highlightPrefix
 	echo
 	configUsagePreinstall | highlightPrefix
 	echo
@@ -246,6 +251,17 @@ Items without a prefix refer to packages installed via the distribution's
 package manager (${nativePackageManager,}).
 HELPTEXT
 }
+configUsageConfig()
+{
+    cat <<'HELPTEXT'
+config: items supply special (type-specific) configuration to the non-config
+non-pre/postinstall item preceding it in the current definition if that item is
+missing, but has now been selected. If there are multiple configurations for an
+item, they are concatenated, separated by a newline. The format itself is
+undefined, but needs to be a single line, and often is in the form
+VARIABLE=VALUE, so that it can simply be eval'd by the type.
+HELPTEXT
+}
 configUsagePreinstall()
 {
     cat <<'HELPTEXT'
@@ -261,9 +277,9 @@ preinstall: items consist of an ACTION that is one of the following:
   distribution's package manager, use the special "native:" prefix here
 - a PREINSTALL-EXPRESSION (whitespace must be escaped or the entire expression
   quoted!) that is eval'd (prepend $SUDO if it needs to be invoked as root)
-A preinstall item runs (before other installation actions) if the
+A preinstall item runs (before other installation actions) if the non-config
 non-pre/postinstall item preceding it in the current definition is missing, but
-the definition has now been selected.
+has now been selected.
 HELPTEXT
 }
 configUsagePostinstall()
@@ -281,9 +297,9 @@ postinstall: items consist of an ACTION that is one of the following:
   distribution's package manager, use the special "native:" prefix here
 - a POSTINSTALL-EXPRESSION (whitespace must be escaped or the entire expression
   quoted!) that is eval'd (prepend $SUDO if it needs to be invoked as root)
-A postinstall item runs if the non-pre/postinstall item preceding it in the
-current definition was missing, but has been successfully installed by the
-installation commands.
+A postinstall item runs if the non-config non-pre/postinstall item preceding it
+in the current definition was missing, but has been successfully installed by
+the installation commands.
 HELPTEXT
 }
 configUsagePostinstallOrOnce()
@@ -303,12 +319,27 @@ following:
 - a POSTINSTALL-EXPRESSION (whitespace must be escaped or the entire expression
   quoted!) that is eval'd (prepend $SUDO if it needs to be invoked as root)
 Like a postinstall item, a postinstall-or-once item runs if the
-non-pre/postinstall item preceding it in the current definition was missing, but
-has been successfully installed by the installation commands. Additionally, if
-the non-pre/postinstall item preceding it already existed (e.g. it comes
-preinstalled), it will also run once (until it succeeds); ID or ACTION itself is
-used for that uniqueness check.
+non-config non-pre/postinstall item preceding it in the current definition was
+missing, but has been successfully installed by the installation commands.
+Additionally, if the non-config non-pre/postinstall item preceding it already
+existed (e.g. it comes preinstalled), it will also run once (until it succeeds);
+ID or ACTION itself is used for that uniqueness check.
 HELPTEXT
+}
+
+typeset -A configuration=()
+addConfig()
+{
+    local name="${1:?}"; shift
+    local item="${name#*$'\n'}"
+    if [ "${addedItems["$item"]}" ]; then
+	# Convert the "config:VALUE\nITEM" to configuration[ITEM]=VALUE.
+	# This can be queried by install${typeFunction}() and considered when
+	# rendering the install command.
+	local newValue="${name%%$'\n'*}"
+	local existingValue="${configuration["$item"]}"
+	configuration["$item"]="${existingValue}${existingValue:+$'\n'}${newValue}"
+    fi
 }
 
 typeset -a addedPreinstallArgs=()
@@ -424,6 +455,8 @@ addItems()
 	local typeFunction="${typeRegistry["${prefix:-native:}"]}"
 	if [ -n "$typeFunction" ]; then
 	    eval "add${typeFunction} \"\$name\""
+	elif [ "$prefix" = config: ]; then
+	    addConfig "$name"
 	elif [ "$prefix" = preinstall: ]; then
 	    addPreinstall "$name"
 	elif [ "$prefix" = postinstall: ]; then
@@ -432,7 +465,7 @@ addItems()
 	    printf >&2 'ERROR: Invalid type: %s\n' "$prefix"
 	    exit 3
 	fi
-	addedItems["$item"]=t	# Record all added items for the preinstall check.
+	addedItems["$item"]=t	# Record all added items for the config type / preinstall check.
     done
 }
 hasOrAddItems()
@@ -442,8 +475,8 @@ hasOrAddItems()
     do
 	local name="${item#*:}"
 	local prefix="${item%"$name"}"
-	if contains "$prefix" "${!definitionFilterTypeRegistry[@]}" preinstall: postinstall: postinstall-or-once:; then
-	    printf >&2 'ERROR: Cannot use a %s type within a preinstall / postinstall[-or-once] item.\n' "$prefix"
+	if contains "$prefix" "${!definitionFilterTypeRegistry[@]}" config: preinstall: postinstall: postinstall-or-once:; then
+	    printf >&2 'ERROR: Cannot use a %s type within a config / preinstall / postinstall[-or-once] item.\n' "$prefix"
 	    exit 3
 	fi
 
@@ -827,7 +860,7 @@ do
 	prefix="${item%"$name"}"
 	if contains "$prefix" "${!definitionFilterTypeRegistry[@]}"; then
 	    continue    # Ignore; definition filters have already been handled.
-	elif contains "$prefix" preinstall: postinstall:; then
+	elif contains "$prefix" config: preinstall: postinstall:; then
 	    if [ -z "$lastRealItem" ]; then
 		printf >&2 'ERROR: No previous item before %s.\n' "$item"
 		exit 3
