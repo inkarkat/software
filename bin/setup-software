@@ -820,6 +820,7 @@ do
     lastMissingItem=
     let realItemCnt=0
     let missingRealItemCnt=0
+    noMissingItemMessage="Already installed: $definition"
     for item
     do
 	name="${item#*:}"
@@ -853,6 +854,7 @@ do
 			    0)	;;  # The item already is installed, and the check has been run already.
 			    1)	# The item already is installed, but the check did not run yet.
 				addPostinstall "$rest"$'\n'"$lastRealItem" --post-or-once --id "$escapedId"
+				noMissingItemMessage="Only postinstall required for $definition"
 				;;
 			    *)	exit 3;;
 			esac
@@ -873,8 +875,14 @@ do
 	    hasItem "$item"
 	    case $? in
 		0)  lastMissingItem=;;
-		98) continue;;	# Just skip this item.
-		99) break;;	# If one item's state cannot not be determined, the entire definition should be skipped, as we cannot ensure the correct installation.
+		98) # Just skip this item.
+		    noMissingItemMessage="Just skipped items in $definition"
+		    continue
+		    ;;
+		99) # If one item's state cannot not be determined, the entire definition should be skipped, as we cannot ensure the correct installation.
+		    noMissingItemMessage="Skipped: $definition"
+		    break
+		    ;;
 		*)  missingItems+=("$item")
 		    lastMissingItem="$item"
 		    let missingRealItemCnt+=1
@@ -885,7 +893,7 @@ do
     done
 
     if [ ${#missingItems[@]} -eq 0 ]; then
-	[ "$isVerbose" ] && printf >&2 'Already installed: %s\n' "$definition"
+	[ "$isVerbose" ] && printf >&2 '%s\n' "$noMissingItemMessage"
     else
 	let missingDefinitionCount+=1
 	what=
