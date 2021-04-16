@@ -9,6 +9,9 @@ triplet.
 It checks the Firefox PROFILE-NAME / default profile for ADDON-ID and if that
 isn't installed yet uses ADDON-URL to launch the right Firefox instance for
 (manual) installation of the add-on.
+The browser to be launched (per PROFILE-NAME) can be configured via a
+    config:FIREFOX=/opt/firefox/firefox
+configuration item following it.
 HELPTEXT
 }
 
@@ -103,20 +106,25 @@ installFirefoxAddon()
 {
     [ ${#addedFirefoxAddons[@]} -gt 0 ] || return
 
+    typeset -A firefoxExecutableByProfile=()	# Assumption: Each profile is opened by a particular Firefox executable, so a mapping of profile -> executable suffices, and we don't need to store profile and executable as independent vectors.
     typeset -A firefoxAddonUrlsByProfile=()
     local firefoxAddonRecord; for firefoxAddonRecord in "${!addedFirefoxAddons[@]}"
     do
+	FIREFOX=
+	eval "${configuration["firefox:$firefoxAddonRecord"]}"
+
 	local profileName addonId addonUrl
 	IFS=: read -r profileName addonId addonUrl <<<"$firefoxAddonRecord"
 	[ -z "$profileName" ] && profileName="${firefoxDefaultProfileName:?}"	# Re-use default profile name cached by hasFirefoxAddon().
 
+	firefoxExecutableByProfile["$profileName"]="${FIREFOX:-firefox}"
 	printf -v quotedAddonUrl '%q' "$addonUrl"
 	firefoxAddonUrlsByProfile["$profileName"]="${firefoxAddonUrlsByProfile["$profileName"]}${firefoxAddonUrlsByProfile["$profileName"]:+ }${quotedAddonUrl}"
     done
 
     for profileName in "${!firefoxAddonUrlsByProfile[@]}"
     do
-	toBeInstalledCommands+=("firefox -no-remote -P $profileName ${firefoxAddonUrlsByProfile["$profileName"]}")
+	toBeInstalledCommands+=("${firefoxExecutableByProfile["$profileName"]} -no-remote -P $profileName ${firefoxAddonUrlsByProfile["$profileName"]}")
     done
 }
 
