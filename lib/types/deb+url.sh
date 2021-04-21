@@ -52,18 +52,18 @@ installDebUrl()
 	    maxAge="${BASH_REMATCH[0]%:}"
 	    packageNameGlobUrl="${packageNameGlobUrl#"${BASH_REMATCH[0]}"}"
 	fi
-	local packageUrl="${packageNameGlobUrl#*:}"
-	local packageNameAndGlob="${packageNameGlobUrl%:$packageUrl}"
+	local packageUrls="${packageNameGlobUrl#*:}"
+	local packageNameAndGlob="${packageNameGlobUrl%:$packageUrls}"
 	local packageGlob="${packageNameAndGlob##*/}"
 	local packageName="${packageNameAndGlob%"$packageGlob"}"
 	local packageOutputNameArg=; isglob "$packageGlob" || printf -v packageOutputNameArg %q "$packageGlob"
 	printf -v packageGlob %q "$packageGlob"
 	packageName="${packageName%/}"
 	printf -v packageName %q "$packageName"
-	printf -v packageUrl %q "$packageUrl"
+	printf -v packageUrlArgs ' --url %q' "$packageUrls"
 
 	# Note: No sudo here, as the downloading will happen as the current user
 	# and only the installation itself will be done through sudo.
-	toBeInstalledCommands+=("deb-download-installer${isBatch:+ --batch}${packageName:+ --application-name }${packageName} --expression ${packageGlob}${maxAge:+ --max-age }$maxAge${packageUrl:+ --url }${packageUrl}${packageOutputNameArg:+ --output }${packageOutputNameArg}")
+	toBeInstalledCommands+=("deb-download-installer${isBatch:+ --batch}${packageName:+ --application-name }${packageName} --expression ${packageGlob}${maxAge:+ --max-age }$maxAge${packageUrlArgs}${packageOutputNameArg:+ --output }${packageOutputNameArg}")
     done
 }
