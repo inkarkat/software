@@ -5,12 +5,12 @@ configUsageNotifyUrl()
     : ${INSTALL_DIR:=~/install}
     cat <<HELPTEXT
 notify+url: items consist of a
-    [MAX-AGE[SUFFIX]]:[[SUBDIR/]NAME/]FILE-GLOB:[URL]
+    [MAX-AGE[SUFFIX]]:[[SUBDIR/]NAME/]FILE-GLOB:[URL [...]]
 triplet.
 If ${INSTALL_DIR}/(SUBDIR|*)/(NAME|*)/FILE-GLOB already exists
 [and if it is younger than MAX-AGE[SUFFIX]], it will be used; else, the
-notification file from URL will be downloaded (and put into ${INSTALL_DIR}/*
-if it exists).
+notification file from URL(s) (first that succeeds) will be downloaded (and put
+into ${INSTALL_DIR}/* if it exists).
 If no URL is given and the notification file does not exist, the installation
 will fail.
 HELPTEXT
@@ -35,8 +35,8 @@ installNotifyUrl()
     [ ${#addedNotifyUrlRecords[@]} -gt 0 ] || return
     local notifyUrlRecord; for notifyUrlRecord in "${!addedNotifyUrlRecords[@]}"
     do
-	local maxAge notificationNameAndGlob notificationUrl
-	IFS=: read -r maxAge notificationNameAndGlob notificationUrl <<<"$notifyUrlRecord"
+	local maxAge notificationNameAndGlob notificationUrlList
+	IFS=: read -r maxAge notificationNameAndGlob notificationUrlList <<<"$notifyUrlRecord"
 	local notificationGlob="${notificationNameAndGlob##*/}"
 	local notificationName="${notificationNameAndGlob%"$notificationGlob"}"
 	if [ -z "$notificationGlob" ]; then
@@ -47,11 +47,12 @@ installNotifyUrl()
 	printf -v notificationGlob %q "$notificationGlob"
 	notificationName="${notificationName%/}"
 	printf -v notificationName %q "$notificationName"
-	printf -v notificationUrl %q "$notificationUrl"
+	typeset -a notificationUrls=(); IFS=' ' read -r -a notificationUrls <<<"$notificationUrlList"
+	local notificationUrlArgs; printf -v notificationUrlArgs ' --url %q' "${notificationUrls[@]}"
 
 	# Note: No sudo here, as the downloading will happen as the current user
 	# and only the installation itself will be done through sudo.
-	toBeInstalledCommands+=("login-notification-download${isBatch:+ --batch} --immediate --no-blocking-gui${notificationName:+ --application-name }${notificationName} --expression ${notificationGlob}${maxAge:+ --max-age }$maxAge --url }${notificationUrl}${notificationOutputNameArg:+ --output }${notificationOutputNameArg}")
+	toBeInstalledCommands+=("login-notification-download${isBatch:+ --batch} --immediate --no-blocking-gui${notificationName:+ --application-name }${notificationName} --expression ${notificationGlob}${maxAge:+ --max-age }$maxAge${notificationUrlArgs}${notificationOutputNameArg:+ --output }${notificationOutputNameArg}")
     done
 }
 

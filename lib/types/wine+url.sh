@@ -4,15 +4,16 @@ configUsageWine()
 {
     cat <<'HELPTEXT'
 wine+url: items consist of a
-    EXECUTABLE-NAME?[:MAX-AGE[SUFFIX]]:[[SUBDIR/]NAME/]PACKAGE-GLOB:[URL]
+    EXECUTABLE-NAME?[:MAX-AGE[SUFFIX]]:[[SUBDIR/]NAME/]PACKAGE-GLOB:[URL [...]]
 triplet / quadruplet.
 If EXECUTABLE-NAME? (located in Wine's drive C: unless it's an absolute path)
 exists / resolves to an existing file or directory, the item is deemed already
 installed.
 Else if ~/install/(SUBDIR|*)/(NAME|*)/PACKAGE-GLOB already exists [and if it is
-younger than MAX-AGE[SUFFIX]], it will be used; else, the *.exe / *.msi from URL
-will be downloaded (and put into ~/install/* if it exists). If no URL is given
-and the package does not exist, the installation will fail.
+younger than MAX-AGE[SUFFIX]], it will be used; else, the *.exe / *.msi from
+URL(s) (first that succeeds) will be downloaded (and put into ~/install/* if it
+exists). If no URL is given and the package does not exist, the installation
+will fail.
 HELPTEXT
 }
 
@@ -113,18 +114,19 @@ installWine()
 	    maxAge="${BASH_REMATCH[0]%:}"
 	    packageNameGlobUrl="${packageNameGlobUrl#"${BASH_REMATCH[0]}"}"
 	fi
-	local packageUrl="${packageNameGlobUrl#*:}"
-	local packageNameAndGlob="${packageNameGlobUrl%:$packageUrl}"
+	local packageUrlList="${packageNameGlobUrl#*:}"
+	local packageNameAndGlob="${packageNameGlobUrl%:$packageUrlList}"
 	local packageGlob="${packageNameAndGlob##*/}"
 	local packageName="${packageNameAndGlob%"$packageGlob"}"
 	local packageOutputNameArg=; isglob "$packageGlob" || printf -v packageOutputNameArg %q "$packageGlob"
 	printf -v packageGlob %q "$packageGlob"
 	packageName="${packageName%/}"
 	printf -v packageName %q "$packageName"
-	printf -v packageUrl %q "$packageUrl"
+	typeset -a packageUrls=(); IFS=' ' read -r -a packageUrls <<<"$packageUrlList"
+	local packageUrlArgs; printf -v packageUrlArgs ' --url %q' "${packageUrls[@]}"
 
 	# Note: No sudo here, as downloading and installation will happen as the
 	# current user.
-	toBeInstalledCommands+=("wine-download-installer${isBatch:+ --batch}${packageName:+ --application-name }${packageName} --expression ${packageGlob}${maxAge:+ --max-age }$maxAge${packageUrl:+ --url }${packageUrl}${packageOutputNameArg:+ --output }${packageOutputNameArg}")
+	toBeInstalledCommands+=("wine-download-installer${isBatch:+ --batch}${packageName:+ --application-name }${packageName} --expression ${packageGlob}${maxAge:+ --max-age }$maxAge${packageUrlArgs}${packageOutputNameArg:+ --output }${packageOutputNameArg}")
     done
 }
