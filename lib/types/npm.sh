@@ -63,4 +63,4 @@ installNpm()
 }
 
 typeRegistry+=([npm:]=Npm)
-typeInstallOrder+=([400]=Npm)
+typeInstallOrder+=([310]=Npm)

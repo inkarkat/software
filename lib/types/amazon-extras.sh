@@ -8,7 +8,7 @@ HELPTEXT
 }
 
 typeRegistry+=([amazon-extras:]=AmazonExtras)
-typeInstallOrder+=([500]=AmazonExtras)
+typeInstallOrder+=([210]=AmazonExtras)
 
 if ! exists amazon-linux-extras; then
     hasAmazonExtras() { return 98; }
