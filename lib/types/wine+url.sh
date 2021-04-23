@@ -60,44 +60,44 @@ addWine()
     # The best identifier for pre-/postinstall hooks is the package name
     # (without any [SUBDIR/]); unfortunately, it is optional and hard to parse,
     # so most of the implementation is copied from installWine().
-    local packageNameGlobUrl="${wineUrlRecord#*:}"
-    if [[ "$packageNameGlobUrl" =~ ^[0-9]+([smhdwyg]|mo): ]]; then
-	packageNameGlobUrl="${packageNameGlobUrl#"${BASH_REMATCH[0]}"}"
+    local applicationNamePackageGlobUrl="${wineUrlRecord#*:}"
+    if [[ "$applicationNamePackageGlobUrl" =~ ^[0-9]+([smhdwyg]|mo): ]]; then
+	applicationNamePackageGlobUrl="${applicationNamePackageGlobUrl#"${BASH_REMATCH[0]}"}"
     fi
-    local packageUrl="${packageNameGlobUrl#*:}"
-    local packageNameAndGlob="${packageNameGlobUrl%:$packageUrl}"
-    local packageGlob="${packageNameAndGlob##*/}"
-    local packageName="${packageNameAndGlob%"$packageGlob"}"
-    packageName="${packageName%/}"
-    packageOnlyName="${packageName##*/}"
+    local urlList="${applicationNamePackageGlobUrl#*:}"
+    local applicationNameAndPackageGlob="${applicationNamePackageGlobUrl%:$urlList}"
+    local packageGlob="${applicationNameAndPackageGlob##*/}"
+    local applicationName="${applicationNameAndPackageGlob%"$packageGlob"}"
+    applicationName="${applicationName%/}"
+    appliationOnlyName="${applicationName##*/}"
 
-    [ -z "$packageOnlyName" ] || preinstallHook "$packageOnlyName"
+    [ -z "$appliationOnlyName" ] || preinstallHook "$appliationOnlyName"
     addedWineUrlPackages["$wineUrlRecord"]=t
-    [ -z "$packageOnlyName" ] || postinstallHook "$packageOnlyName"
+    [ -z "$appliationOnlyName" ] || postinstallHook "$appliationOnlyName"
 }
 
 isAvailableWine()
 {
-    local executableNameAndPackageName="${1:?}"; shift
-    local queriedExecutableName="${executableNameAndPackageName%%:*}"; shift
-    local queriedPackageName="${executableNameAndPackageName#"${queriedExecutableName}:"}"; shift
+    local executableNameAndApplicationName="${1:?}"; shift
+    local queriedExecutableName="${executableNameAndApplicationName%%:*}"; shift
+    local queriedApplicationName="${executableNameAndApplicationName#"${queriedExecutableName}:"}"; shift
 
 
-    hasWine "${queriedExecutableName}:${queriedPackageName}:" && return 0
+    hasWine "${queriedExecutableName}:${queriedApplicationName}:" && return 0
 
     local wineUrlRecord; for wineUrlRecord in "${!addedWineUrlPackages[@]}"
     do
-	local packageNameGlobUrl="${wineUrlRecord#*:}"
-	if [[ "$packageNameGlobUrl" =~ ^[0-9]+([smhdwyg]|mo): ]]; then
-	    packageNameGlobUrl="${packageNameGlobUrl#"${BASH_REMATCH[0]}"}"
+	local applicationNamePackageGlobUrl="${wineUrlRecord#*:}"
+	if [[ "$applicationNamePackageGlobUrl" =~ ^[0-9]+([smhdwyg]|mo): ]]; then
+	    applicationNamePackageGlobUrl="${applicationNamePackageGlobUrl#"${BASH_REMATCH[0]}"}"
 	fi
-	local packageUrl="${packageNameGlobUrl#*:}"
-	local packageNameAndGlob="${packageNameGlobUrl%:$packageUrl}"
-	local packageGlob="${packageNameAndGlob##*/}"
-	local packageName="${packageNameAndGlob%"$packageGlob"}"
-	packageName="${packageName%/}"
+	local urlList="${applicationNamePackageGlobUrl#*:}"
+	local applicationNameAndPackageGlob="${applicationNamePackageGlobUrl%:$urlList}"
+	local packageGlob="${applicationNameAndPackageGlob##*/}"
+	local applicationName="${applicationNameAndPackageGlob%"$packageGlob"}"
+	applicationName="${applicationName%/}"
 
-	[ "$packageName" = "$queriedPackageName" ] && return 0
+	[ "$applicationName" = "$queriedApplicationName" ] && return 0
     done
 
     return 1
@@ -109,24 +109,24 @@ installWine()
     local wineUrlRecord; for wineUrlRecord in "${!addedWineUrlPackages[@]}"
     do
 	local maxAge=
-	local packageNameGlobUrl="${wineUrlRecord#*:}"
-	if [[ "$packageNameGlobUrl" =~ ^[0-9]+([smhdwyg]|mo): ]]; then
+	local applicationNamePackageGlobUrl="${wineUrlRecord#*:}"
+	if [[ "$applicationNamePackageGlobUrl" =~ ^[0-9]+([smhdwyg]|mo): ]]; then
 	    maxAge="${BASH_REMATCH[0]%:}"
-	    packageNameGlobUrl="${packageNameGlobUrl#"${BASH_REMATCH[0]}"}"
+	    applicationNamePackageGlobUrl="${applicationNamePackageGlobUrl#"${BASH_REMATCH[0]}"}"
 	fi
-	local packageUrlList="${packageNameGlobUrl#*:}"
-	local packageNameAndGlob="${packageNameGlobUrl%:$packageUrlList}"
-	local packageGlob="${packageNameAndGlob##*/}"
-	local packageName="${packageNameAndGlob%"$packageGlob"}"
-	local packageOutputNameArg=; isglob "$packageGlob" || printf -v packageOutputNameArg %q "$packageGlob"
+	local urlList="${applicationNamePackageGlobUrl#*:}"
+	local applicationNameAndPackageGlob="${applicationNamePackageGlobUrl%:$urlList}"
+	local packageGlob="${applicationNameAndPackageGlob##*/}"
+	local applicationName="${applicationNameAndPackageGlob%"$packageGlob"}"
+	local outputNameArg=; isglob "$packageGlob" || printf -v outputNameArg %q "$packageGlob"
 	printf -v packageGlob %q "$packageGlob"
-	packageName="${packageName%/}"
-	printf -v packageName %q "$packageName"
-	typeset -a packageUrls=(); IFS=' ' read -r -a packageUrls <<<"$packageUrlList"
-	local packageUrlArgs; printf -v packageUrlArgs ' --url %q' "${packageUrls[@]}"
+	applicationName="${applicationName%/}"
+	printf -v applicationName %q "$applicationName"
+	typeset -a urls=(); IFS=' ' read -r -a urls <<<"$urlList"
+	local urlArgs; printf -v urlArgs ' --url %q' "${urls[@]}"
 
 	# Note: No sudo here, as downloading and installation will happen as the
 	# current user.
-	toBeInstalledCommands+=("wine-download-installer${isBatch:+ --batch}${packageName:+ --application-name }${packageName} --expression ${packageGlob}${maxAge:+ --max-age }$maxAge${packageUrlArgs}${packageOutputNameArg:+ --output }${packageOutputNameArg}")
+	toBeInstalledCommands+=("wine-download-installer${isBatch:+ --batch}${applicationName:+ --application-name }${applicationName} --expression ${packageGlob}${maxAge:+ --max-age }$maxAge${urlArgs}${outputNameArg:+ --output }${outputNameArg}")
     done
 }
