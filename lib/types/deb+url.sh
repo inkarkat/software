@@ -47,24 +47,24 @@ installDebUrl()
     local debUrlRecord; for debUrlRecord in "${!addedDebUrlPackages[@]}"
     do
 	local maxAge=
-	local packageNameGlobUrl="${debUrlRecord#*:}"
-	if [[ "$packageNameGlobUrl" =~ ^[0-9]+([smhdwyg]|mo): ]]; then
+	local applicationNamePackageGlobUrl="${debUrlRecord#*:}"
+	if [[ "$applicationNamePackageGlobUrl" =~ ^[0-9]+([smhdwyg]|mo): ]]; then
 	    maxAge="${BASH_REMATCH[0]%:}"
-	    packageNameGlobUrl="${packageNameGlobUrl#"${BASH_REMATCH[0]}"}"
+	    applicationNamePackageGlobUrl="${applicationNamePackageGlobUrl#"${BASH_REMATCH[0]}"}"
 	fi
-	local packageUrlList="${packageNameGlobUrl#*:}"
-	local packageNameAndGlob="${packageNameGlobUrl%:$packageUrlList}"
-	local packageGlob="${packageNameAndGlob##*/}"
-	local packageName="${packageNameAndGlob%"$packageGlob"}"
-	local packageOutputNameArg=; isglob "$packageGlob" || printf -v packageOutputNameArg %q "$packageGlob"
+	local urlList="${applicationNamePackageGlobUrl#*:}"
+	local applicationNameAndPackageGlob="${applicationNamePackageGlobUrl%:$urlList}"
+	local packageGlob="${applicationNameAndPackageGlob##*/}"
+	local applicationName="${applicationNameAndPackageGlob%"$packageGlob"}"
+	local outputNameArg=; isglob "$packageGlob" || printf -v outputNameArg %q "$packageGlob"
 	printf -v packageGlob %q "$packageGlob"
-	packageName="${packageName%/}"
-	printf -v packageName %q "$packageName"
-	typeset -a packageUrls=(); IFS=' ' read -r -a packageUrls <<<"$packageUrlList"
-	local packageUrlArgs; printf -v packageUrlArgs ' --url %q' "${packageUrls[@]}"
+	applicationName="${applicationName%/}"
+	printf -v applicationName %q "$applicationName"
+	typeset -a urls=(); IFS=' ' read -r -a urls <<<"$urlList"
+	local urlArgs; printf -v urlArgs ' --url %q' "${urls[@]}"
 
 	# Note: No sudo here, as the downloading will happen as the current user
 	# and only the installation itself will be done through sudo.
-	toBeInstalledCommands+=("deb-download-installer${isBatch:+ --batch}${packageName:+ --application-name }${packageName} --expression ${packageGlob}${maxAge:+ --max-age }$maxAge${packageUrlArgs}${packageOutputNameArg:+ --output }${packageOutputNameArg}")
+	toBeInstalledCommands+=("deb-download-installer${isBatch:+ --batch}${applicationName:+ --application-name }${applicationName} --expression ${packageGlob}${maxAge:+ --max-age }$maxAge${urlArgs}${outputNameArg:+ --output }${outputNameArg}")
     done
 }
