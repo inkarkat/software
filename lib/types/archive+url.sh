@@ -95,9 +95,15 @@ installArchiveUrl()
 	local destinationFilespec="${archiveUrlRecord%%:*}"
 	local extractionDirspecCreationCommand=
 	local quotedExtractionDirspec='.'
+	typeset -a archiveDownloadInstallerArgs=()
 	if [[ "$destinationFilespec" =~ ^(.*)/\.(/.*)?$ ]]; then
-	    printf -v quotedExtractionDirspec %q "${BASH_REMATCH[1]}"
-	    extractionDirspecCreationCommand="${SUDO}${SUDO:+ }mkdir --parents -- $quotedExtractionDirspec && "
+	    local extractionDirspec="${BASH_REMATCH[1]}"
+	    printf -v quotedExtractionDirspec %q "$extractionDirspec"
+	    if [ -d "$extractionDirspec" ]; then
+		[ -w "$extractionDirspec" ] || archiveDownloadInstallerArgs+=(--sudo)
+	    else
+		extractionDirspecCreationCommand="${SUDO}${SUDO:+ }mkdir --parents -- $quotedExtractionDirspec && "
+	    fi
 	fi
 
 	local maxAge=
@@ -117,7 +123,7 @@ installArchiveUrl()
 	typeset -a urls=(); IFS=' ' read -r -a urls <<<"$urlList"
 	local urlArgs; printf -v urlArgs ' --url %q' "${urls[@]}"
 
-	toBeInstalledCommands+=("${extractionDirspecCreationCommand}${SUDO}${SUDO:+ }${archiveDownloadInstallerCommand}${isBatch:+ --batch} --destination-dir $quotedExtractionDirspec ${applicationName:+ --application-name }${applicationName} --expression ${packageGlob}${maxAge:+ --max-age }$maxAge${urlArgs}${outputNameArg:+ --output }${outputNameArg}")
+	toBeInstalledCommands+=("${extractionDirspecCreationCommand}${archiveDownloadInstallerCommand}${isBatch:+ --batch} ${archiveDownloadInstallerArgs[*]}${archiveDownloadInstallerArgs:+ }--destination-dir ${quotedExtractionDirspec}${applicationName:+ --application-name }${applicationName} --expression ${packageGlob}${maxAge:+ --max-age }$maxAge${urlArgs}${outputNameArg:+ --output }${outputNameArg}")
     done
 }
 installTarUrl()
