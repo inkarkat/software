@@ -215,7 +215,10 @@ addAllAcceptedGroups()
 
 database()
 {
-    picoDB --base-type data --namespace "$setupName" --table "$@"
+    # Note: No --namespace "$setupName" here, because the information usually is
+    # system scoped (e.g. for the build-dep type). If clients want this scoped
+    # to the setup, they can pass the arguments themselves.
+    picoDB --base-type data --table "$@"
 }
 
 onceMarker()
