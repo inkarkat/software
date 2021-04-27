@@ -7,5 +7,5 @@ readonly scriptDir="$([ "${BASH_SOURCE[0]}" ] && dirname -- "${BASH_SOURCE[0]}" 
 readonly APT_SOURCES="${1:?}"
 
 "${scriptDir}/../../../../lib/withUnixhome" writeOrigOrBackup "$APT_SOURCES"
-sed -i -e 's/^# deb-src/deb-src/' -- "$APT_SOURCES"
+sed -i -e 's/^[[:space:]]*#[[:space:]]*deb-src/deb-src/' -- "$APT_SOURCES"
 apt update
