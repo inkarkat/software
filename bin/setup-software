@@ -269,10 +269,10 @@ configUsagePreinstall()
 {
     cat <<'HELPTEXT'
 preinstall: items consist of an ACTION that is one of the following:
-- an executable command (potentially followed by command-line arguments) in the
+- an EXECUTABLE-COMMAND (potentially followed by command-line arguments) in the
   ./etc/preinstall directory tree that is invoked (prepend $SUDO if it needs to
   be invoked as root) and should then perform the preinstallation steps
-- a text file in the ./etc/preinstall directory tree whose file name (without
+- a TEXT-FILE in the ./etc/preinstall directory tree whose file name (without
   extension) is taken as a notification title and contents as notification to be
   displayed (presumably with instructions for manual pre-installation steps)
   immediately and on each login until the user acknowledges it
@@ -289,10 +289,10 @@ configUsagePostinstall()
 {
     cat <<'HELPTEXT'
 postinstall: items consist of an ACTION that is one of the following:
-- an executable command (potentially followed by command-line arguments) in the
+- an EXECUTABLE-COMMAND (potentially followed by command-line arguments) in the
   ./etc/postinstall directory tree that is invoked (prepend $SUDO if it needs to
   be invoked as root) and should then perform the postinstallation steps
-- a text file in the ./etc/postinstall directory tree whose file name (without
+- a TEXT-FILE in the ./etc/postinstall directory tree whose file name (without
   extension) is taken as a notification title and contents as notification to be
   displayed (presumably with instructions for manual post-installation steps)
   immediately and on each login until the user acknowledges it
@@ -310,10 +310,10 @@ configUsagePostinstallOrOnce()
     cat <<'HELPTEXT'
 postinstall-or-once: items consist of [ID:]ACTION where the latter is one of the
 following:
-- an executable command (potentially followed by command-line arguments) in the
+- an EXECUTABLE-COMMAND (potentially followed by command-line arguments) in the
   ./etc/postinstall directory tree that is invoked (prepend $SUDO if it needs to
   be invoked as root) and should then perform the postinstallation steps
-- a text file in the ./etc/postinstall directory tree whose file name (without
+- a TEXT-FILE in the ./etc/postinstall directory tree whose file name (without
   extension) is taken as a notification title and contents as notification to be
   displayed (presumably with instructions for manual post-installation steps)
   immediately and on each login until the user acknowledges it

@@ -29,10 +29,10 @@ CHECK can be one of the following (in decreasing precedence):
   Note: This cannot contain literal colons, as these would prematurely end the
   TEST-EXPRESSION; you can use $(echo -e \\x3a) instead of : as a workaround.
 ACTION is one of the following:
-- an executable command (potentially followed by command-line arguments) in the
+- an EXECUTABLE-COMMAND (potentially followed by command-line arguments) in the
   ./etc/custom directory tree that is invoked (prepend $SUDO if it needs to be
   invoked as root) and should then install the application
-- a text file in the ./etc/custom directory tree whose file name (without
+- a TEXT-FILE in the ./etc/custom directory tree whose file name (without
   extension) is taken as a notification title and contents as notification to be
   displayed (presumably with instructions for manual installation steps)
   immediately and on each login until the user acknowledges it
