@@ -137,7 +137,7 @@ installCustom()
 	    continue
 	elif customFilespec="$(getCustomFilespec -x "${customActionWithoutSudoAndArgs}")"; then
 	    local customArgs="${customActionWithoutSudo#"$customActionWithoutSudoAndArgs"}"
-	    customActionWithoutSudo="${customFilespec}${customArgs:+ }${customArgs}"
+	    customActionWithoutSudo="${customFilespec}${customArgs}"
 	elif customFilespec="$(getCustomFilespec -e "${customAction}")"; then
 	    local quotedCustomNotification; printf -v quotedCustomNotification %s "$customFilespec"
 	    toBeInstalledCommands+=("addLoginNotification --file $quotedCustomNotification --immediate")
