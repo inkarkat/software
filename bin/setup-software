@@ -80,6 +80,14 @@ HELPDESCRIPTION
 			this project / BASE-DIR.
     GROUP-FILESPEC	Consider definitions from GROUP-FILESPEC, which can
 			point to anywhere in the file system.
+
+EXIT STATUS:
+    0	Complete success.
+    1	Failed to install (especially failure in pre- or postinstall actions).
+    2	Bad invocation, wrong or missing command-line arguments.
+    3	Invalid definition syntax, internal error or failed assertion.
+    4	All definition(s) [groups] were declined or already installed.
+    99	No definitions have been found.
 HELPTEXT
 }
 
@@ -750,7 +758,7 @@ done
 if [ "$isAddAll" ]; then
     addAllAcceptedGroups
     if [ ${#acceptedGroups[@]} -eq 0 ]; then
-	exit 1
+	exit 4
     else
 	set -- "${acceptedGroups[@]}" "$@"
 
@@ -823,7 +831,10 @@ do
 
     done < "$definitionFilespec"
 done
-[ ${#definitions[@]} -eq 0 ] && exit 1
+if [ ${#definitions[@]} -eq 0 ]; then
+    echo >&2 'No definitions have been found.'
+    exit 99
+fi
 
 
 
@@ -963,7 +974,5 @@ if [ "${#definitions[@]}" -gt 0 ]; then
 	definitionsVerb=are; definitionsPlural=s; [ ${#definitions[@]} -eq 1 ] && { definitionsVerb=is; definitionsPlural= ; }
 	printf >&2 '%d definition%s %s already installed.\n' "${#definitions[@]}" "$definitionsPlural" "$definitionsVerb"
     fi
-else
-    echo >&2 'No definitions have been found.'
 fi
-exit 1
+exit 4
