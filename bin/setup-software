@@ -692,7 +692,7 @@ do
 	--execute|-e)	recursiveArgs+=("$1"); shift; isExecute=t;;
 	--verbose|-v)	recursiveArgs+=("$1"); shift; isVerbose=t;;
 	--yes|-y)	shift; obtainSelection=true;;
-	--batch|-b)	shift; isBatch=t;;
+	--batch|-b)	recursiveArgs+=("$1"); shift; isBatch=t;;
 	--select|-s)	shift; selections+=("$1"); shift;;
 	--all|-a)	shift; isAddAll=t;;
 	--name)		shift; setupName="${1:?}"; shift;;
