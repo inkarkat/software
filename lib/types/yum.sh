@@ -42,11 +42,23 @@ getInstalledYumPackages()
     [ "$isInstalledYumPackagesAvailable" ] && return
     haveRepoquery || return 1
 
+    # If another update / installation is happening, repoquery blocks with
+    # "Existing lock /var/run/yum.pid: another copy is running as pid N."
+    # Try to detect this though the PID file existence, and then abort the
+    # querying after 2 seconds (which should give the warning just once, yet
+    # allow for successful querying of installed packages should we be wrong
+    # about the PID file or it suddenly vanished.
+    unset -f repoquery; [ -e /var/run/yum.pid ] && repoquery() { timeout 2s repoquery "$@"; }
+
     local exitStatus package; while IFS=$'\n' read -r package || { exitStatus="$package"; break; }	# Exit status from the process substitution (<(repoquery)) is lost; return the actual exit status via an incomplete (i.e. missing the newline) last line.
     do
 	installedYumPackages["$package"]=t
 	case ",${DEBUG:-}," in *,setup-software:native,*) echo >&2 "${PS4}setup-software (native): Found $package";; esac
     done < <(repoquery --qf '%{name}' --installed -a; printf %d "$?")
+    if [ $exitStatus -eq 124 ]; then
+	echo >&2 'ERROR: Failed to obtain installed native package list due to another concurrent yum execution; aborting.'
+	exit 3
+    fi
     [ $exitStatus -eq 0 -a ${#installedYumPackages[@]} -gt 0 ] && isInstalledYumPackagesAvailable=t
 }
 
