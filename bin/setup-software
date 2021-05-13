@@ -800,8 +800,9 @@ getDefinitionGroupFilespec()
 }
 
 IFS=' '
+typeset -ra definitionGroups=("$@")
 typeset -a definitions=()
-for definitionGroupFile
+for definitionGroupFile in "${definitionGroups[@]}"
 do
     if [ "${definitionGroupFile:0:1}" != '.' ] && definitionGroupFilespec="$(getDefinitionGroupFilespec "$definitionGroupFile")"; then
 	:
