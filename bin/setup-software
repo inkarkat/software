@@ -3,6 +3,7 @@ shopt -qs extglob nullglob
 
 : ${SETUPSOFTWARE_GROUP_VALID_TIMESPAN:=1d}
 : ${SETUPSOFTWARE_DEFINITION_VALID_TIMESPAN:=1d}
+readonly GROUPDIR_FILTER_FILENAME='.groupdir-filter'
 
 readonly scriptDir="$([ "${BASH_SOURCE[0]}" ] && absoluteScriptFile="$(readlink -nf -- "${BASH_SOURCE[0]}")" && dirname -- "$absoluteScriptFile" || exit 3)"
 [ -d "$scriptDir" ] || { echo >&2 "ERROR: Cannot determine script directory!"; exit 3; }
@@ -136,16 +137,26 @@ printConfigUsageForTypes()
 printConfigUsage()
 {
     if [ $# -eq 0 ]; then
-	cat <<'HELPTEXT'
+	cat <<HELPTEXT
 A definition consists of one or many whitespace-separated ITEMs, optionally
 followed by a # DESCRIPTION. It can be broken over multiple lines, with a
-trailing \ as the line continuation character. Each ITEM may have implicit pre-
+trailing \\ as the line continuation character. Each ITEM may have implicit pre-
 and post-install steps in ./etc/{pre,post}install/ITEM/*, allowing for
 customization around their installation no matter in which definition ITEM has
 been selected.
 Definitions are grouped into DEFINITION-GROUPs which contain definitions that
 belong to a certain category or are typically installed together for a certain
 use case.
+Definition groups can be excluded from consideration, either completely or
+starting from a certain line, through definition group filters. These work like
+definition filters, but the entire definition has to consist of them (no mixing
+with other items). If a complete definition group is excluded, it won't be
+offered by --all, neither. To exclude a complete subdirectory of definition
+groups, you can put a DEFINITION-GROUP-DIR/${GROUPDIR_FILTER_FILENAME} file in
+there; it has to start with the definition group filter(s) and then must be
+followed by a regular dummy definition (e.g. simply a line containing "dummy:").
+If it is completely empty, the whole subdirectory will be filtered
+unconditionally.
 HELPTEXT
 	echo
 	typeset -a typeOrdering=("${!typeInstallOrder[@]}")
@@ -304,7 +315,8 @@ addAllAcceptedGroups()
 	if isDefinitionGroupDir "${group}"; then
 	    groupDirectoryGroupCount=$(countGlob "${group}/*" "${groups[@]}")
 	    [ $groupDirectoryGroupCount -gt 1 ] || continue  # Ignore a group directory that has only one group in it; the query for the group itself will suffice.
-	    memoizeDecision --memoize-group "${setupName}-groups" --timespan "$SETUPSOFTWARE_GROUP_VALID_TIMESPAN" --subject "$group" --verb "directory (with $groupDirectoryGroupCount groups) is not" --state 'chosen' --action 'consider it' || \
+	    ! isDefinitionGroupCompletelyFiltered "${group}/${GROUPDIR_FILTER_FILENAME}" && \
+		memoizeDecision --memoize-group "${setupName}-groups" --timespan "$SETUPSOFTWARE_GROUP_VALID_TIMESPAN" --subject "$group" --verb "directory (with $groupDirectoryGroupCount groups) is not" --state 'chosen' --action 'consider it' || \
 		readarray -O ${#filteredGroups[@]} -t filteredGroups < <(filterGlob "${group}/*" "${groups[@]}")
 	    continue
 	fi
