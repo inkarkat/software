@@ -822,6 +822,17 @@ do
 	[[ "$line" =~ ^[[:space:]]*# ]] && continue
 	[[ "$line" =~ ^[[:space:]]*$ ]] && continue
 
+	eval "evaluatedLine=$line"
+	filter="${evaluatedLine#*:}"
+	prefix="${evaluatedLine%"$filter"}"
+	if contains "$prefix" "${!definitionGroupFilterTypeRegistry[@]}"; then
+	    definitionGroupFilterFunction="${definitionGroupFilterTypeRegistry["$prefix"]}"
+	    if [ -n "$definitionGroupFilterFunction" ]; then
+		eval "isDefinitionGroupAcceptedBy${definitionGroupFilterFunction} \"\$filter\" \"group \$definitionGroupFile\"" || \
+		    continue 2	# Skip the entire definiton group file.
+	    fi
+	    continue	# Just skip this filter definition.
+	fi
 
 	if [ ${#selections[@]} -eq 0 ]; then
 	    definitions+=("$line")
