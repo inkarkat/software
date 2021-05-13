@@ -293,7 +293,7 @@ addAllAcceptedGroups()
     typeset -a groups=()
     readarray -t groups < <(for dirspec in "${definitionDirspecs[@]}"
 	do
-	    cd "$dirspec" && find . -print
+	    cd "$dirspec" && find . -not -path '*/\.*' -print
 	done | sort | sed -e 's#^\./##'
     )
     typeset -a filteredGroups=()
