@@ -11,8 +11,9 @@ CHECK can be one of the following (in decreasing precedence):
   if EXECUTABLE-COMMAND starts with a &, this is replaced by the following
   ACTION (without a $SUDO prefix), allowing you to save repeated typing:
 	custom:&-check:foo-installer
-- an EXECUTABLE-NAME? (located through $PATH) or GLOB?, and succeeds if
-  it's there / resolves to an existing file or directory
+- an EXECUTABLE-NAME? (located through $PATH) or GLOB? (potentially prefixed
+  with !), and succeeds if it's (with !: not) there / resolves to an existing
+  file or directory
 - the special expression "false"; then, no check is performed and whether the
   installation action will happen depends solely on the (potentially recalled or
   derived from the whole definition) user's answer
@@ -85,6 +86,9 @@ hasCustom()
 	"$customFilespec"
     elif [[ "$customCheck" =~ ^\& ]] && customFilespec="$(getCustomFilespec -x "${customActionWithoutSudoAndArgs}${customCheck#\&}")"; then
 	"$customFilespec"
+    elif [[ "$customCheck" =~ ^\!.*\?$ ]]; then
+	customCheck="${customCheck#\!}"
+	! customPathOrGlobCheck "${customCheck%\?}"
     elif [[ "$customCheck" =~ \?$ ]]; then
 	customPathOrGlobCheck "${customCheck%\?}"
     else
