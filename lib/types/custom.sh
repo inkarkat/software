@@ -76,7 +76,7 @@ hasCustom()
     local customFilespec
     if customFilespec="$(getCustomFilespec -x "${customCheck}")"; then
 	"$customFilespec"
-    elif [[ "$customCheck" =~ \?$ ]] && customFilespec="$(getCustomFilespec -x "${customActionWithoutSudoAndArgs}${customCheck#\&}")"; then
+    elif [[ "$customCheck" =~ ^\& ]] && customFilespec="$(getCustomFilespec -x "${customActionWithoutSudoAndArgs}${customCheck#\&}")"; then
 	"$customFilespec"
     elif [[ "$customCheck" =~ \?$ ]]; then
 	which "${customCheck%\?}" >/dev/null 2>&1 || expandglob -- "${customCheck%\?}" >/dev/null 2>&1
