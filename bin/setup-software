@@ -3,6 +3,7 @@ shopt -qs extglob nullglob
 
 : ${SETUPSOFTWARE_GROUP_VALID_TIMESPAN:=1d}
 : ${SETUPSOFTWARE_DEFINITION_VALID_TIMESPAN:=1d}
+readonly GROUPDIR_FILTER_FILENAME='.groupdir-filter'
 
 readonly scriptDir="$([ "${BASH_SOURCE[0]}" ] && absoluteScriptFile="$(readlink -nf -- "${BASH_SOURCE[0]}")" && dirname -- "$absoluteScriptFile" || exit 3)"
 [ -d "$scriptDir" ] || { echo >&2 "ERROR: Cannot determine script directory!"; exit 3; }
@@ -104,12 +105,16 @@ printConfigUsageForTypes()
     do
 	local typeFunction="${typeRegistry["${prefix:-native}:"]}"
 	local definitionFilterFunction="${definitionFilterTypeRegistry["${prefix}:"]}"
+	local definitionGroupFilterFunction="${definitionGroupFilterTypeRegistry["${prefix}:"]}"
 	if [ -n "$typeFunction" ]; then
 	    printf "$padding"
 	    eval "configUsage${typeFunction}" | highlightPrefix
 	elif [ -n "$definitionFilterFunction" ]; then
 	    printf "$padding"
 	    eval "configUsage${definitionFilterFunction}" | highlightPrefix
+	elif [ -n "$definitionGroupFilterFunction" ]; then
+	    printf "$padding"
+	    eval "configUsage${definitionGroupFilterFunction}" | highlightPrefix
 	elif [ "$prefix" = config ]; then
 	    printf "$padding"
 	    configUsageConfig | highlightPrefix
@@ -132,16 +137,26 @@ printConfigUsageForTypes()
 printConfigUsage()
 {
     if [ $# -eq 0 ]; then
-	cat <<'HELPTEXT'
+	cat <<HELPTEXT
 A definition consists of one or many whitespace-separated ITEMs, optionally
 followed by a # DESCRIPTION. It can be broken over multiple lines, with a
-trailing \ as the line continuation character. Each ITEM may have implicit pre-
+trailing \\ as the line continuation character. Each ITEM may have implicit pre-
 and post-install steps in ./etc/{pre,post}install/ITEM/*, allowing for
 customization around their installation no matter in which definition ITEM has
 been selected.
 Definitions are grouped into DEFINITION-GROUPs which contain definitions that
 belong to a certain category or are typically installed together for a certain
 use case.
+Definition groups can be excluded from consideration, either completely or
+starting from a certain line, through definition group filters. These work like
+definition filters, but the entire definition has to consist of them (no mixing
+with other items). If a complete definition group is excluded, it won't be
+offered by --all, neither. To exclude a complete subdirectory of definition
+groups, you can put a DEFINITION-GROUP-DIR/${GROUPDIR_FILTER_FILENAME} file in
+there; it has to start with the definition group filter(s) and then must be
+followed by a regular dummy definition (e.g. simply a line containing "dummy:").
+If it is completely empty, the whole subdirectory will be filtered
+unconditionally.
 HELPTEXT
 	echo
 	typeset -a typeOrdering=("${!typeInstallOrder[@]}")
@@ -159,8 +174,9 @@ HELPTEXT
 	    prefixes+=("${mirroredTypeRegistry["${typeInstallOrder["$order"]}"]}")
 	done
 	typeset -a definitionFilterPrefixes=("${!definitionFilterTypeRegistry[@]}")
+	typeset -a definitionGroupFilterPrefixes=("${!definitionGroupFilterTypeRegistry[@]}")
 
-	printConfigUsageForTypes "${prefixes[@]%:}" "${definitionFilterPrefixes[@]%:}"    # Show config help for all types (in the order in which the types are also installed).
+	printConfigUsageForTypes "${prefixes[@]%:}" "${definitionFilterPrefixes[@]%:}" "${definitionGroupFilterPrefixes[@]%:}"    # Show config help for all types (in the order in which the types are also installed).
 
 	echo
 	configUsageConfig | highlightPrefix
@@ -179,11 +195,99 @@ typeset -a nativeRegistry=()
 typeset -A typeRegistry=([native:]=Native)
 typeset -A typeInstallOrder=([100]=Native)
 typeset -A definitionFilterTypeRegistry=()
+typeset -A definitionGroupFilterTypeRegistry=()
 for typeLib in "${typeDir}"/*.sh
 do
     source "$typeLib" || exit $?
 done
 set -o noglob
+
+getDefinitionGroupFilespec()
+{
+    local definitionGroup="${1:?}"; shift
+    local dirspec; for dirspec in "${definitionDirspecs[@]}"
+    do
+	local definitionGroupFilespec="${dirspec}/${definitionGroup}"
+	if [ -f "$definitionGroupFilespec" ]; then
+	    printf %s "$definitionGroupFilespec"
+	    return 0
+	fi
+    done
+    return 1
+}
+
+parseDefinitionGroup()
+{
+    local definitionGroupFilespec="${1:?}"; shift
+    let physicalLineCnt=0
+    while IFS=$'\n' read -r line
+    do
+	let physicalLineCnt+=1
+	while [[ "$line" =~ \\$ ]]
+	do
+	    let physicalLineCnt+=1
+	    IFS=$'\n' read -r nextLine
+	    line="${line%\\}$nextLine"
+	done
+	[[ "$line" =~ ^[[:space:]]*# ]] && continue
+	[[ "$line" =~ ^[[:space:]]*$ ]] && continue
+
+	testDefinitionGroupFilter "$line"
+	case $? in
+	    1)	continue;;	# This is a definition group filter, but it did not filter.
+	    2)	return;;	# The filter applies; skip the entire remainder of the definition group file.
+	esac
+
+	if [ ${#selections[@]} -eq 0 ]; then
+	    definitions+=("$line")
+	else
+	    items="${line%%[	 ]#*}"
+	    comment="${line#"$items"}"
+	    comment="${comment##+([	 ])#*([	 ])}"
+	    subject="${comment:-"$items"}"
+
+	    contains "$subject" "${selections[@]}" && \
+		definitions+=("$line")
+	fi
+
+    done < "$definitionGroupFilespec"
+}
+
+testDefinitionGroupFilter()
+{
+    local line="$1"; shift
+    eval "set -- ${line%%[	 ]#*}"
+    local lastDefinitionGroupFilterItem= item
+    for item
+    do
+	local filter="${item#*:}"
+	local prefix="${item%"$filter"}"
+	if contains "$prefix" "${!definitionGroupFilterTypeRegistry[@]}"; then
+	    lastDefinitionGroupFilterItem="$item"
+	    local definitionGroupFilterFunction="${definitionGroupFilterTypeRegistry["$prefix"]}"
+	    if [ -n "$definitionGroupFilterFunction" ]; then
+		eval "isDefinitionGroupAcceptedBy${definitionGroupFilterFunction} \"\$filter\" \"group \$definitionGroup, after line \$physicalLineCnt\"" || \
+		    return 2	# Skip the entire definition group file.
+	    fi
+	elif [ -n "$lastDefinitionGroupFilterItem" ]; then
+	    printf >&2 'ERROR: Definition group filter types (%s) must not be mixed with other items (%s) in a single definition.\n' "$lastDefinitionGroupFilterItem" "$item"
+	    exit 3
+	else
+	    return 0	# If the first item isn't a definition group filter, the other's cannot be such, neither. We'll catch any in the later processing stages.
+	fi
+    done
+    [ -n "$lastDefinitionGroupFilterItem" ] && return 1
+}
+
+isDefinitionGroupCompletelyFiltered()
+{
+    local definitionGroup="${1:?}"; shift
+    local definitionGroupFilespec; definitionGroupFilespec="$(getDefinitionGroupFilespec "$definitionGroup")" || return 1
+
+    typeset -a definitions=()
+    parseDefinitionGroup "$definitionGroupFilespec"
+    [ ${#definitions[@]} -eq 0 ]
+}
 
 isDefinitionGroupDir()
 {
@@ -200,7 +304,7 @@ addAllAcceptedGroups()
     typeset -a groups=()
     readarray -t groups < <(for dirspec in "${definitionDirspecs[@]}"
 	do
-	    cd "$dirspec" && find . -print
+	    cd "$dirspec" && find . -not -path '*/\.*' -print
 	done | sort | sed -e 's#^\./##'
     )
     typeset -a filteredGroups=()
@@ -211,10 +315,13 @@ addAllAcceptedGroups()
 	if isDefinitionGroupDir "${group}"; then
 	    groupDirectoryGroupCount=$(countGlob "${group}/*" "${groups[@]}")
 	    [ $groupDirectoryGroupCount -gt 1 ] || continue  # Ignore a group directory that has only one group in it; the query for the group itself will suffice.
-	    memoizeDecision --memoize-group "${setupName}-groups" --timespan "$SETUPSOFTWARE_GROUP_VALID_TIMESPAN" --subject "$group" --verb "directory (with $groupDirectoryGroupCount groups) is not" --state 'chosen' --action 'consider it' || \
+	    ! isDefinitionGroupCompletelyFiltered "${group}/${GROUPDIR_FILTER_FILENAME}" && \
+		memoizeDecision --memoize-group "${setupName}-groups" --timespan "$SETUPSOFTWARE_GROUP_VALID_TIMESPAN" --subject "$group" --verb "directory (with $groupDirectoryGroupCount groups) is not" --state 'chosen' --action 'consider it' || \
 		readarray -O ${#filteredGroups[@]} -t filteredGroups < <(filterGlob "${group}/*" "${groups[@]}")
 	    continue
 	fi
+
+	isDefinitionGroupCompletelyFiltered "$group" && continue
 
 	memoizeDecision --memoize-group "${setupName}-groups" --timespan "$SETUPSOFTWARE_GROUP_VALID_TIMESPAN" --subject "$group" --verb 'is not' --state 'chosen' --action 'consider it' && \
 	    acceptedGroups+=("$group")
@@ -486,7 +593,7 @@ hasOrAddItems()
     do
 	local name="${item#*:}"
 	local prefix="${item%"$name"}"
-	if contains "$prefix" "${!definitionFilterTypeRegistry[@]}" config: preinstall: postinstall: postinstall-or-once:; then
+	if contains "$prefix" "${!definitionFilterTypeRegistry[@]}" "${!definitionGroupFilterTypeRegistry[@]}" config: preinstall: postinstall: postinstall-or-once:; then
 	    printf >&2 'ERROR: Cannot use a %s type within a config / preinstall / postinstall[-or-once] item.\n' "$prefix"
 	    exit 3
 	fi
@@ -779,57 +886,21 @@ elif [ $# -eq 0 ]; then
     exit 2
 fi
 
-getDefinitionFilespec()
-{
-    local definitionFile="${1:?}"; shift
-    local dirspec; for dirspec in "${definitionDirspecs[@]}"
-    do
-	local definitionFilespec="${dirspec}/${definitionFile}"
-	if [ -f "$definitionFilespec" ]; then
-	    printf %s "$definitionFilespec"
-	    return 0
-	fi
-    done
-    return 1
-}
-
 IFS=' '
+typeset -ra definitionGroups=("$@")
 typeset -a definitions=()
-for definitionFile
+for definitionGroup in "${definitionGroups[@]}"
 do
-    if [ "${definitionFile:0:1}" != '.' ] && definitionFilespec="$(getDefinitionFilespec "$definitionFile")"; then
+    if [ "${definitionGroup:0:1}" != '.' ] && definitionGroupFilespec="$(getDefinitionGroupFilespec "$definitionGroup")"; then
 	:
-    elif [ -f "${definitionFile}" ]; then
-	definitionFilespec="$definitionFile"
+    elif [ -f "${definitionGroup}" ]; then
+	definitionGroupFilespec="$definitionGroup"
     else
-	printf >&2 'ERROR: Definition "%s" does not exist.\n' "$definitionFile"
+	printf >&2 'ERROR: Definition "%s" does not exist.\n' "$definitionGroup"
 	exit 2
     fi
 
-    while IFS=$'\n' read -r line
-    do
-	while [[ "$line" =~ \\$ ]]
-	do
-	    IFS=$'\n' read -r nextLine
-	    line="${line%\\}$nextLine"
-	done
-	[[ "$line" =~ ^[[:space:]]*# ]] && continue
-	[[ "$line" =~ ^[[:space:]]*$ ]] && continue
-
-
-	if [ ${#selections[@]} -eq 0 ]; then
-	    definitions+=("$line")
-	else
-	    items="${line%%[	 ]#*}"
-	    comment="${line#"$items"}"
-	    comment="${comment##+([	 ])#*([	 ])}"
-	    subject="${comment:-"$items"}"
-
-	    contains "$subject" "${selections[@]}" && \
-		definitions+=("$line")
-	fi
-
-    done < "$definitionFilespec"
+    parseDefinitionGroup "$definitionGroupFilespec"
 done
 if [ ${#definitions[@]} -eq 0 ]; then
     echo >&2 'No definitions have been found.'
@@ -874,6 +945,9 @@ do
 	prefix="${item%"$name"}"
 	if contains "$prefix" "${!definitionFilterTypeRegistry[@]}"; then
 	    continue    # Ignore; definition filters have already been handled.
+	elif contains "$prefix" "${!definitionGroupFilterTypeRegistry[@]}"; then
+	    printf >&2 'ERROR: Definition group filter types (like %s) must only appear the beginning of a definition group: %s.\n' "$prefix" "$item"
+	    exit 3
 	elif contains "$prefix" config: preinstall: postinstall:; then
 	    if [ -z "$lastRealItem" ]; then
 		printf >&2 'ERROR: No previous item before %s.\n' "$item"
