@@ -193,10 +193,10 @@ set -o noglob
 
 getDefinitionGroupFilespec()
 {
-    local definitionGroupFile="${1:?}"; shift
+    local definitionGroup="${1:?}"; shift
     local dirspec; for dirspec in "${definitionDirspecs[@]}"
     do
-	local definitionGroupFilespec="${dirspec}/${definitionGroupFile}"
+	local definitionGroupFilespec="${dirspec}/${definitionGroup}"
 	if [ -f "$definitionGroupFilespec" ]; then
 	    printf %s "$definitionGroupFilespec"
 	    return 0
@@ -255,7 +255,7 @@ testDefinitionGroupFilter()
 	    lastDefinitionGroupFilterItem="$item"
 	    local definitionGroupFilterFunction="${definitionGroupFilterTypeRegistry["$prefix"]}"
 	    if [ -n "$definitionGroupFilterFunction" ]; then
-		eval "isDefinitionGroupAcceptedBy${definitionGroupFilterFunction} \"\$filter\" \"group \$definitionGroupFile, after line \$physicalLineCnt\"" || \
+		eval "isDefinitionGroupAcceptedBy${definitionGroupFilterFunction} \"\$filter\" \"group \$definitionGroup, after line \$physicalLineCnt\"" || \
 		    return 2	# Skip the entire definition group file.
 	    fi
 	elif [ -n "$lastDefinitionGroupFilterItem" ]; then
@@ -270,8 +270,8 @@ testDefinitionGroupFilter()
 
 isDefinitionGroupCompletelyFiltered()
 {
-    local definitionGroupFile="${1:?}"; shift
-    local definitionGroupFilespec; definitionGroupFilespec="$(getDefinitionGroupFilespec "$definitionGroupFile")" || return 1
+    local definitionGroup="${1:?}"; shift
+    local definitionGroupFilespec; definitionGroupFilespec="$(getDefinitionGroupFilespec "$definitionGroup")" || return 1
 
     typeset -a definitions=()
     parseDefinitionGroup "$definitionGroupFilespec"
@@ -877,14 +877,14 @@ fi
 IFS=' '
 typeset -ra definitionGroups=("$@")
 typeset -a definitions=()
-for definitionGroupFile in "${definitionGroups[@]}"
+for definitionGroup in "${definitionGroups[@]}"
 do
-    if [ "${definitionGroupFile:0:1}" != '.' ] && definitionGroupFilespec="$(getDefinitionGroupFilespec "$definitionGroupFile")"; then
+    if [ "${definitionGroup:0:1}" != '.' ] && definitionGroupFilespec="$(getDefinitionGroupFilespec "$definitionGroup")"; then
 	:
-    elif [ -f "${definitionGroupFile}" ]; then
-	definitionGroupFilespec="$definitionGroupFile"
+    elif [ -f "${definitionGroup}" ]; then
+	definitionGroupFilespec="$definitionGroup"
     else
-	printf >&2 'ERROR: Definition "%s" does not exist.\n' "$definitionGroupFile"
+	printf >&2 'ERROR: Definition "%s" does not exist.\n' "$definitionGroup"
 	exit 2
     fi
 
