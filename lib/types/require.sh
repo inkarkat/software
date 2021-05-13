@@ -9,15 +9,25 @@ require: items consist of a CHECK that can be:
   the special "native:" prefix here. The check passes if that ITEM has already
   been installed or has already been selected by the user in the current
   session.
-- an executable command (potentially prefixed with ! (which negates the status,
+- an EXECUTABLE-COMMAND (potentially prefixed with ! (which negates the status,
   just as in the shell) and/or followed by command-line arguments) in the
   ./etc/require directory tree that is invoked and should fail if the
   requirements are not fulfilled.
+- an EXECUTABLE-NAME? (located through $PATH) or GLOB? (potentially prefixed
+  with !), which fulfills the requirement if it's (with !: not) there / resolves
+  to an existing file or directory.
 - a REQUIREMENT-EXPRESSION (whitespace must be escaped or the entire expression
   quoted!) that is eval'd and should fail if the requirements are not fulfilled.
 If the CHECK fails, the entire definition (both preceding and following items)
 will be skipped.
 HELPTEXT
+}
+
+requirePathOrGlobCheck()
+{
+    local executableNameOrGlob="${1:?}"; shift
+    which "$executableNameOrGlob" >/dev/null 2>&1 || \
+	expandglob -- "$executableNameOrGlob" >/dev/null 2>&1
 }
 
 getRequirementExecutable()
@@ -68,6 +78,11 @@ isDefinitionAcceptedByRequire()
 	elif requirementFilespec="$(getRequirementExecutable "${requirementWithoutArgs#!}")"; then
 	    requirementArgs="${requirement#"${requirementWithoutArgs}"}"
 	    ! "$requirementFilespec" $requirementArgs
+	elif [[ "$requirement" =~ ^\!.*\?$ ]]; then
+	    requirement="${requirement#\!}"
+	    ! requirePathOrGlobCheck "${requirement%\?}"
+	elif [[ "$requirement" =~ \?$ ]]; then
+	    requirePathOrGlobCheck "${requirement%\?}"
 	else
 	    eval "$requirement"
 	fi; then
