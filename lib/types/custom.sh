@@ -43,6 +43,13 @@ ACTION is one of the following:
 HELPTEXT
 }
 
+customPathOrGlobCheck()
+{
+    local executableNameOrGlob="${1:?}"; shift
+    which "$executableNameOrGlob" >/dev/null 2>&1 || \
+	expandglob -- "$executableNameOrGlob" >/dev/null 2>&1
+}
+
 getCustomFilespec()
 {
     local compareOp="${1:?}"; shift
@@ -79,7 +86,7 @@ hasCustom()
     elif [[ "$customCheck" =~ ^\& ]] && customFilespec="$(getCustomFilespec -x "${customActionWithoutSudoAndArgs}${customCheck#\&}")"; then
 	"$customFilespec"
     elif [[ "$customCheck" =~ \?$ ]]; then
-	which "${customCheck%\?}" >/dev/null 2>&1 || expandglob -- "${customCheck%\?}" >/dev/null 2>&1
+	customPathOrGlobCheck "${customCheck%\?}"
     else
 	if [[ "$customCheck" =~ ^\& ]]; then
 	    if customFilespec="$(getCustomFilespec -x "${customActionWithoutSudoAndArgs}")"; then
