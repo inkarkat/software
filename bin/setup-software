@@ -779,14 +779,14 @@ elif [ $# -eq 0 ]; then
     exit 2
 fi
 
-getDefinitionFilespec()
+getDefinitionGroupFilespec()
 {
-    local definitionFile="${1:?}"; shift
+    local definitionGroupFile="${1:?}"; shift
     local dirspec; for dirspec in "${definitionDirspecs[@]}"
     do
-	local definitionFilespec="${dirspec}/${definitionFile}"
-	if [ -f "$definitionFilespec" ]; then
-	    printf %s "$definitionFilespec"
+	local definitionGroupFilespec="${dirspec}/${definitionGroupFile}"
+	if [ -f "$definitionGroupFilespec" ]; then
+	    printf %s "$definitionGroupFilespec"
 	    return 0
 	fi
     done
@@ -795,14 +795,14 @@ getDefinitionFilespec()
 
 IFS=' '
 typeset -a definitions=()
-for definitionFile
+for definitionGroupFile
 do
-    if [ "${definitionFile:0:1}" != '.' ] && definitionFilespec="$(getDefinitionFilespec "$definitionFile")"; then
+    if [ "${definitionGroupFile:0:1}" != '.' ] && definitionGroupFilespec="$(getDefinitionGroupFilespec "$definitionGroupFile")"; then
 	:
-    elif [ -f "${definitionFile}" ]; then
-	definitionFilespec="$definitionFile"
+    elif [ -f "${definitionGroupFile}" ]; then
+	definitionGroupFilespec="$definitionGroupFile"
     else
-	printf >&2 'ERROR: Definition "%s" does not exist.\n' "$definitionFile"
+	printf >&2 'ERROR: Definition "%s" does not exist.\n' "$definitionGroupFile"
 	exit 2
     fi
 
@@ -829,7 +829,7 @@ do
 		definitions+=("$line")
 	fi
 
-    done < "$definitionFilespec"
+    done < "$definitionGroupFilespec"
 done
 if [ ${#definitions[@]} -eq 0 ]; then
     echo >&2 'No definitions have been found.'
