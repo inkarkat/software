@@ -205,6 +205,43 @@ getDefinitionGroupFilespec()
     return 1
 }
 
+parseDefinitionGroup()
+{
+    local definitionGroupFilespec="${1:?}"; shift
+    let physicalLineCnt=0
+    while IFS=$'\n' read -r line
+    do
+	let physicalLineCnt+=1
+	while [[ "$line" =~ \\$ ]]
+	do
+	    let physicalLineCnt+=1
+	    IFS=$'\n' read -r nextLine
+	    line="${line%\\}$nextLine"
+	done
+	[[ "$line" =~ ^[[:space:]]*# ]] && continue
+	[[ "$line" =~ ^[[:space:]]*$ ]] && continue
+
+	testDefinitionGroupFilter "$line"
+	case $? in
+	    1)	continue;;	# This is a definition group filter, but it did not filter.
+	    2)	return;;	# The filter applies; skip the entire remainder of the definition group file.
+	esac
+
+	if [ ${#selections[@]} -eq 0 ]; then
+	    definitions+=("$line")
+	else
+	    items="${line%%[	 ]#*}"
+	    comment="${line#"$items"}"
+	    comment="${comment##+([	 ])#*([	 ])}"
+	    subject="${comment:-"$items"}"
+
+	    contains "$subject" "${selections[@]}" && \
+		definitions+=("$line")
+	fi
+
+    done < "$definitionGroupFilespec"
+}
+
 testDefinitionGroupFilter()
 {
     local line="$1"; shift
@@ -839,38 +876,7 @@ do
 	exit 2
     fi
 
-    let physicalLineCnt=0
-    while IFS=$'\n' read -r line
-    do
-	let physicalLineCnt+=1
-	while [[ "$line" =~ \\$ ]]
-	do
-	    let physicalLineCnt+=1
-	    IFS=$'\n' read -r nextLine
-	    line="${line%\\}$nextLine"
-	done
-	[[ "$line" =~ ^[[:space:]]*# ]] && continue
-	[[ "$line" =~ ^[[:space:]]*$ ]] && continue
-
-	testDefinitionGroupFilter "$line"
-	case $? in
-	    1)	continue;;	# This is a definition group filter, but it did not filter.
-	    2)	continue 2;;	# The filter applies; skip the entire remainder of the definition group file.
-	esac
-
-	if [ ${#selections[@]} -eq 0 ]; then
-	    definitions+=("$line")
-	else
-	    items="${line%%[	 ]#*}"
-	    comment="${line#"$items"}"
-	    comment="${comment##+([	 ])#*([	 ])}"
-	    subject="${comment:-"$items"}"
-
-	    contains "$subject" "${selections[@]}" && \
-		definitions+=("$line")
-	fi
-
-    done < "$definitionGroupFilespec"
+    parseDefinitionGroup "$definitionGroupFilespec"
 done
 if [ ${#definitions[@]} -eq 0 ]; then
     echo >&2 'No definitions have been found.'
