@@ -1,9 +1,8 @@
 #!/bin/bash source-this-script
 
-configUsageRequire()
+printSyntaxRequire()
 {
     cat <<'HELPTEXT'
-require: items consist of a CHECK that can be:
 - another ITEM (in abbreviated form, usually just having one "package name"
   parameter); for packages installed via the distribution's package manager, use
   the special "native:" prefix here. The check passes if that ITEM has already
@@ -18,8 +17,24 @@ require: items consist of a CHECK that can be:
   to an existing file or directory.
 - a REQUIREMENT-EXPRESSION (whitespace must be escaped or the entire expression
   quoted!) that is eval'd and should fail if the requirements are not fulfilled.
+HELPTEXT
+}
+configUsageRequire()
+{
+    echo 'require: items consist of a CHECK that can be:'
+    printSyntaxRequire
+    cat <<'HELPTEXT'
 If the CHECK fails, the entire definition (both preceding and following items)
 will be skipped.
+HELPTEXT
+}
+configUsageGroupRequire()
+{
+    echo 'group-require: items consist of a CHECK that can be:'
+    printSyntaxRequire
+    cat <<'HELPTEXT'
+If the CHECK fails, the entire remainder of the definition group (i.e. the
+remaining lines in the file) will be skipped.
 HELPTEXT
 }
 
@@ -92,5 +107,10 @@ isDefinitionAcceptedByRequire()
     fi
     return 0
 }
+isDefinitionGroupAcceptedByGroupRequire()
+{
+    isDefinitionAcceptedByRequire "$@"
+}
 
 definitionFilterTypeRegistry+=([require:]=Require)
+definitionGroupFilterTypeRegistry+=([group-require:]=GroupRequire)
