@@ -104,12 +104,16 @@ printConfigUsageForTypes()
     do
 	local typeFunction="${typeRegistry["${prefix:-native}:"]}"
 	local definitionFilterFunction="${definitionFilterTypeRegistry["${prefix}:"]}"
+	local definitionGroupFilterFunction="${definitionGroupFilterTypeRegistry["${prefix}:"]}"
 	if [ -n "$typeFunction" ]; then
 	    printf "$padding"
 	    eval "configUsage${typeFunction}" | highlightPrefix
 	elif [ -n "$definitionFilterFunction" ]; then
 	    printf "$padding"
 	    eval "configUsage${definitionFilterFunction}" | highlightPrefix
+	elif [ -n "$definitionGroupFilterFunction" ]; then
+	    printf "$padding"
+	    eval "configUsage${definitionGroupFilterFunction}" | highlightPrefix
 	elif [ "$prefix" = config ]; then
 	    printf "$padding"
 	    configUsageConfig | highlightPrefix
@@ -159,8 +163,9 @@ HELPTEXT
 	    prefixes+=("${mirroredTypeRegistry["${typeInstallOrder["$order"]}"]}")
 	done
 	typeset -a definitionFilterPrefixes=("${!definitionFilterTypeRegistry[@]}")
+	typeset -a definitionGroupFilterPrefixes=("${!definitionGroupFilterTypeRegistry[@]}")
 
-	printConfigUsageForTypes "${prefixes[@]%:}" "${definitionFilterPrefixes[@]%:}"    # Show config help for all types (in the order in which the types are also installed).
+	printConfigUsageForTypes "${prefixes[@]%:}" "${definitionFilterPrefixes[@]%:}" "${definitionGroupFilterPrefixes[@]%:}"    # Show config help for all types (in the order in which the types are also installed).
 
 	echo
 	configUsageConfig | highlightPrefix
@@ -179,6 +184,7 @@ typeset -a nativeRegistry=()
 typeset -A typeRegistry=([native:]=Native)
 typeset -A typeInstallOrder=([100]=Native)
 typeset -A definitionFilterTypeRegistry=()
+typeset -A definitionGroupFilterTypeRegistry=()
 for typeLib in "${typeDir}"/*.sh
 do
     source "$typeLib" || exit $?
@@ -486,7 +492,7 @@ hasOrAddItems()
     do
 	local name="${item#*:}"
 	local prefix="${item%"$name"}"
-	if contains "$prefix" "${!definitionFilterTypeRegistry[@]}" config: preinstall: postinstall: postinstall-or-once:; then
+	if contains "$prefix" "${!definitionFilterTypeRegistry[@]}" "${!definitionGroupFilterTypeRegistry[@]}" config: preinstall: postinstall: postinstall-or-once:; then
 	    printf >&2 'ERROR: Cannot use a %s type within a config / preinstall / postinstall[-or-once] item.\n' "$prefix"
 	    exit 3
 	fi
@@ -874,6 +880,9 @@ do
 	prefix="${item%"$name"}"
 	if contains "$prefix" "${!definitionFilterTypeRegistry[@]}"; then
 	    continue    # Ignore; definition filters have already been handled.
+	elif contains "$prefix" "${!definitionGroupFilterTypeRegistry[@]}"; then
+	    printf >&2 'ERROR: Definition group filter types (like %s) must only appear the beginning of a definition group: %s.\n' "$prefix" "$item"
+	    exit 3
 	elif contains "$prefix" config: preinstall: postinstall:; then
 	    if [ -z "$lastRealItem" ]; then
 		printf >&2 'ERROR: No previous item before %s.\n' "$item"
