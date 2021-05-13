@@ -799,6 +799,32 @@ getDefinitionGroupFilespec()
     return 1
 }
 
+testDefinitionGroupFilter()
+{
+    local line="$1"; shift
+    eval "set -- ${line%%[	 ]#*}"
+    local lastDefinitionGroupFilterItem= item
+    for item
+    do
+	local filter="${item#*:}"
+	local prefix="${item%"$filter"}"
+	if contains "$prefix" "${!definitionGroupFilterTypeRegistry[@]}"; then
+	    lastDefinitionGroupFilterItem="$item"
+	    local definitionGroupFilterFunction="${definitionGroupFilterTypeRegistry["$prefix"]}"
+	    if [ -n "$definitionGroupFilterFunction" ]; then
+		eval "isDefinitionGroupAcceptedBy${definitionGroupFilterFunction} \"\$filter\" \"group \$definitionGroupFile, after line \$physicalLineCnt\"" || \
+		    return 2	# Skip the entire definition group file.
+	    fi
+	elif [ -n "$lastDefinitionGroupFilterItem" ]; then
+	    printf >&2 'ERROR: Definition group filter types (%s) must not be mixed with other items (%s) in a single definition.\n' "$lastDefinitionGroupFilterItem" "$item"
+	    exit 3
+	else
+	    return 0	# If the first item isn't a definition group filter, the other's cannot be such, neither. We'll catch any in the later processing stages.
+	fi
+    done
+    [ -n "$lastDefinitionGroupFilterItem" ] && return 1
+}
+
 IFS=' '
 typeset -ra definitionGroups=("$@")
 typeset -a definitions=()
@@ -826,27 +852,11 @@ do
 	[[ "$line" =~ ^[[:space:]]*# ]] && continue
 	[[ "$line" =~ ^[[:space:]]*$ ]] && continue
 
-	eval "set -- ${line%%[	 ]#*}"
-	lastDefinitionGroupFilterItem=
-	for item
-	do
-	    filter="${item#*:}"
-	    prefix="${item%"$filter"}"
-	    if contains "$prefix" "${!definitionGroupFilterTypeRegistry[@]}"; then
-		lastDefinitionGroupFilterItem="$item"
-		definitionGroupFilterFunction="${definitionGroupFilterTypeRegistry["$prefix"]}"
-		if [ -n "$definitionGroupFilterFunction" ]; then
-		    eval "isDefinitionGroupAcceptedBy${definitionGroupFilterFunction} \"\$filter\" \"group \$definitionGroupFile, after line \$physicalLineCnt\"" || \
-			continue 3	# Skip the entire definiton group file.
-		fi
-	    elif [ -n "$lastDefinitionGroupFilterItem" ]; then
-		printf >&2 'ERROR: Definition group filter types (%s) must not be mixed with other items (%s) in a single definition.\n' "$lastDefinitionGroupFilterItem" "$item"
-		exit 3
-	    else
-		break	# If the first item isn't a definition group filter, the other's cannot be such, neither. We'll catch any in the later processing stages.
-	    fi
-	done
-	[ -n "$lastDefinitionGroupFilterItem" ] && continue
+	testDefinitionGroupFilter "$line"
+	case $? in
+	    1)	continue;;	# This is a definition group filter, but it did not filter.
+	    2)	continue 2;;	# The filter applies; skip the entire remainder of the definition group file.
+	esac
 
 	if [ ${#selections[@]} -eq 0 ]; then
 	    definitions+=("$line")
