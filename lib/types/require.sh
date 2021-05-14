@@ -47,7 +47,9 @@ requirePathOrGlobCheck()
 
 getRequirementExecutable()
 {
-    local requirement="${1:?}"; shift
+    local requirement="${1?}"; shift
+    [ -n "$requirement" ] || return 1
+
     local dirspec; for dirspec in "${requireActionsDirspecs[@]}"
     do
 	local requirementFilespec="${dirspec}/${requirement}"

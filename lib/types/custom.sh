@@ -54,7 +54,9 @@ customPathOrGlobCheck()
 getCustomFilespec()
 {
     local compareOp="${1:?}"; shift
-    local customAction="${1:?}"; shift
+    local customAction="${1?}"; shift
+    [ -n "$customAction" ] || return 1
+
     local dirspec; for dirspec in "${customActionsDirspecs[@]}"
     do
 	local customFilespec="${dirspec}/${customAction}"
