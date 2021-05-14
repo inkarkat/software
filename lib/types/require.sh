@@ -12,11 +12,15 @@ printSyntaxRequire()
   just as in the shell) and/or followed by command-line arguments) in the
   ./etc/require directory tree that is invoked and should fail if the
   requirements are not fulfilled.
+  (Prepend $SUDO (before the !) if the command needs to be invoked as root; but
+  try your best to avoid that.)
 - an EXECUTABLE-NAME? (located through $PATH) or GLOB? (potentially prefixed
   with !), which fulfills the requirement if it's (with !: not) there / resolves
   to an existing file or directory.
 - a REQUIREMENT-EXPRESSION (whitespace must be escaped or the entire expression
   quoted!) that is eval'd and should fail if the requirements are not fulfilled.
+  (Prepend $SUDO if the expression needs to be invoked as root; but try your
+  best to avoid that.)
 HELPTEXT
 }
 configUsageRequire()
@@ -84,24 +88,26 @@ isDefinitionAcceptedByRequire()
 	printf >&2 'ERROR: Invalid type: %s\n' "$prefix"
 	exit 3
     else
-	local requirementFilespec requirementWithoutArgs="${requirement%% *}"
-	if ! if requirementFilespec="$(getRequirementExecutable "$requirement")"; then
-	    "$requirementFilespec"
-	elif requirementFilespec="$(getRequirementExecutable "${requirement#!}")"; then
-	    ! "$requirementFilespec"
-	elif requirementFilespec="$(getRequirementExecutable "${requirementWithoutArgs}")"; then
-	    requirementArgs="${requirement#"${requirementWithoutArgs}"}"
-	    "$requirementFilespec" $requirementArgs
-	elif requirementFilespec="$(getRequirementExecutable "${requirementWithoutArgs#!}")"; then
-	    requirementArgs="${requirement#"${requirementWithoutArgs}"}"
-	    ! "$requirementFilespec" $requirementArgs
+	local requirementWithoutSudo="${requirement#\$SUDO }"
+	local sudoPrefix="${requirement%"$requirementWithoutSudo"}"
+	local requirementFilespec requirementWithoutSudoAndArgs="${requirement%% *}"
+	if ! if requirementFilespec="$(getRequirementExecutable "$requirementWithoutSudo")"; then
+	    eval "${sudoPrefix:+${SUDO}${SUDO:+ }}\"\$requirementFilespec\""
+	elif requirementFilespec="$(getRequirementExecutable "${requirementWithoutSudo#!}")"; then
+	    eval "${sudoPrefix:+${SUDO}${SUDO:+ }}! \"\$requirementFilespec\""
+	elif requirementFilespec="$(getRequirementExecutable "${requirementWithoutSudoAndArgs}")"; then
+	    requirementArgs="${requirementWithoutSudo#"${requirementWithoutSudoAndArgs}"}"
+	    eval "${sudoPrefix:+${SUDO}${SUDO:+ }}\"\$requirementFilespec\" $requirementArgs"
+	elif requirementFilespec="$(getRequirementExecutable "${requirementWithoutSudoAndArgs#!}")"; then
+	    requirementArgs="${requirementWithoutSudo#"${requirementWithoutSudoAndArgs}"}"
+	    eval "${sudoPrefix:+${SUDO}${SUDO:+ }}! \"\$requirementFilespec\" $requirementArgs"
 	elif [[ "$requirement" =~ ^\!.*\?$ ]]; then
 	    requirement="${requirement#\!}"
 	    ! requirePathOrGlobCheck "${requirement%\?}"
 	elif [[ "$requirement" =~ \?$ ]]; then
 	    requirePathOrGlobCheck "${requirement%\?}"
 	else
-	    eval "$requirement"
+	    eval "${sudoPrefix:+${SUDO}${SUDO:+ }}$requirementWithoutSudo"
 	fi; then
 	    [ "$isVerbose" ] && printf >&2 'Skipping because requirement %s is not passed: %s\n' "$requirement" "$definition"
 	    return 1
