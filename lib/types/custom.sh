@@ -11,6 +11,8 @@ CHECK can be one of the following (in decreasing precedence):
   if EXECUTABLE-COMMAND starts with a &, this is replaced by the following
   ACTION (without a $SUDO prefix), allowing you to save repeated typing:
 	custom:&-check:foo-installer
+  (Prepend $SUDO if the command needs to be invoked as root; but try your best
+  to avoid that.)
 - an EXECUTABLE-NAME? (located through $PATH) or GLOB? (potentially prefixed
   with !), and succeeds if it's (with !: not) there / resolves to an existing
   file or directory
@@ -29,6 +31,8 @@ CHECK can be one of the following (in decreasing precedence):
 	custom:&-check:foo-installer
   Note: This cannot contain literal colons, as these would prematurely end the
   TEST-EXPRESSION; you can use $(echo -e \\x3a) instead of : as a workaround.
+  (Prepend $SUDO if the expression needs to be invoked as root; but try your
+  best to avoid that.)
 ACTION is one of the following:
 - an EXECUTABLE-COMMAND (potentially followed by command-line arguments) in the
   ./etc/custom directory tree that is invoked (prepend $SUDO if it needs to be
@@ -74,6 +78,8 @@ hasCustom()
 {
     local customAction="${1#*:}"
     local customCheck="${1%":$customAction"}"
+    local customCheckWithoutSudo="${customCheck#\$SUDO }"
+    local sudoPrefix="${customCheck%"$customCheckWithoutSudo"}"
     local customActionWithoutSudoAndArgs="${customAction#\$SUDO }"; customActionWithoutSudoAndArgs="${customActionWithoutSudoAndArgs%% *}"
 
     if [ -z "$customAction" -o -z "$customCheck" ]; then
@@ -84,24 +90,24 @@ hasCustom()
     [ "${addedCustomActions["$customAction"]}" ] && return 0	# This custom action has already been selected for installation.
 
     local customFilespec
-    if customFilespec="$(getCustomFilespec -x "${customCheck}")"; then
-	"$customFilespec"
-    elif [[ "$customCheck" =~ ^\& ]] && customFilespec="$(getCustomFilespec -x "${customActionWithoutSudoAndArgs}${customCheck#\&}")"; then
-	"$customFilespec"
+    if customFilespec="$(getCustomFilespec -x "${customCheckWithoutSudo}")"; then
+	eval "${sudoPrefix:+${SUDO}${SUDO:+ }}\"\$customFilespec\""
+    elif [[ "$customCheckWithoutSudo" =~ ^\& ]] && customFilespec="$(getCustomFilespec -x "${customActionWithoutSudoAndArgs}${customCheckWithoutSudo#\&}")"; then
+	eval "${sudoPrefix:+${SUDO}${SUDO:+ }}\"\$customFilespec\""
     elif [[ "$customCheck" =~ ^\!.*\?$ ]]; then
 	customCheck="${customCheck#\!}"
 	! customPathOrGlobCheck "${customCheck%\?}"
     elif [[ "$customCheck" =~ \?$ ]]; then
 	customPathOrGlobCheck "${customCheck%\?}"
     else
-	if [[ "$customCheck" =~ ^\& ]]; then
+	if [[ "$customCheckWithoutSudo" =~ ^\& ]]; then
 	    if customFilespec="$(getCustomFilespec -x "${customActionWithoutSudoAndArgs}")"; then
 		customActionWithoutSudoAndArgs="$customFilespec"
 	    fi
-	    customCheck="${customActionWithoutSudoAndArgs}${customCheck#\&}"
+	    customCheckWithoutSudo="${customActionWithoutSudoAndArgs}${customCheckWithoutSudo#\&}"
 	fi
 
-	eval "$customCheck"
+	eval "${sudoPrefix:+${SUDO}${SUDO:+ }}$customCheckWithoutSudo"
     fi
 }
 
