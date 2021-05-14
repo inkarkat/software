@@ -909,7 +909,8 @@ fi
 
 
 
-missingDefinitionCount=0
+let handledDefinitionCount=0
+let missingDefinitionCount=0
 for definition in "${definitions[@]}"
 do
     items="${definition%%[	 ]#*}"
@@ -933,6 +934,7 @@ do
 	fi
     done
 
+    let handledDefinitionCount+=1
     typeset -a missingItems=()
     lastRealItem=
     lastMissingItem=
@@ -1002,6 +1004,7 @@ do
 		    ;;
 		99) # If one item's state cannot not be determined, the entire definition should be skipped, as we cannot ensure the correct installation.
 		    noMissingItemMessage="Skipped: $definition"
+		    let handledDefinitionCount-=1
 		    break
 		    ;;
 		*)  missingItems+=("$item")
@@ -1040,13 +1043,16 @@ done
 
 generateAndPrintInstallCommands && exit
 
-if [ "${#definitions[@]}" -gt 0 ]; then
+if [ $handledDefinitionCount -gt 0 ]; then
     if [ $missingDefinitionCount -gt 0 ]; then
 	missingDefinitionCountPlural=s; missingDefinitionCountAuxilliaryVerb=were; [ $missingDefinitionCount -eq 1 ] && { missingDefinitionCountPlural=; missingDefinitionCountAuxilliaryVerb=was; }
 	printf >&2 '%d not yet installed definition%s %s declined.\n' "$missingDefinitionCount" "$missingDefinitionCountPlural" "$missingDefinitionCountAuxilliaryVerb"
     else
-	definitionsVerb=are; definitionsPlural=s; [ ${#definitions[@]} -eq 1 ] && { definitionsVerb=is; definitionsPlural= ; }
-	printf >&2 '%d definition%s %s already installed.\n' "${#definitions[@]}" "$definitionsPlural" "$definitionsVerb"
+	definitionsVerb=are; definitionsPlural=s; [ $handledDefinitionCount -eq 1 ] && { definitionsVerb=is; definitionsPlural= ; }
+	printf >&2 '%d definition%s %s already installed.\n' "$handledDefinitionCount" "$definitionsPlural" "$definitionsVerb"
     fi
+elif [ ${#definitions[@]} -gt 0 ]; then
+    skippedDefinitionsVerb=have; skippedDefinitionsPlural=s; [ ${#definitions[@]} -eq 1 ] && { skippedDefinitionsVerb=has; skippedDefinitionsPlural= ; }
+    printf >&2 '%d definition%s %s been skipped.\n' "${#definitions[@]}" "$skippedDefinitionsPlural" "$skippedDefinitionsVerb"
 fi
 exit 4
