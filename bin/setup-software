@@ -18,7 +18,7 @@ printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s | tee install-script.sh && sh install-script.sh\n' "$(basename "$1")" '[-v|--verbose] [-y|--yes] [-b|--batch] [-s|--select DEFINITION [-s ...]] [--base-dir BASE-DIR] [--name NAME] -a|--all|GROUP-NAME|GROUP-FILESPEC [...] [-?|-h|--help]|[-H|--config-help [TYPE]]'
+    printf 'Usage: %q %s | tee install-script.sh && sh install-script.sh\n' "$(basename "$1")" '[--check|--dry-run] [-v|--verbose] [-y|--yes] [-b|--batch] [-s|--select DEFINITION [-s ...]] [--base-dir BASE-DIR] [--name NAME] -a|--all|GROUP-NAME|GROUP-FILESPEC [...] [-?|-h|--help]|[-H|--config-help [TYPE]]'
     echo
     printf 'Usage: %q %s\n' "$(basename "$1")" '-e|--execute [...]'
     echo
@@ -29,6 +29,11 @@ printShortUsage()
     printf 'Usage: %q %s | runWithPrompt --exit-on-failure\n' "$(basename "$1")" '--yes --batch [--select DEFINITION] (--base-dir BASE-DIR -a|--all|GROUP-NAME | GROUP-FILESPEC)'
     echo
     printf 'Usage: %q %s\n' "$(basename "$1")" '--execute --yes --batch [--select DEFINITION] [--add-base-dir BASE-DIR] (--base-dir BASE-DIR -a|--all|GROUP-NAME | GROUP-FILESPEC)'
+    echo
+    echo 'Recursive use:'
+    echo
+    printf "custom:'& --check --yes [--add-base-dir BASE-DIR] (--base-dir BASE-DIR -a|--all|GROUP-NAME | GROUP-FILESPEC)':'%q --yes \${isBatch:+--batch} \${isVerbose:+--verbose} [--add-base-dir BASE-DIR] (--base-dir BASE-DIR -a|--all|GROUP-NAME | GROUP-FILESPEC)'" "$(basename "$1")"
+    echo
 }
 printUsage()
 {
@@ -53,6 +58,13 @@ HELPDESCRIPTION
     --config-help|-H [TYPE]
 			Show details about the configuration syntax for all /
 			for TYPE.
+    --check		Just check whether any installation would happen;
+			succeed if nothing is chosen / all is up-to-date, fail
+			if some installation action would be required.
+    --dry-run		Like --check, but behave like usual (success means some
+			installation action would be required; failure means
+			not), and also print related messages; just omit the
+			installation commands.
     --execute|-e	Directly execute the installation commands (as long as
 			they succeed; like with set -e) instead of just printing
 			them.
@@ -781,6 +793,11 @@ generateAndPrintInstallCommands()
     printInstallCommands
 }
 
+checkAndExit()
+{
+    [ $addedDefinitionCount -eq 0 ] && exit 0 || exit 1
+}
+
 
 installExitStatus=0
 noopExitStatus=4
@@ -806,6 +823,8 @@ do
 			eval 'printConfigUsage "$@"' "${pager:+|}" '"${pager[@]}"'
 			exit 0
 			;;
+	--check)	shift; action=checkAndExit;;
+	--dry-run)	shift; action=false;;
 	--base-dir)	recursiveArgs+=("$1" "$2"); shift; baseDir="${1:?}"; shift;;
 	--add-base-dir)	recursiveArgs+=("$1" "$2"); shift; additionalBaseDirs=("${1:?}" "${additionalBaseDirs[@]}"); shift;;
 	--execute|-e)	recursiveArgs+=("$1"); shift; isExecute=t;;
