@@ -911,6 +911,7 @@ fi
 
 let handledDefinitionCount=0
 let missingDefinitionCount=0
+let addedDefinitionCount=0
 for definition in "${definitions[@]}"
 do
     items="${definition%%[	 ]#*}"
@@ -1034,6 +1035,7 @@ do
 	fi
 
 	if $obtainSelection --subject "$subject" --verb "$itemVerb not yet${itemAuxVerb:+ }$itemAuxVerb" --state "installed${what:+ (}${what}${what:+)}" --action 'install it'; then
+	    let addedDefinitionCount+=1
 	    addItems "${missingItems[@]}"
 	fi
     fi
@@ -1044,7 +1046,10 @@ done
 generateAndPrintInstallCommands && exit
 
 if [ $handledDefinitionCount -gt 0 ]; then
-    if [ $missingDefinitionCount -gt 0 ]; then
+    if [ $addedDefinitionCount -gt 0 ]; then
+	definitionsVerb=are; definitionsPlural=s; [ $handledDefinitionCount -eq 1 ] && { definitionsVerb=is; definitionsPlural= ; }
+	printf >&2 '%d out of %d offered definition%s would be installed.\n' "$addedDefinitionCount" "$handledDefinitionCount" "$definitionsPlural"
+    elif [ $missingDefinitionCount -gt 0 ]; then
 	missingDefinitionCountPlural=s; missingDefinitionCountAuxilliaryVerb=were; [ $missingDefinitionCount -eq 1 ] && { missingDefinitionCountPlural=; missingDefinitionCountAuxilliaryVerb=was; }
 	printf >&2 '%d not yet installed definition%s %s declined.\n' "$missingDefinitionCount" "$missingDefinitionCountPlural" "$missingDefinitionCountAuxilliaryVerb"
     else
