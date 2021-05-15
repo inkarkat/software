@@ -43,7 +43,8 @@ printLongUsage()
     # It is printed to stdout to allow paging with 'more'.
     cat <<HELPDESCRIPTION
 Guided wizard to interactively choose / take (with -y|--yes) (from DEFINITION(s)
-/ all / the passed GROUP(s)) and install various common software that I use.
+/ all / the passed GROUP(s)) and [print commands to] install those selected
+software items (from various sources).
 HELPDESCRIPTION
     echo
     printShortUsage "$1"
