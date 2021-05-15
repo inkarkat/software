@@ -784,6 +784,7 @@ generateAndPrintInstallCommands()
 
 installExitStatus=0
 noopExitStatus=4
+action=generateAndPrintInstallCommands
 setupName=
 obtainSelection=askTo
 isAddAll=
@@ -1046,7 +1047,7 @@ done
 
 
 
-generateAndPrintInstallCommands && exit $installExitStatus
+$action && exit $installExitStatus
 
 status=$noopExitStatus
 if [ $handledDefinitionCount -gt 0 ]; then
