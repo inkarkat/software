@@ -1048,10 +1048,12 @@ done
 
 generateAndPrintInstallCommands && exit $installExitStatus
 
+status=$noopExitStatus
 if [ $handledDefinitionCount -gt 0 ]; then
     if [ $addedDefinitionCount -gt 0 ]; then
 	definitionsVerb=are; definitionsPlural=s; [ $handledDefinitionCount -eq 1 ] && { definitionsVerb=is; definitionsPlural= ; }
 	printf >&2 '%d out of %d offered definition%s would be installed.\n' "$addedDefinitionCount" "$handledDefinitionCount" "$definitionsPlural"
+	status=$installExitStatus
     elif [ $missingDefinitionCount -gt 0 ]; then
 	missingDefinitionCountPlural=s; missingDefinitionCountAuxilliaryVerb=were; [ $missingDefinitionCount -eq 1 ] && { missingDefinitionCountPlural=; missingDefinitionCountAuxilliaryVerb=was; }
 	printf >&2 '%d not yet installed definition%s %s declined.\n' "$missingDefinitionCount" "$missingDefinitionCountPlural" "$missingDefinitionCountAuxilliaryVerb"
@@ -1063,4 +1065,4 @@ elif [ ${#definitions[@]} -gt 0 ]; then
     skippedDefinitionsVerb=have; skippedDefinitionsPlural=s; [ ${#definitions[@]} -eq 1 ] && { skippedDefinitionsVerb=has; skippedDefinitionsPlural= ; }
     printf >&2 '%d definition%s %s been skipped.\n' "${#definitions[@]}" "$skippedDefinitionsPlural" "$skippedDefinitionsVerb"
 fi
-exit $noopExitStatus
+exit $status
