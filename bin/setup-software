@@ -782,6 +782,8 @@ generateAndPrintInstallCommands()
 }
 
 
+installExitStatus=0
+noopExitStatus=4
 setupName=
 obtainSelection=askTo
 isAddAll=
@@ -1044,7 +1046,7 @@ done
 
 
 
-generateAndPrintInstallCommands && exit
+generateAndPrintInstallCommands && exit $installExitStatus
 
 if [ $handledDefinitionCount -gt 0 ]; then
     if [ $addedDefinitionCount -gt 0 ]; then
@@ -1061,4 +1063,4 @@ elif [ ${#definitions[@]} -gt 0 ]; then
     skippedDefinitionsVerb=have; skippedDefinitionsPlural=s; [ ${#definitions[@]} -eq 1 ] && { skippedDefinitionsVerb=has; skippedDefinitionsPlural= ; }
     printf >&2 '%d definition%s %s been skipped.\n' "${#definitions[@]}" "$skippedDefinitionsPlural" "$skippedDefinitionsVerb"
 fi
-exit 4
+exit $noopExitStatus
