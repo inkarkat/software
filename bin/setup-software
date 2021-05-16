@@ -44,6 +44,7 @@ printUsage()
 }
 printLongUsage()
 {
+    local IFS=$'\n'
     # This is the long "man page" when launched with the help argument.
     # It is printed to stdout to allow paging with 'more'.
     cat <<HELPDESCRIPTION
@@ -94,7 +95,7 @@ HELPDESCRIPTION
 			this project / BASE-DIR.
     GROUP-FILESPEC	Consider definitions from GROUP-FILESPEC, which can
 			point to anywhere in the file system.
-
+${commandLineHelpExtensions[*]}
 EXIT STATUS:
     0	Complete success.
     1	Failed to install (especially failure in pre- or postinstall actions).
@@ -204,8 +205,10 @@ HELPTEXT
     fi
 }
 
+typeset -a commandLineHelpExtensions=()
 typeset -A commandLineOptions=()
 typeset -A commandLineParameters=()
+
 typeset -a nativeRegistry=()
 typeset -A typeRegistry=([native:]=Native)
 typeset -A typeInstallOrder=([100]=Native)
