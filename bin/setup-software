@@ -204,6 +204,8 @@ HELPTEXT
     fi
 }
 
+typeset -A commandLineOptions=()
+typeset -A commandLineParameters=()
 typeset -a nativeRegistry=()
 typeset -A typeRegistry=([native:]=Native)
 typeset -A typeInstallOrder=([100]=Native)
@@ -867,7 +869,19 @@ do
 			specialHandlingCommands+=("${specialCommand% }")
 			;;
 	--)		shift; break;;
-	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
+	-*)		if [ -n "${commandLineOptions["$1"]}" ]; then
+			    "${commandLineOptions["$1"]}" "$1"
+			    shift
+			elif [ -n "${commandLineParameters["$1"]}" ]; then
+			    "${commandLineParameters["$1"]}" "$1" "$2"
+			    shift; shift
+			else
+			    echo "ERROR: Unknown option \"$1\"!"
+			    echo
+			    printUsage "$0"
+			    exit 2
+			fi >&2
+			;;
 	*)		break;;
     esac
 done
