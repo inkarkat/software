@@ -20,9 +20,17 @@ will establish separate namespaces for queries.
 HELPTEXT
 }
 
+typeset -A yesForNames=()
+handleYesFor()
+{
+    shift   # --yes-for
+    local optionGroupName="${1?}"; shift
+    yesForNames["${optionGroupName:-optional}"]=t
+}
+
 declineOptionalDefinitions()
 {
-    [ -z "$setupAppendix" ]
+    [ -z "$setupAppendix" ] || [ -n "${yesForNames["$setupAppendix"]}" ]
 }
 
 isDefinitionAcceptedByOptional()
@@ -49,5 +57,6 @@ isDefinitionGroupAcceptedByGroupOptional()
     return 0
 }
 
+commandLineParameters+=([--yes-for]=handleYesFor)
 definitionFilterTypeRegistry+=([optional:]=Optional)
 definitionGroupFilterTypeRegistry+=([group-optional:]=GroupOptional)
