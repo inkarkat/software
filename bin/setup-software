@@ -18,7 +18,7 @@ printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s | tee install-script.sh && sh install-script.sh\n' "$(basename "$1")" '[-v|--verbose] [-y|--yes] [-b|--batch] [-s|--select DEFINITION [-s ...]] [--base-dir BASE-DIR] [--name NAME] -a|--all|GROUP-NAME|GROUP-FILESPEC [...] [-?|-h|--help]|[-H|--config-help [TYPE]]'
+    printf 'Usage: %q %s | tee install-script.sh && sh install-script.sh\n' "$(basename "$1")" '[--check|--dry-run] [-v|--verbose] [-y|--yes] [-b|--batch] [-s|--select DEFINITION [-s ...]] [--base-dir BASE-DIR] [--name NAME] -a|--all|GROUP-NAME|GROUP-FILESPEC [...] [-?|-h|--help]|[-H|--config-help [TYPE]]'
     echo
     printf 'Usage: %q %s\n' "$(basename "$1")" '-e|--execute [...]'
     echo
@@ -29,6 +29,11 @@ printShortUsage()
     printf 'Usage: %q %s | runWithPrompt --exit-on-failure\n' "$(basename "$1")" '--yes --batch [--select DEFINITION] (--base-dir BASE-DIR -a|--all|GROUP-NAME | GROUP-FILESPEC)'
     echo
     printf 'Usage: %q %s\n' "$(basename "$1")" '--execute --yes --batch [--select DEFINITION] [--add-base-dir BASE-DIR] (--base-dir BASE-DIR -a|--all|GROUP-NAME | GROUP-FILESPEC)'
+    echo
+    echo 'Recursive use:'
+    echo
+    printf "custom:'& --check --yes [--add-base-dir BASE-DIR] (--base-dir BASE-DIR -a|--all|GROUP-NAME | GROUP-FILESPEC)':'%q --yes \${isBatch:+--batch} \${isVerbose:+--verbose} [--add-base-dir BASE-DIR] (--base-dir BASE-DIR -a|--all|GROUP-NAME | GROUP-FILESPEC)'" "$(basename "$1")"
+    echo
 }
 printUsage()
 {
@@ -43,7 +48,8 @@ printLongUsage()
     # It is printed to stdout to allow paging with 'more'.
     cat <<HELPDESCRIPTION
 Guided wizard to interactively choose / take (with -y|--yes) (from DEFINITION(s)
-/ all / the passed GROUP(s)) and install various common software that I use.
+/ all / the passed GROUP(s)) and [print commands to] install those selected
+software items (from various sources).
 HELPDESCRIPTION
     echo
     printShortUsage "$1"
@@ -52,6 +58,13 @@ HELPDESCRIPTION
     --config-help|-H [TYPE]
 			Show details about the configuration syntax for all /
 			for TYPE.
+    --check		Just check whether any installation would happen;
+			succeed if nothing is chosen / all is up-to-date, fail
+			if some installation action would be required.
+    --dry-run		Like --check, but behave like usual (success means some
+			installation action would be required; failure means
+			not), and also print related messages; just omit the
+			installation commands.
     --execute|-e	Directly execute the installation commands (as long as
 			they succeed; like with set -e) instead of just printing
 			them.
@@ -780,7 +793,15 @@ generateAndPrintInstallCommands()
     printInstallCommands
 }
 
+checkAndExit()
+{
+    [ $addedDefinitionCount -eq 0 ] && exit 0 || exit 1
+}
 
+
+installExitStatus=0
+noopExitStatus=4
+action=generateAndPrintInstallCommands
 setupName=
 obtainSelection=askTo
 isAddAll=
@@ -802,6 +823,8 @@ do
 			eval 'printConfigUsage "$@"' "${pager:+|}" '"${pager[@]}"'
 			exit 0
 			;;
+	--check)	shift; action=checkAndExit;;
+	--dry-run)	shift; action=false;;
 	--base-dir)	recursiveArgs+=("$1" "$2"); shift; baseDir="${1:?}"; shift;;
 	--add-base-dir)	recursiveArgs+=("$1" "$2"); shift; additionalBaseDirs=("${1:?}" "${additionalBaseDirs[@]}"); shift;;
 	--execute|-e)	recursiveArgs+=("$1"); shift; isExecute=t;;
@@ -911,6 +934,7 @@ fi
 
 let handledDefinitionCount=0
 let missingDefinitionCount=0
+let addedDefinitionCount=0
 for definition in "${definitions[@]}"
 do
     items="${definition%%[	 ]#*}"
@@ -1034,6 +1058,7 @@ do
 	fi
 
 	if $obtainSelection --subject "$subject" --verb "$itemVerb not yet${itemAuxVerb:+ }$itemAuxVerb" --state "installed${what:+ (}${what}${what:+)}" --action 'install it'; then
+	    let addedDefinitionCount+=1
 	    addItems "${missingItems[@]}"
 	fi
     fi
@@ -1041,10 +1066,15 @@ done
 
 
 
-generateAndPrintInstallCommands && exit
+$action && exit $installExitStatus
 
+status=$noopExitStatus
 if [ $handledDefinitionCount -gt 0 ]; then
-    if [ $missingDefinitionCount -gt 0 ]; then
+    if [ $addedDefinitionCount -gt 0 ]; then
+	definitionsVerb=are; definitionsPlural=s; [ $handledDefinitionCount -eq 1 ] && { definitionsVerb=is; definitionsPlural= ; }
+	printf >&2 '%d out of %d offered definition%s would be installed.\n' "$addedDefinitionCount" "$handledDefinitionCount" "$definitionsPlural"
+	status=$installExitStatus
+    elif [ $missingDefinitionCount -gt 0 ]; then
 	missingDefinitionCountPlural=s; missingDefinitionCountAuxilliaryVerb=were; [ $missingDefinitionCount -eq 1 ] && { missingDefinitionCountPlural=; missingDefinitionCountAuxilliaryVerb=was; }
 	printf >&2 '%d not yet installed definition%s %s declined.\n' "$missingDefinitionCount" "$missingDefinitionCountPlural" "$missingDefinitionCountAuxilliaryVerb"
     else
@@ -1055,4 +1085,4 @@ elif [ ${#definitions[@]} -gt 0 ]; then
     skippedDefinitionsVerb=have; skippedDefinitionsPlural=s; [ ${#definitions[@]} -eq 1 ] && { skippedDefinitionsVerb=has; skippedDefinitionsPlural= ; }
     printf >&2 '%d definition%s %s been skipped.\n' "${#definitions[@]}" "$skippedDefinitionsPlural" "$skippedDefinitionsVerb"
 fi
-exit 4
+exit $status
