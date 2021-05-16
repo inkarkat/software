@@ -20,6 +20,12 @@ will establish separate namespaces for queries.
 HELPTEXT
 }
 
+commandLineHelpExtensions+=(
+"    --yes-for ''|OPTION-GROUP-NAME"
+'			Also include optional definitions [that target'
+'			OPTION-GROUP-NAME] in automatic installation with --yes.'
+)
+
 typeset -A yesForNames=()
 handleYesFor()
 {
