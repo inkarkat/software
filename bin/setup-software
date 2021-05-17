@@ -1129,7 +1129,7 @@ do
 	    itemAuxVerb=be
 	fi
 
-	if $obtainSelection --subject "$subject" --verb "$itemVerb not yet${itemAuxVerb:+ }$itemAuxVerb" --state "installed${what:+ (}${what}${what:+)}" --action 'install it'; then
+	if askTo --subject "$subject" --verb "$itemVerb not yet${itemAuxVerb:+ }$itemAuxVerb" --state "installed${what:+ (}${what}${what:+)}" --action 'install it'; then
 	    let addedDefinitionCount+=1
 	    addItems "${missingItems[@]}"
 	fi
