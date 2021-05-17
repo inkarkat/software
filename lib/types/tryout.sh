@@ -32,7 +32,7 @@ else
 	shift # requirement
 	local definition="${1:?}"; shift
 
-	[ "$isVerbose" ] && printf >&2 'Skipping tryout definition because TRYOUT is not set: %s\n' "$definition"
+	[ "$isVerbose" ] && messagePrintf 'Skipping tryout definition because TRYOUT is not set: %s\n' "$definition"
 	return 1
     }
     isDefinitionGroupAcceptedByGroupTryout()
@@ -40,7 +40,7 @@ else
 	shift # group filter
 	local definitionGroupFileAndLocation="${1:?}"; shift
 
-	[ "$isVerbose" ] && printf >&2 'Skipping tryout definition group filter for %s because TRYOUT is not set\n' "$definitionGroupFileAndLocation"
+	[ "$isVerbose" ] && messagePrintf 'Skipping tryout definition group filter for %s because TRYOUT is not set\n' "$definitionGroupFileAndLocation"
 	return 1
     }
 fi

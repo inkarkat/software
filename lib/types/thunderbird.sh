@@ -60,7 +60,7 @@ hasThunderbirdAddon()
     fi
 
     if ! getInstalledThunderbirdAddons "$profileName" "$configDirspec"; then
-	echo >&2 "ERROR: Failed to obtain Thunderbird installed add-on list for profile ${profileName}; skipping ${1}."
+	messagePrintf >&2 'ERROR: Failed to obtain Thunderbird installed add-on list for profile %s; skipping %s.\n' "$profileName" "$1"
 	return 99
     fi
     [ "${installedThunderbirdProfileAddonIds["${profileName} ${addonId}"]}" ]

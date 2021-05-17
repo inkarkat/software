@@ -23,7 +23,7 @@ typeInstallOrder+=([700]=Wine)
 if ! "${projectDir:?}/etc/require/intel-architecture"; then
     hasWine()
     {
-	echo >&2 "Note: Wine is not available on non-Intel architectures; skipping ${1}."
+	messagePrintf >&2 'Note: Wine is not available on non-Intel architectures; skipping %s\n.' "$1"
 	return 99
     }
     installWine() { :; }

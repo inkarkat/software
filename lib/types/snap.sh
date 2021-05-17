@@ -37,7 +37,7 @@ hasSnap()
 {
     local snapPackageName="${1:?}"; shift
     if ! getInstalledSnapPackages; then
-	echo >&2 "ERROR: Failed to obtain installed Snap store package list; skipping ${snapPackageName}."
+	messagePrintf >&2 'ERROR: Failed to obtain installed Snap store package list; skipping %s.\n' "$snapPackageName"
 	return 99
     fi
     [ "${installedSnapPackages["$snapPackageName"]}" ] || [ "${addedSnapPackages["$snapPackageName"]}" ] || [ "${externallyAddedSnapPackages["$snapPackageName"]}" ]

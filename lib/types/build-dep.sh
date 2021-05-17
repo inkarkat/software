@@ -36,7 +36,7 @@ hasDebBuild()
 {
     local debBuildName="${1:?}"; shift
     if ! getInstalledDebBuildDependencies; then
-	echo >&2 "ERROR: Failed to obtain build dependencies list; skipping ${debBuildName}."
+	messagePrintf >&2 'ERROR: Failed to obtain build dependencies list; skipping %s.\n' "$debBuildName"
 	return 99
     fi
     [ "${installedDebBuildDependencies["$debBuildName"]}" ] || [ "${addedDebBuildDependencies["$debBuildName"]}" ]

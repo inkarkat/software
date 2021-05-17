@@ -77,7 +77,7 @@ isDefinitionAcceptedByRequire()
 	local availabilityFunctionName="isAvailable${typeFunction}"
 	if type -t "$availabilityFunctionName" >/dev/null; then
 	    if ! "$availabilityFunctionName" "$name"; then
-		[ "$isVerbose" ] && printf >&2 'Skipping because requirement %s is not passed: %s\n' "$requirement" "$definition"
+		[ "$isVerbose" ] && messagePrintf 'Skipping because requirement %s is not passed: %s\n' "$requirement" "$definition"
 		return 1
 	    fi
 	else
@@ -109,7 +109,7 @@ isDefinitionAcceptedByRequire()
 	else
 	    eval "${sudoPrefix:+${SUDO}${SUDO:+ }}$requirementWithoutSudo"
 	fi; then
-	    [ "$isVerbose" ] && printf >&2 'Skipping because requirement %s is not passed: %s\n' "$requirement" "$definition"
+	    [ "$isVerbose" ] && messagePrintf 'Skipping because requirement %s is not passed: %s\n' "$requirement" "$definition"
 	    return 1
 	fi
     fi

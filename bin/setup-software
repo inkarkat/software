@@ -233,6 +233,11 @@ do
 done
 set -o noglob
 
+messagePrintf()
+{
+    printf >&2 "$@"
+}
+
 getDefinitionGroupFilespec()
 {
     local definitionGroup="${1:?}"; shift
@@ -702,7 +707,7 @@ runPreInstallCheck()
 	else
 	    addUniqueToBeInstalledCommand "${sudoPrefix:+${SUDO}${SUDO:+ }}${actionWithoutSudo}"
 	fi
-    fi || printf >&2 'Skipping preinstall action, because %s indicated that no action is needed.\n' "$action"
+    fi || messagePrintf 'Skipping preinstall action, because %s indicated that no action is needed.\n' "$action"
 }
 
 postInstall()
@@ -756,18 +761,18 @@ runPostInstallCheck()
 		hasOrAddItems "${action#native:}" && \
 		    generateInstallCommands
 		printInstallCommands || \
-		    printf >&2 'Skipping postinstall action, because %s indicated that no action is needed.\n' "$action"
+		    messagePrintf 'Skipping postinstall action, because %s indicated that no action is needed.\n' "$action"
 	    elif [ -n "$prefix" ] && [ -n "${typeRegistry["$prefix"]}" ]; then
 		hasOrAddItems "$action" && \
 		    generateInstallCommands
 		printInstallCommands || \
-		    printf >&2 'Skipping postinstall action, because %s indicated that no action is needed.\n' "$action"
+		    messagePrintf 'Skipping postinstall action, because %s indicated that no action is needed.\n' "$action"
 	    else
 		eval "$action"
 	    fi
 	fi || return 1
     else
-	printf >&2 'Skipping postinstall action, because installation of %s was not successful.\n' "$item"
+	messagePrintf 'Skipping postinstall action, because installation of %s was not successful.\n' "$item"
     fi
 }
 
@@ -929,7 +934,7 @@ if [ "$isAddAll" ]; then
 	set -- "${acceptedGroups[@]}" "$@"
 
 	acceptedGroupsPlural=s; [ ${#acceptedGroups[@]} -eq 1 ] && acceptedGroupsPlural=
-	printf >&2 '\nOkay, %d definition group%s selected. Now for the definitions themselves:\n\n' "${#acceptedGroups[@]}" "$acceptedGroupsPlural"
+	messagePrintf '\nOkay, %d definition group%s selected. Now for the definitions themselves:\n\n' "${#acceptedGroups[@]}" "$acceptedGroupsPlural"
     fi
 fi
 if [ ${#specialHandlingCommands[@]} -gt 0 ]; then
@@ -962,7 +967,7 @@ do
     parseDefinitionGroup "$definitionGroupFilespec"
 done
 if [ ${#definitions[@]} -eq 0 ]; then
-    echo >&2 'No definitions have been found.'
+    messagePrintf >&2 '%s\n' 'No definitions have been found.'
     exit 99
 fi
 
@@ -1078,7 +1083,7 @@ do
     done
 
     if [ ${#missingItems[@]} -eq 0 ]; then
-	[ "$isVerbose" ] && printf >&2 '%s\n' "$noMissingItemMessage"
+	[ "$isVerbose" ] && messagePrintf '%s\n' "$noMissingItemMessage"
     else
 	let missingDefinitionCount+=1
 	what=
@@ -1109,17 +1114,17 @@ status=$noopExitStatus
 if [ $handledDefinitionCount -gt 0 ]; then
     if [ $addedDefinitionCount -gt 0 ]; then
 	definitionsVerb=are; definitionsPlural=s; [ $handledDefinitionCount -eq 1 ] && { definitionsVerb=is; definitionsPlural= ; }
-	printf >&2 '%d out of %d offered definition%s would be installed.\n' "$addedDefinitionCount" "$handledDefinitionCount" "$definitionsPlural"
+	messagePrintf '%d out of %d offered definition%s would be installed.\n' "$addedDefinitionCount" "$handledDefinitionCount" "$definitionsPlural"
 	status=$installExitStatus
     elif [ $missingDefinitionCount -gt 0 ]; then
 	missingDefinitionCountPlural=s; missingDefinitionCountAuxilliaryVerb=were; [ $missingDefinitionCount -eq 1 ] && { missingDefinitionCountPlural=; missingDefinitionCountAuxilliaryVerb=was; }
-	printf >&2 '%d not yet installed definition%s %s declined.\n' "$missingDefinitionCount" "$missingDefinitionCountPlural" "$missingDefinitionCountAuxilliaryVerb"
+	messagePrintf '%d not yet installed definition%s %s declined.\n' "$missingDefinitionCount" "$missingDefinitionCountPlural" "$missingDefinitionCountAuxilliaryVerb"
     else
 	definitionsVerb=are; definitionsPlural=s; [ $handledDefinitionCount -eq 1 ] && { definitionsVerb=is; definitionsPlural= ; }
-	printf >&2 '%d definition%s %s already installed.\n' "$handledDefinitionCount" "$definitionsPlural" "$definitionsVerb"
+	messagePrintf '%d definition%s %s already installed.\n' "$handledDefinitionCount" "$definitionsPlural" "$definitionsVerb"
     fi
 elif [ ${#definitions[@]} -gt 0 ]; then
     skippedDefinitionsVerb=have; skippedDefinitionsPlural=s; [ ${#definitions[@]} -eq 1 ] && { skippedDefinitionsVerb=has; skippedDefinitionsPlural= ; }
-    printf >&2 '%d definition%s %s been skipped.\n' "${#definitions[@]}" "$skippedDefinitionsPlural" "$skippedDefinitionsVerb"
+    messagePrintf '%d definition%s %s been skipped.\n' "${#definitions[@]}" "$skippedDefinitionsPlural" "$skippedDefinitionsVerb"
 fi
 exit $status

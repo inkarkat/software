@@ -36,7 +36,7 @@ hasAmazonExtras()
 {
     local amazonExtrasPackageName="${1:?}"; shift
     if ! getInstalledAmazonExtrasPackages; then
-	echo >&2 "ERROR: Failed to obtain installed Python package list; skipping ${amazonExtrasPackageName}."
+	messagePrintf >&2 'ERROR: Failed to obtain installed Python package list; skipping %s.\n' "$amazonExtrasPackageName"
 	return 99
     fi
     [ "${installedAmazonExtrasPackages["$amazonExtrasPackageName"]}" ] || [ "${addedAmazonExtrasPackages["$amazonExtrasPackageName"]}" ] || [ "${externallyAddedAmazonExtrasPackages["$amazonExtrasPackageName"]}" ]

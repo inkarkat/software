@@ -38,7 +38,7 @@ hasPpa()
 {
     local ppaRepoName="${1:?}"; shift
     if ! getInstalledPpaRepositories; then
-	echo >&2 "ERROR: Failed to obtain installed Ubuntu personal package archives list; skipping ${ppaRepoName}."
+	messagePrintf >&2 'ERROR: Failed to obtain installed Ubuntu personal package archives list; skipping %s.\n' "$ppaRepoName"
 	return 99
     fi
     [ "${installedPpaRepositories["$ppaRepoName"]}" ] || [ "${addedPpaRepositories["$ppaRepoName"]}" ] || [ "${externallyAddedPpaRepositories["$ppaRepoName"]}" ]

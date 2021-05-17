@@ -36,7 +36,7 @@ hasPip3()
 {
     local pip3PackageName="${1:?}"; shift
     if ! getInstalledPip3Packages; then
-	echo >&2 "ERROR: Failed to obtain installed Python package list; skipping ${pip3PackageName}."
+	messagePrintf >&2 'ERROR: Failed to obtain installed Python package list; skipping %s.\n' "$pip3PackageName"
 	return 99
     fi
     [ "${installedPip3Packages["$pip3PackageName"]}" ] || [ "${addedPip3Packages["$pip3PackageName"]}" ] || [ "${externallyAddedPip3Packages["$pip3PackageName"]}" ]

@@ -39,7 +39,7 @@ hasApt()
 {
     local packageName="${1:?}"; shift
     if ! getInstalledAptPackages; then
-	echo >&2 "ERROR: Failed to obtain installed native package list; skipping ${packageName}."
+	messagePrintf >&2 'ERROR: Failed to obtain installed native package list; skipping %s.\n' "$packageName"
 	return 99
     fi
 
