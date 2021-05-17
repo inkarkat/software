@@ -355,14 +355,14 @@ addAllAcceptedGroups()
 	    groupDirectoryGroupCount=$(countGlob "${group}/*" "${groups[@]}")
 	    [ $groupDirectoryGroupCount -gt 1 ] || continue  # Ignore a group directory that has only one group in it; the query for the group itself will suffice.
 	    ! isDefinitionGroupCompletelyFiltered "${group}/${GROUPDIR_FILTER_FILENAME}" && \
-		memoizeDecision --memoize-group "${setupName}${setupAppendix:+-}${setupAppendix}-groups" --timespan "$SETUPSOFTWARE_GROUP_VALID_TIMESPAN" --subject "$group" --verb "directory (with $groupDirectoryGroupCount groups) is not" --state 'chosen' --action 'consider it' || \
+		$obtainGroups --memoize-group "${setupName}${setupAppendix:+-}${setupAppendix}-groups" --timespan "$SETUPSOFTWARE_GROUP_VALID_TIMESPAN" --subject "$group" --verb "directory (with $groupDirectoryGroupCount groups) is not" --state 'chosen' --action 'consider it' || \
 		readarray -O ${#filteredGroups[@]} -t filteredGroups < <(filterGlob "${group}/*" "${groups[@]}")
 	    continue
 	fi
 
 	isDefinitionGroupCompletelyFiltered "$group" && continue
 
-	memoizeDecision --memoize-group "${setupName}${setupAppendix:+-}${setupAppendix}-groups" --timespan "$SETUPSOFTWARE_GROUP_VALID_TIMESPAN" --subject "$group" --verb 'is not' --state 'chosen' --action 'consider it' && \
+	$obtainGroups --memoize-group "${setupName}${setupAppendix:+-}${setupAppendix}-groups" --timespan "$SETUPSOFTWARE_GROUP_VALID_TIMESPAN" --subject "$group" --verb 'is not' --state 'chosen' --action 'consider it' && \
 	    acceptedGroups+=("$group")
     done
 }
