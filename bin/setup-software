@@ -913,6 +913,14 @@ do
 	*)		break;;
     esac
 done
+if [ "$isQuiet" ]; then
+    if [ "$isVerbose" ]; then
+	echo 'ERROR: Cannot combine -q|--quiet with -v|--verbose.'
+	echo
+	printUsage "$0"
+	exit 2
+    fi >&2
+fi
 typeset -a customActionsDirspecs=()
 typeset -a requireActionsDirspecs=()
 typeset -a preinstallActionsDirspecs=()
