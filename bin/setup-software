@@ -240,6 +240,11 @@ messagePrintf()
     printf >&2 "$@"
 }
 
+silentRecallDecision()
+{
+    recallDecision >/dev/null 2>&1 "$@"
+}
+
 getDefinitionGroupFilespec()
 {
     local definitionGroup="${1:?}"; shift
@@ -920,6 +925,9 @@ if [ "$isQuiet" ]; then
 	printUsage "$0"
 	exit 2
     fi >&2
+
+    [ "$obtainSelection" = recallDecision ] && obtainSelection=silentRecallDecision
+    [ "$obtainGroups" = recallDecision ] && obtainGroups=silentRecallDecision
 fi
 typeset -a customActionsDirspecs=()
 typeset -a requireActionsDirspecs=()
