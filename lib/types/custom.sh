@@ -132,7 +132,7 @@ addCustom()
 	    local typeFunction="${typeRegistry["${prefix}"]}"
 	    if [ -n "$typeFunction" ]; then
 		itemActions["$customAction"]=t
-		eval "add${typeFunction} \"\$name\""
+		"add${typeFunction}" "$name"
 	    fi
 	fi
     fi

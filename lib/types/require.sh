@@ -76,7 +76,7 @@ isDefinitionAcceptedByRequire()
     if [ -n "$typeFunction" ]; then
 	local availabilityFunctionName="isAvailable${typeFunction}"
 	if type -t "$availabilityFunctionName" >/dev/null; then
-	    if ! eval "$availabilityFunctionName \"\$name\""; then
+	    if ! "$availabilityFunctionName" "$name"; then
 		[ "$isVerbose" ] && printf >&2 'Skipping because requirement %s is not passed: %s\n' "$requirement" "$definition"
 		return 1
 	    fi

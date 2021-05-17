@@ -20,7 +20,7 @@ hasDummy()
     if [ -n "$typeFunction" ]; then
 	local availabilityFunctionName="isAvailable${typeFunction}"
 	if type -t "$availabilityFunctionName" >/dev/null; then
-	    eval "$availabilityFunctionName \"\$name\""
+	    "$availabilityFunctionName" "$name"
 	else
 	    printf >&2 'ERROR: Type %s cannot be used as a dummy item; it does not report availability.\n' "$prefix"
 	    exit 3
