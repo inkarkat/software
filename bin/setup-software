@@ -23,7 +23,7 @@ printShortUsage()
     # skim the long one.
     printf 'Usage: %q %s\n' "$(basename "$1")" '-?|-h|--help | -H|--config-help [TYPE]'
     echo
-    printf 'Usage: %q %s | tee install-script.sh && sh install-script.sh\n' "$(basename "$1")" "[--check|--dry-run] [-v|--verbose] [-y|--yes] [-b|--batch] [-s|--select DEFINITION [-s ...]] [--base-dir BASE-DIR] [--name NAME]${commandLineOptionExtensions:+ }${commandLineOptionExtensions}${commandLineParameterExtensions:+ }${commandLineParameterExtensions} -a|--all|GROUP-NAME|GROUP-FILESPEC [...]"
+    printf 'Usage: %q %s | tee install-script.sh && sh install-script.sh\n' "$(basename "$1")" "[--check|--dry-run] [-v|--verbose] [-y|--yes|--recall-only] [-b|--batch] [-s|--select DEFINITION [-s ...]] [--base-dir BASE-DIR] [--name NAME]${commandLineOptionExtensions:+ }${commandLineOptionExtensions}${commandLineParameterExtensions:+ }${commandLineParameterExtensions} -a|--all|--group-recall-only|GROUP-NAME|GROUP-FILESPEC [...]"
     echo
     printf 'Usage: %q %s\n' "$(basename "$1")" '-e|--execute [...]'
     echo
@@ -78,6 +78,10 @@ HELPDESCRIPTION
 			skipped.
     --yes|-y		Accept all definitions (that are not yet installed and
 			have been chosen) without the usual interactive query.
+    --recall-only	Only reconsider those definitions that are not yet
+			installed but had been persistently accepted beforehand.
+			Useful to rerun a setup to catch those definitions that
+			failed to install the first time.
     --batch|-b		Skip any interactive user confirmation for installation
 			commands (e.g. by the package manager).
     --select|-s	DEFINITION
@@ -96,6 +100,10 @@ HELPDESCRIPTION
     --name NAME		Use NAME for storing the user's choices.
     --all|-a		Consider definitions from all existing definition
 			groups.
+    --group-recall-only	Only reconsider those definition groups that had been
+			persistently accepted when executed with --all.
+			Useful to rerun a setup to catch those definitions that
+			failed to install the first time.
     GROUP-NAME		Consider definitions from GROUP-NAME, as stored inside
 			this project / BASE-DIR.
     GROUP-FILESPEC	Consider definitions from GROUP-FILESPEC, which can
@@ -817,6 +825,7 @@ setupName=
 setupAppendix=
 obtainSelection=memoizeDecision
 isAddAll=
+obtainGroups=memoizeDecision
 typeset -a selections=()
 typeset -a specialHandlingCommands=()
 specialHandlingFinalCommand=
@@ -842,9 +851,12 @@ do
 	--execute|-e)	recursiveArgs+=("$1"); shift; isExecute=t;;
 	--verbose|-v)	recursiveArgs+=("$1"); shift; isVerbose=t;;
 	--yes|-y)	shift; obtainSelection=true;;
+	--recall-only)	shift; obtainSelection=recallDecision;;
 	--batch|-b)	recursiveArgs+=("$1"); shift; isBatch=t;;
 	--select|-s)	shift; selections+=("$1"); shift;;
 	--all|-a)	shift; isAddAll=t;;
+	--group-recall-only)
+			shift; obtainGroups=recallDecision;;
 	--name)		shift; setupName="${1:?}"; shift;;
 	--database)	shift; database "$@"; exit $?;;
 	--pre)		shift; item="$1"; shift
