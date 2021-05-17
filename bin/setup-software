@@ -555,11 +555,11 @@ hasItem()
 
 askTo()
 {
-    memoizeDecision --timespan "$SETUPSOFTWARE_DEFINITION_VALID_TIMESPAN" --memoize-group "${setupName}${setupAppendix:+-}${setupAppendix}" "$@"
+    $obtainSelection --timespan "$SETUPSOFTWARE_DEFINITION_VALID_TIMESPAN" --memoize-group "${setupName}${setupAppendix:+-}${setupAppendix}" "$@"
 }
 askToInstall()
 {
-    $obtainSelection --subject "${1:?}" --verb 'is not yet' --state installed --action 'install it'
+    askTo --subject "${1:?}" --verb 'is not yet' --state installed --action 'install it'
 }
 
 isAvailableNative()
@@ -815,7 +815,7 @@ noopExitStatus=4
 action=generateAndPrintInstallCommands
 setupName=
 setupAppendix=
-obtainSelection=askTo
+obtainSelection=memoizeDecision
 isAddAll=
 typeset -a selections=()
 typeset -a specialHandlingCommands=()
