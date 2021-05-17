@@ -75,7 +75,9 @@ HELPDESCRIPTION
 			they succeed; like with set -e) instead of just printing
 			them.
     --quiet|-q		Suppress any informational user messages except errors
-			and the querying itself.
+			and the querying itself. If this is passed before
+			--[group-]recall-only, those messages will be silenced
+			as well.
     --verbose|-v	Also mention already installed definitions that are
 			skipped.
     --yes|-y		Accept all definitions (that are not yet installed and
@@ -864,12 +866,24 @@ do
 	--quiet|-q)	recursiveArgs+=("$1"); shift; isQuiet=t; messagePrintf() { :; };;
 	--verbose|-v)	recursiveArgs+=("$1"); shift; isVerbose=t;;
 	--yes|-y)	shift; obtainSelection=true;;
-	--recall-only)	shift; obtainSelection=recallDecision;;
+	--recall-only)	shift
+			if [ "$isQuiet" ]; then
+			    obtainSelection=silentRecallDecision
+			else
+			    obtainSelection=recallDecision
+			fi
+			;;
 	--batch|-b)	recursiveArgs+=("$1"); shift; isBatch=t;;
 	--select|-s)	shift; selections+=("$1"); shift;;
 	--all|-a)	shift; isAddAll=t;;
 	--group-recall-only)
-			shift; obtainGroups=recallDecision;;
+			shift
+			if [ "$isQuiet" ]; then
+			    obtainGroups=silentRecallDecision
+			else
+			    obtainGroups=recallDecision
+			fi
+			;;
 	--name)		shift; setupName="${1:?}"; shift;;
 	--database)	shift; database "$@"; exit $?;;
 	--pre)		shift; item="$1"; shift
@@ -925,9 +939,6 @@ if [ "$isQuiet" ]; then
 	printUsage "$0"
 	exit 2
     fi >&2
-
-    [ "$obtainSelection" = recallDecision ] && obtainSelection=silentRecallDecision
-    [ "$obtainGroups" = recallDecision ] && obtainGroups=silentRecallDecision
 fi
 typeset -a customActionsDirspecs=()
 typeset -a requireActionsDirspecs=()
