@@ -16,9 +16,14 @@ SUDO='sudo --set-home'; [ $EUID -eq 0 ] && SUDO=''  # Use root's home; especiall
 
 printShortUsage()
 {
+    local commandLineOptionExtensions; [ ${#commandLineOptions[@]} -gt 0 ] && commandLineOptionExtensions="$(joinBy --prefix '[' --suffix ']' '] [' "${!commandLineOptions[@]}")"
+    local commandLineParameterExtensions; [ ${#commandLineParameters[@]} -gt 0 ] && commandLineParameterExtensions="$(joinBy --prefix '[' --suffix ' ARG]' ' ARG] [' "${!commandLineParameters[@]}")"
+
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s | tee install-script.sh && sh install-script.sh\n' "$(basename "$1")" '[--check|--dry-run] [-v|--verbose] [-y|--yes] [-b|--batch] [-s|--select DEFINITION [-s ...]] [--base-dir BASE-DIR] [--name NAME] -a|--all|GROUP-NAME|GROUP-FILESPEC [...] [-?|-h|--help]|[-H|--config-help [TYPE]]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '-?|-h|--help | -H|--config-help [TYPE]'
+    echo
+    printf 'Usage: %q %s | tee install-script.sh && sh install-script.sh\n' "$(basename "$1")" "[--check|--dry-run] [-v|--verbose] [-y|--yes] [-b|--batch] [-s|--select DEFINITION [-s ...]] [--base-dir BASE-DIR] [--name NAME]${commandLineOptionExtensions:+ }${commandLineOptionExtensions}${commandLineParameterExtensions:+ }${commandLineParameterExtensions} -a|--all|GROUP-NAME|GROUP-FILESPEC [...]"
     echo
     printf 'Usage: %q %s\n' "$(basename "$1")" '-e|--execute [...]'
     echo
@@ -44,6 +49,7 @@ printUsage()
 }
 printLongUsage()
 {
+    local IFS=$'\n'
     # This is the long "man page" when launched with the help argument.
     # It is printed to stdout to allow paging with 'more'.
     cat <<HELPDESCRIPTION
@@ -94,7 +100,7 @@ HELPDESCRIPTION
 			this project / BASE-DIR.
     GROUP-FILESPEC	Consider definitions from GROUP-FILESPEC, which can
 			point to anywhere in the file system.
-
+${commandLineHelpExtensions[*]}
 EXIT STATUS:
     0	Complete success.
     1	Failed to install (especially failure in pre- or postinstall actions).
@@ -203,6 +209,10 @@ HELPTEXT
 	printConfigUsageForTypes "$@"
     fi
 }
+
+typeset -a commandLineHelpExtensions=()
+typeset -A commandLineOptions=()
+typeset -A commandLineParameters=()
 
 typeset -a nativeRegistry=()
 typeset -A typeRegistry=([native:]=Native)
@@ -325,18 +335,19 @@ addAllAcceptedGroups()
     do
 	contains "$group" "${filteredGroups[@]}" && continue
 
+	local setupAppendix=''	# This may be modified by definition group filters (through isDefinitionGroupCompletelyFiltered()); reset it on every iteration here.
 	if isDefinitionGroupDir "${group}"; then
 	    groupDirectoryGroupCount=$(countGlob "${group}/*" "${groups[@]}")
 	    [ $groupDirectoryGroupCount -gt 1 ] || continue  # Ignore a group directory that has only one group in it; the query for the group itself will suffice.
 	    ! isDefinitionGroupCompletelyFiltered "${group}/${GROUPDIR_FILTER_FILENAME}" && \
-		memoizeDecision --memoize-group "${setupName}-groups" --timespan "$SETUPSOFTWARE_GROUP_VALID_TIMESPAN" --subject "$group" --verb "directory (with $groupDirectoryGroupCount groups) is not" --state 'chosen' --action 'consider it' || \
+		memoizeDecision --memoize-group "${setupName}${setupAppendix:+-}${setupAppendix}-groups" --timespan "$SETUPSOFTWARE_GROUP_VALID_TIMESPAN" --subject "$group" --verb "directory (with $groupDirectoryGroupCount groups) is not" --state 'chosen' --action 'consider it' || \
 		readarray -O ${#filteredGroups[@]} -t filteredGroups < <(filterGlob "${group}/*" "${groups[@]}")
 	    continue
 	fi
 
 	isDefinitionGroupCompletelyFiltered "$group" && continue
 
-	memoizeDecision --memoize-group "${setupName}-groups" --timespan "$SETUPSOFTWARE_GROUP_VALID_TIMESPAN" --subject "$group" --verb 'is not' --state 'chosen' --action 'consider it' && \
+	memoizeDecision --memoize-group "${setupName}${setupAppendix:+-}${setupAppendix}-groups" --timespan "$SETUPSOFTWARE_GROUP_VALID_TIMESPAN" --subject "$group" --verb 'is not' --state 'chosen' --action 'consider it' && \
 	    acceptedGroups+=("$group")
     done
 }
@@ -544,7 +555,7 @@ hasItem()
 
 askTo()
 {
-    memoizeDecision --timespan "$SETUPSOFTWARE_DEFINITION_VALID_TIMESPAN" --memoize-group "$setupName" "$@"
+    memoizeDecision --timespan "$SETUPSOFTWARE_DEFINITION_VALID_TIMESPAN" --memoize-group "${setupName}${setupAppendix:+-}${setupAppendix}" "$@"
 }
 askToInstall()
 {
@@ -803,6 +814,7 @@ installExitStatus=0
 noopExitStatus=4
 action=generateAndPrintInstallCommands
 setupName=
+setupAppendix=
 obtainSelection=askTo
 isAddAll=
 typeset -a selections=()
@@ -865,7 +877,19 @@ do
 			specialHandlingCommands+=("${specialCommand% }")
 			;;
 	--)		shift; break;;
-	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
+	-*)		if [ -n "${commandLineOptions["$1"]}" ]; then
+			    "${commandLineOptions["$1"]}" "$1"
+			    shift
+			elif [ -n "${commandLineParameters["$1"]}" ]; then
+			    "${commandLineParameters["$1"]}" "$1" "$2"
+			    shift; shift
+			else
+			    echo "ERROR: Unknown option \"$1\"!"
+			    echo
+			    printUsage "$0"
+			    exit 2
+			fi >&2
+			;;
 	*)		break;;
     esac
 done
@@ -946,6 +970,7 @@ do
     itemVerb=are; [ -n "$comment" -o $# -eq 1 ] && itemVerb=is
     itemAuxVerb=
 
+    setupAppendix=''	# This may be modified by definition filters (through isDefinitionAcceptedBy${definitionFilterFunction}()); reset it for every definition here.
     for item
     do
 	name="${item#*:}"
