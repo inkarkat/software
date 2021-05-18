@@ -959,13 +959,12 @@ do
 done
 [ -n "$setupName" ] || createSetupName "${additionalBaseDirs[@]}" "$baseDir"
 
+typeset -ra passedGroups=("$@"); set --
 if [ "$isAddAll" ]; then
     addAllAcceptedGroups
     if [ ${#acceptedGroups[@]} -eq 0 ]; then
 	exit 4
     else
-	set -- "${acceptedGroups[@]}" "$@"
-
 	acceptedGroupsPlural=s; [ ${#acceptedGroups[@]} -eq 1 ] && acceptedGroupsPlural=
 	messagePrintf '\nOkay, %d definition group%s selected. Now for the definitions themselves:\n\n' "${#acceptedGroups[@]}" "$acceptedGroupsPlural"
     fi
@@ -978,15 +977,14 @@ if [ ${#specialHandlingCommands[@]} -gt 0 ]; then
     done
     eval "$specialHandlingFinalCommand" || status=1
     exit $status
-elif [ $# -eq 0 ]; then
+elif [ ! "$isAddAll" ] && [ ${#passedGroups[@]} -eq 0 ]; then
     printUsage "$0" >&2
     exit 2
 fi
 
 IFS=' '
-typeset -ra definitionGroups=("$@")
 typeset -a definitions=()
-for definitionGroup in "${definitionGroups[@]}"
+for definitionGroup in "${acceptedGroups[@]}" "${passedGroups[@]}"
 do
     if [ "${definitionGroup:0:1}" != '.' ] && definitionGroupFilespec="$(getDefinitionGroupFilespec "$definitionGroup")"; then
 	:
