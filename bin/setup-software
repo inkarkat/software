@@ -700,7 +700,7 @@ runPreInstallCheck()
     local actionWithoutSudoAndArgs="${actionWithoutSudo%% *}"
     local actionFilespec
     if actionFilespec="$(getPreinstallFilespec -x "${actionWithoutSudoAndArgs}")"; then
-	actionWithoutSudo="${actionFilespec}/${actionWithoutSudo#"$actionWithoutSudoAndArgs"}"
+	actionWithoutSudo="${actionFilespec}${actionWithoutSudo#"$actionWithoutSudoAndArgs"}"
 	addUniqueToBeInstalledCommand "${sudoPrefix:+${SUDO}${SUDO:+ }}${actionWithoutSudo}"
     elif actionFilespec="$(getPreinstallFilespec -e "${action}")"; then
 	local quotedPreinstallNotification; printf -v quotedPreinstallNotification %s "$actionFilespec"
