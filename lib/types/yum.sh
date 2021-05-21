@@ -30,7 +30,12 @@ haveRepoquery()
     if [ ! "$didRepoqueryCheck" ]; then
 	didRepoqueryCheck=t
 	askToInstall 'yum-utils' || return 1
-	$SUDO yum${isBatch:+ --assumeyes} install yum-utils
+
+	preinstallHook 'yum-utils'
+	preInstall --execute
+	    $SUDO yum${isBatch:+ --assumeyes} install yum-utils
+	postinstallHook 'yum-utils'
+	postInstall --execute
     fi
     exists repoquery
 }
