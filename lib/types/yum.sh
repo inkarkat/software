@@ -33,7 +33,12 @@ haveRepoquery()
 
 	preinstallHook 'yum-utils'
 	preInstall --execute
-	    $SUDO yum${isBatch:+ --assumeyes} install yum-utils
+	    # Unless we're directly executing the generated install commands, we
+	    # must not produce anything on stdout, as that might get captured by
+	    # a client and then attempted to be executed as install commands.
+	    local redirectStdoutToStderr; [ "$isExecute" ] || redirectStdoutToStderr='>&2'
+
+	    eval "\$SUDO yum${isBatch:+ --assumeyes} install yum-utils${redirectStdoutToStderr:+ }${redirectStdoutToStderr}"
 	postinstallHook 'yum-utils'
 	postInstall --execute
     fi
