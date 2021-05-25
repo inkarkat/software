@@ -673,7 +673,7 @@ preInstall()
 {
     [ ${#addedPreinstallArgs[@]} -gt 0 ] || return
 
-    "${scriptDir}/${scriptName}" "$@" "${recursiveArgs[@]}" "${addedPreinstallArgs[@]}" && \
+    eval "\"\${scriptDir}/\${scriptName}\" \"\$@\" \"\${recursiveArgs[@]}\" \"\${addedPreinstallArgs[@]}\"" && \
 	addedPreinstallArgs=()
 }
 getPreinstallFilespec()
