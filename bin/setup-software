@@ -673,7 +673,13 @@ preInstall()
 {
     [ ${#addedPreinstallArgs[@]} -gt 0 ] || return
 
-    eval "\"\${scriptDir}/\${scriptName}\" \"\$@\" \"\${recursiveArgs[@]}\" \"\${addedPreinstallArgs[@]}\"" && \
+    # When the preinstall actions are directly executed, but not the install
+    # command we're generating, those actions must not produce anything on
+    # stdout, as that might get captured by a client and then attempted to be
+    # executed as install commands.
+    local redirectStdoutToStderr; [ ! "$isExecute" ] && containsGlob '--execute|-e' "$@" && redirectStdoutToStderr='>&2'
+
+    eval "\"\${scriptDir}/\${scriptName}\" \"\$@\" \"\${recursiveArgs[@]}\" \"\${addedPreinstallArgs[@]}\"${redirectStdoutToStderr:+ }${redirectStdoutToStderr}" && \
 	addedPreinstallArgs=()
 }
 getPreinstallFilespec()
