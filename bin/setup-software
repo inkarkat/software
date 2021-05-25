@@ -242,6 +242,7 @@ set -o noglob
 
 messagePrintf()
 {
+    [ "$isQuiet" ] && return
     printf >&2 "$@"
 }
 
@@ -874,7 +875,7 @@ do
 	--base-dir)	recursiveArgs+=("$1" "$2"); shift; baseDir="${1:?}"; shift;;
 	--add-base-dir)	recursiveArgs+=("$1" "$2"); shift; additionalBaseDirs=("${1:?}" "${additionalBaseDirs[@]}"); shift;;
 	--execute|-e)	recursiveArgs+=("$1"); shift; isExecute=t;;
-	--quiet|-q)	recursiveArgs+=("$1"); shift; isQuiet=t; messagePrintf() { :; };;
+	--quiet|-q)	recursiveArgs+=("$1"); shift; isQuiet=t; messagePrintf() { :; };;   # Optimization: Make messagePrintf() a no-op.
 	--verbose|-v)	recursiveArgs+=("$1"); shift; isVerbose=t;;
 	--yes|-y)	shift; obtainSelection=true;;
 	--recall-only)	shift

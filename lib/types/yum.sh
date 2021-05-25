@@ -95,7 +95,7 @@ addYum()
 
 isAvailableYum()
 {
-    hasYum "$@" 2>/dev/null
+    isQuiet=t hasYum "$@"
 }
 
 installYum()

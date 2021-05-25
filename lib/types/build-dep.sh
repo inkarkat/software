@@ -66,7 +66,7 @@ addDebBuild()
 
 isAvailableDebBuild()
 {
-    hasDebBuild "$@" 2>/dev/null
+    isQuiet=t hasDebBuild "$@"
 }
 
 installDebBuild()

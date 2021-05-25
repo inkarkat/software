@@ -54,7 +54,7 @@ addPip3()
 
 isAvailablePip3()
 {
-    hasPip3 "$@" 2>/dev/null
+    isQuiet=t hasPip3 "$@"
 }
 
 installPip3()

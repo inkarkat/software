@@ -53,7 +53,7 @@ addAmazonExtras()
 
 isAvailableAmazonExtras()
 {
-    hasAmazonExtras "$@" 2>/dev/null
+    isQuiet=t hasAmazonExtras "$@"
 }
 
 installAmazonExtras()
