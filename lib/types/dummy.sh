@@ -51,7 +51,7 @@ addDummy()
 
 isAvailableDummy()
 {
-    hasDummy "$@" 2>/dev/null
+    isQuiet=t hasDummy "$@"
 }
 
 installDummy()

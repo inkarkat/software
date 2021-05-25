@@ -52,7 +52,7 @@ addNpm()
 
 isAvailableNpm()
 {
-    hasNpm "$@" 2>/dev/null
+    isQuiet=t hasNpm "$@"
 }
 
 installNpm()

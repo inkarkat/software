@@ -56,7 +56,7 @@ addApt()
 
 isAvailableApt()
 {
-    hasApt "$@" 2>/dev/null
+    isQuiet=t hasApt "$@"
 }
 
 installApt()

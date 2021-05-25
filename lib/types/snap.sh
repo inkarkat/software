@@ -55,7 +55,7 @@ addSnap()
 
 isAvailableSnap()
 {
-    hasSnap "$@" 2>/dev/null
+    isQuiet=t hasSnap "$@"
 }
 
 installSnap()

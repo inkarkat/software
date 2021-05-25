@@ -56,7 +56,7 @@ addPpa()
 
 isAvailablePpa()
 {
-    hasPpa "$@" 2>/dev/null
+    isQuiet=t hasPpa "$@"
 }
 
 installPpa()

@@ -242,6 +242,7 @@ set -o noglob
 
 messagePrintf()
 {
+    [ "$isQuiet" ] && return
     printf >&2 "$@"
 }
 
@@ -673,7 +674,13 @@ preInstall()
 {
     [ ${#addedPreinstallArgs[@]} -gt 0 ] || return
 
-    "${scriptDir}/${scriptName}" "$@" "${recursiveArgs[@]}" "${addedPreinstallArgs[@]}" && \
+    # When the preinstall actions are directly executed, but not the install
+    # command we're generating, those actions must not produce anything on
+    # stdout, as that might get captured by a client and then attempted to be
+    # executed as install commands.
+    local redirectStdoutToStderr; [ ! "$isExecute" ] && containsGlob '--execute|-e' "$@" && redirectStdoutToStderr='>&2'
+
+    eval "\"\${scriptDir}/\${scriptName}\" \"\$@\" \"\${recursiveArgs[@]}\" \"\${addedPreinstallArgs[@]}\"${redirectStdoutToStderr:+ }${redirectStdoutToStderr}" && \
 	addedPreinstallArgs=()
 }
 getPreinstallFilespec()
@@ -868,7 +875,7 @@ do
 	--base-dir)	recursiveArgs+=("$1" "$2"); shift; baseDir="${1:?}"; shift;;
 	--add-base-dir)	recursiveArgs+=("$1" "$2"); shift; additionalBaseDirs=("${1:?}" "${additionalBaseDirs[@]}"); shift;;
 	--execute|-e)	recursiveArgs+=("$1"); shift; isExecute=t;;
-	--quiet|-q)	recursiveArgs+=("$1"); shift; isQuiet=t; messagePrintf() { :; };;
+	--quiet|-q)	recursiveArgs+=("$1"); shift; isQuiet=t; messagePrintf() { :; };;   # Optimization: Make messagePrintf() a no-op.
 	--verbose|-v)	recursiveArgs+=("$1"); shift; isVerbose=t;;
 	--yes|-y)	shift; obtainSelection=true;;
 	--recall-only)	shift
