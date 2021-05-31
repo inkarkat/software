@@ -1,4 +1,5 @@
 #!/bin/bash
+shopt -qs extglob
 
 printUsage()
 {
@@ -21,17 +22,20 @@ for versionRequirement
 do
     versionRequirement="${versionRequirement//./}"
     case "$versionRequirement" in
-	-*)	[ $ubuntuVersion -le ${versionRequirement#-} ] && exit 0;;
-	*+)	[ $ubuntuVersion -ge ${versionRequirement%+} ] && exit 0;;
-	*-*)	minVersion=${versionRequirement%-*}
-		maxVersion=${versionRequirement#*-}
-		[ $ubuntuVersion -ge $minVersion -a $ubuntuVersion -le $maxVersion ] && exit 0
-		;;
-	*%*)	minVersion=${versionRequirement%\%*}
-		maxVersion=${versionRequirement#*%}
-		[ $ubuntuVersion -lt $minVersion -o $ubuntuVersion -gt $maxVersion ] && exit 0
-		;;
-	*)	[ $ubuntuVersion -eq $versionRequirement ] && exit 0;;
+	-+([0-9]))	    [ $ubuntuVersion -le ${versionRequirement#-} ] && exit 0;;
+	+([0-9])+)	    [ $ubuntuVersion -ge ${versionRequirement%+} ] && exit 0;;
+	+([0-9])-+([0-9]))  minVersion=${versionRequirement%-*}
+			    maxVersion=${versionRequirement#*-}
+			    [ $ubuntuVersion -ge $minVersion -a $ubuntuVersion -le $maxVersion ] && exit 0
+			    ;;
+	+([0-9])%+([0-9]))  minVersion=${versionRequirement%\%*}
+			    maxVersion=${versionRequirement#*%}
+			    [ $ubuntuVersion -lt $minVersion -o $ubuntuVersion -gt $maxVersion ] && exit 0
+			    ;;
+	+([0-9]))	    [ $ubuntuVersion -eq $versionRequirement ] && exit 0;;
+	*)		    printf >&2 'ERROR: Invalid version requirement: %s\n' "$versionRequirement"
+			    exit 2
+			    ;;
     esac
 done
 exit 1

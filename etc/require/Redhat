@@ -27,17 +27,20 @@ for versionRequirement
 do
     versionRequirement="${versionRequirement//./}"
     case "$versionRequirement" in
-	-*)	[ $redhatVersion -le ${versionRequirement#-} ] && exit 0;;
-	*+)	[ $redhatVersion -ge ${versionRequirement%+} ] && exit 0;;
-	*-*)	minVersion=${versionRequirement%-*}
-		maxVersion=${versionRequirement#*-}
-		[ $redhatVersion -ge $minVersion -a $redhatVersion -le $maxVersion ] && exit 0
-		;;
-	*%*)	minVersion=${versionRequirement%\%*}
-		maxVersion=${versionRequirement#*%}
-		[ $redhatVersion -lt $minVersion -o $redhatVersion -gt $maxVersion ] && exit 0
-		;;
-	*)	[ $redhatVersion -eq $versionRequirement ] && exit 0;;
+	-+([0-9]))	    [ $redhatVersion -le ${versionRequirement#-} ] && exit 0;;
+	+([0-9])+)	    [ $redhatVersion -ge ${versionRequirement%+} ] && exit 0;;
+	+([0-9])-+([0-9]))  minVersion=${versionRequirement%-*}
+			    maxVersion=${versionRequirement#*-}
+			    [ $redhatVersion -ge $minVersion -a $redhatVersion -le $maxVersion ] && exit 0
+			    ;;
+	+([0-9])%+([0-9]))  minVersion=${versionRequirement%\%*}
+			    maxVersion=${versionRequirement#*%}
+			    [ $redhatVersion -lt $minVersion -o $redhatVersion -gt $maxVersion ] && exit 0
+			    ;;
+	+([0-9]))	    [ $redhatVersion -eq $versionRequirement ] && exit 0;;
+	*)		    printf >&2 'ERROR: Invalid version requirement: %s\n' "$versionRequirement"
+			    exit 2
+			    ;;
     esac
 done
 exit 1
