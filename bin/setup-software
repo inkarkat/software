@@ -361,19 +361,20 @@ addAllAcceptedGroups()
     do
 	contains "$group" "${filteredGroups[@]}" && continue
 
+	local groupSubject="${group##+([0-9])}"	# Leading digits are used for ordering; drop them for querying the user and recalling as they are irrelevant to them and may be subject to change.
 	local setupAppendix=''	# This may be modified by definition group filters (through isDefinitionGroupCompletelyFiltered()); reset it on every iteration here.
 	if isDefinitionGroupDir "${group}"; then
 	    groupDirectoryGroupCount=$(countGlob "${group}/*" "${groups[@]}")
 	    [ $groupDirectoryGroupCount -gt 1 ] || continue  # Ignore a group directory that has only one group in it; the query for the group itself will suffice.
 	    ! isDefinitionGroupCompletelyFiltered "${group}/${GROUPDIR_FILTER_FILENAME}" && \
-		$obtainGroups --memoize-group "${setupName}${setupAppendix:+-}${setupAppendix}-groups" --timespan "$SETUPSOFTWARE_GROUP_VALID_TIMESPAN" --subject "$group" --verb "directory (with $groupDirectoryGroupCount groups) is not" --state 'chosen' --action 'consider it' || \
+		$obtainGroups --memoize-group "${setupName}${setupAppendix:+-}${setupAppendix}-groups" --timespan "$SETUPSOFTWARE_GROUP_VALID_TIMESPAN" --subject "$groupSubject" --verb "directory (with $groupDirectoryGroupCount groups) is not" --state 'chosen' --action 'consider it' || \
 		readarray -O ${#filteredGroups[@]} -t filteredGroups < <(filterGlob "${group}/*" "${groups[@]}")
 	    continue
 	fi
 
 	isDefinitionGroupCompletelyFiltered "$group" && continue
 
-	$obtainGroups --memoize-group "${setupName}${setupAppendix:+-}${setupAppendix}-groups" --timespan "$SETUPSOFTWARE_GROUP_VALID_TIMESPAN" --subject "$group" --verb 'is not' --state 'chosen' --action 'consider it' && \
+	$obtainGroups --memoize-group "${setupName}${setupAppendix:+-}${setupAppendix}-groups" --timespan "$SETUPSOFTWARE_GROUP_VALID_TIMESPAN" --subject "$groupSubject" --verb 'is not' --state 'chosen' --action 'consider it' && \
 	    acceptedGroups+=("$group")
     done
 }
