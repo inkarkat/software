@@ -253,7 +253,17 @@ silentRecallDecision()
 
 getSubjectFromItems()
 {
-    joinBy ' ' "$@"
+    typeset -a typeItems=()
+    for item
+    do
+	name="${item#*:}"
+	prefix="${item%"$name"}"
+	[ -n "${typeRegistry["${prefix:-native:}"]}" ] && \
+	    typeItems+=("$item")
+    done
+    [ ${#typeItems[@]} -eq 0 ] && typeItems=("$@")
+
+    joinBy ' ' "${typeItems[@]}"
 }
 
 getDefinitionGroupFilespec()
