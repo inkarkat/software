@@ -251,6 +251,21 @@ silentRecallDecision()
     recallDecision >/dev/null 2>&1 "$@"
 }
 
+getSubjectFromItems()
+{
+    typeset -a typeItems=()
+    for item
+    do
+	name="${item#*:}"
+	prefix="${item%"$name"}"
+	[ -n "${typeRegistry["${prefix:-native:}"]}" ] && \
+	    typeItems+=("$item")
+    done
+    [ ${#typeItems[@]} -eq 0 ] && typeItems=("$@")
+
+    joinBy ' ' "${typeItems[@]}"
+}
+
 getDefinitionGroupFilespec()
 {
     local definitionGroup="${1:?}"; shift
@@ -293,7 +308,12 @@ parseDefinitionGroup()
 	    items="${line%%[	 ]#*}"
 	    comment="${line#"$items"}"
 	    comment="${comment##+([	 ])#*([	 ])}"
-	    subject="${comment:-"$items"}"  # Note: Do not eval the comment here, as that would make it much harder to exactly match the selection.
+	    if [ -n "$comment" ]; then
+		subject="$comment"  # Note: Do not eval the comment here, as that would make it much harder to exactly match the selection.
+	    else
+		eval "set -- $items"
+		subject="$(getSubjectFromItems "$@")"
+	    fi
 
 	    contains "$subject" "${selections[@]}" && \
 		definitions+=("$line")
@@ -1023,8 +1043,12 @@ do
     comment="${definition#"$items"}"
     comment="${comment#[	 ]#}"
     comment="${comment##[	 ]}"
-    [ -n "$comment" ] && subject="$(printf %s "$comment" | evalFile)" || subject="$items"
     eval "set -- $items"
+    if [ -n "$comment" ]; then
+	subject="$(printf %s "$comment" | evalFile)"
+    else
+	subject="$(getSubjectFromItems "$@")"
+    fi
     itemVerb=are; [ -n "$comment" -o $# -eq 1 ] && itemVerb=is
     itemAuxVerb=
 
