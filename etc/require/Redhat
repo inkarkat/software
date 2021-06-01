@@ -7,7 +7,7 @@ printUsage()
 Test for Redhat variant and/or release; succeeds if at least one passed requirement is true.
 HELPTEXT
     echo
-    printf 'Usage: %q %s\n' "$(basename "$1")" '[--variant centos|fedora|rhel|amzn|...] [-N[.n]|N[.n]|N[.n]+|N[.n]-M[.m]|N[.n]%M[.m] [...]] [-?|-h|--help]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[--variant centos|fedora|rhel|amzn|...] [-N[.n]|[!]N[.n]|N[.n]+|N[.n]-M[.m]|N[.n]%M[.m] [...]] [-?|-h|--help]'
 }
 variantRequirement=
 case "$1" in
@@ -41,6 +41,7 @@ do
 				    exit 0
 				fi
 				;;
+	!+([0-9.]))		versionCompare $redhatVersion -eq ${versionRequirement#!} || exit 0;;
 	+([0-9.]))		versionCompare $redhatVersion -eq $versionRequirement && exit 0;;
 	*)			printf >&2 'ERROR: Invalid version requirement: %s\n' "$versionRequirement"
 				exit 2

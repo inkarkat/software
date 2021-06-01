@@ -7,7 +7,7 @@ printUsage()
 Test for Ubuntu release; succeeds if at least one passed requirement is true.
 HELPTEXT
     echo
-    printf 'Usage: %q %s\n' "$(basename "$1")" '[-YY.MM|YY.MM|YY.MM+|YY.MM-YY.MM|YY.MM%YY.MM [...]] [-?|-h|--help]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[-YY.MM|[!]YY.MM|YY.MM+|YY.MM-YY.MM|YY.MM%YY.MM [...]] [-?|-h|--help]'
 }
 case "$1" in
     --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
@@ -34,6 +34,7 @@ do
 			    maxVersion=${versionRequirement#*%}
 			    [ $ubuntuVersion -lt $minVersion -o $ubuntuVersion -gt $maxVersion ] && exit 0
 			    ;;
+	!+([0-9]))	    [ $ubuntuVersion -ne ${versionRequirement#!} ] && exit 0;;
 	+([0-9]))	    [ $ubuntuVersion -eq $versionRequirement ] && exit 0;;
 	*)		    printf >&2 'ERROR: Invalid version requirement: %s\n' "$versionRequirement"
 			    exit 2
