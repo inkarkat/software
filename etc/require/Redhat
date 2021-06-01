@@ -7,7 +7,7 @@ printUsage()
 Test for Redhat variant and/or release; succeeds if at least one passed requirement is true.
 HELPTEXT
     echo
-    printf 'Usage: %q %s\n' "$(basename "$1")" '[--variant centos|fedora|rhel|amzn|...] [-N|N|N+|N-M|N%M [...]] [-?|-h|--help]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[--variant centos|fedora|rhel|amzn|...] [-N[.n]|N[.n]|N[.n]+|N[.n]-M[.m]|N[.n]%M[.m] [...]] [-?|-h|--help]'
 }
 variantRequirement=
 case "$1" in
@@ -26,22 +26,25 @@ contains rhel "$ID" $ID_LIKE || exit 3
 
 for versionRequirement
 do
-    versionRequirement="${versionRequirement//./}"
     case "$versionRequirement" in
-	-+([0-9]))	    [ $redhatVersion -le ${versionRequirement#-} ] && exit 0;;
-	+([0-9])+)	    [ $redhatVersion -ge ${versionRequirement%+} ] && exit 0;;
-	+([0-9])-+([0-9]))  minVersion=${versionRequirement%-*}
-			    maxVersion=${versionRequirement#*-}
-			    [ $redhatVersion -ge $minVersion -a $redhatVersion -le $maxVersion ] && exit 0
-			    ;;
-	+([0-9])%+([0-9]))  minVersion=${versionRequirement%\%*}
-			    maxVersion=${versionRequirement#*%}
-			    [ $redhatVersion -lt $minVersion -o $redhatVersion -gt $maxVersion ] && exit 0
-			    ;;
-	+([0-9]))	    [ $redhatVersion -eq $versionRequirement ] && exit 0;;
-	*)		    printf >&2 'ERROR: Invalid version requirement: %s\n' "$versionRequirement"
-			    exit 2
-			    ;;
+	-+([0-9.]))		versionCompare $redhatVersion -le ${versionRequirement#-} && exit 0;;
+	+([0-9.])+)		versionCompare $redhatVersion -ge ${versionRequirement%+} && exit 0;;
+	+([0-9.])-+([0-9.]))	minVersion=${versionRequirement%-*}
+				maxVersion=${versionRequirement#*-}
+				if versionCompare $redhatVersion -ge $minVersion && versionCompare $redhatVersion -le $maxVersion; then
+				    exit 0
+				fi
+				;;
+	+([0-9.])%+([0-9.]))	minVersion=${versionRequirement%\%*}
+				maxVersion=${versionRequirement#*%}
+				if versionCompare $redhatVersion -lt $minVersion || versionCompare $redhatVersion -gt $maxVersion; then
+				    exit 0
+				fi
+				;;
+	+([0-9.]))		versionCompare $redhatVersion -eq $versionRequirement && exit 0;;
+	*)			printf >&2 'ERROR: Invalid version requirement: %s\n' "$versionRequirement"
+				exit 2
+				;;
     esac
 done
 exit 1
