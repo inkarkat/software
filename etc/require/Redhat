@@ -19,7 +19,7 @@ source /etc/os-release || exit 3
 [ -n "$ID" -a -n "$VERSION_ID" ] || exit 3
 redhatVersion="$VERSION_ID"
 
-contains rhel $ID_LIKE || exit 3
+contains rhel "$ID" $ID_LIKE || exit 3
 [ -z "$variantRequirement" ] || [ "$ID" = "$variantRequirement" ] || exit 1
 
 [ $# -eq 0 ] && exit 0
