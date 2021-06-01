@@ -1022,7 +1022,7 @@ do
     comment="${definition#"$items"}"
     comment="${comment#[	 ]#}"
     comment="${comment##[	 ]}"
-    subject="${comment:-"$items"}"
+    [ -n "$comment" ] && subject="$(printf %s "$comment" | evalFile)" || subject="$items"
     eval "set -- $items"
     itemVerb=are; [ -n "$comment" -o $# -eq 1 ] && itemVerb=is
     itemAuxVerb=
