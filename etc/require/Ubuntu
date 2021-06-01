@@ -18,6 +18,8 @@ esac
 ubuntuVersion="$(lsb_release -rs 2>/dev/null)" || exit 3
 ubuntuVersion="${ubuntuVersion//./}"
 
+[ $# -eq 0 ] && exit 0
+
 for versionRequirement
 do
     versionRequirement="${versionRequirement//./}"
