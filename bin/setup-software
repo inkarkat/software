@@ -293,7 +293,7 @@ parseDefinitionGroup()
 	    items="${line%%[	 ]#*}"
 	    comment="${line#"$items"}"
 	    comment="${comment##+([	 ])#*([	 ])}"
-	    subject="${comment:-"$items"}"
+	    subject="${comment:-"$items"}"  # Note: Do not eval the comment here, as that would make it much harder to exactly match the selection.
 
 	    contains "$subject" "${selections[@]}" && \
 		definitions+=("$line")
