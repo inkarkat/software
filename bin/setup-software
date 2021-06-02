@@ -1069,7 +1069,7 @@ do
     lastMissingItem=
     let realItemCnt=0
     let missingRealItemCnt=0
-    noMissingItemMessage="Already installed: $definition"
+    noMissingItemMessage="Already installed: $subject"
     for item
     do
 	name="${item#*:}"
@@ -1106,7 +1106,7 @@ do
 			    0)	;;  # The item already is installed, and the check has been run already.
 			    1)	# The item already is installed, but the check did not run yet.
 				addPostinstall "$rest"$'\n'"$lastRealItem" --post-or-once --id "$escapedId"
-				noMissingItemMessage="Only postinstall required for $definition"
+				noMissingItemMessage="Only postinstall required for $subject"
 				;;
 			    *)	exit 3;;
 			esac
@@ -1128,11 +1128,11 @@ do
 	    case $? in
 		0)  lastMissingItem=;;
 		98) # Just skip this item.
-		    noMissingItemMessage="Just skipped items in $definition"
+		    noMissingItemMessage="Just skipped items in $subject"
 		    continue
 		    ;;
 		99) # If one item's state cannot not be determined, the entire definition should be skipped, as we cannot ensure the correct installation.
-		    noMissingItemMessage="Skipped: $definition"
+		    noMissingItemMessage="Skipped: $subject"
 		    let handledDefinitionCount-=1
 		    break
 		    ;;
