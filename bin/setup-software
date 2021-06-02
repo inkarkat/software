@@ -1049,8 +1049,6 @@ do
     else
 	subject="$(getSubjectFromItems "$@")"
     fi
-    itemVerb=are; [ -n "$comment" -o $# -eq 1 ] && itemVerb=is
-    itemAuxVerb=
 
     setupAppendix=''	# This may be modified by definition filters (through isDefinitionAcceptedBy${definitionFilterFunction}()); reset it for every definition here.
     for item
@@ -1152,6 +1150,8 @@ do
     else
 	let missingDefinitionCount+=1
 	what=
+	itemVerb=are; [ -n "$comment" -o $realItemCnt -eq 1 ] && itemVerb=is
+	itemAuxVerb=
 	if [ $realItemCnt -gt $missingRealItemCnt ]; then
 	    missingItemsPlural=s; [ $missingRealItemCnt -eq 1 ] && missingItemsPlural=
 	    what="$missingRealItemCnt item${missingItemsPlural} missing: ${missingItems[*]}"
