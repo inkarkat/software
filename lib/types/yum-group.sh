@@ -29,7 +29,8 @@ getInstalledYumGroups()
     # querying after 2 seconds (which should give the warning just once, yet
     # allow for successful querying of installed packages should we be wrong
     # about the PID file or it suddenly vanished.
-    unset -f yum; [ -e /var/run/yum.pid ] && yum() { timeout 2s yum "$@"; }
+    typeset -a yumCommand=(yum)
+    [ -e /var/run/yum.pid ] && yumCommand=(timeout 2s yum)
 
     local exitStatus line isInInstalledSection=; while IFS=$'\n' read -r line || { exitStatus="$line"; break; }	# Exit status from the process substitution (<(yum)) is lost; return the actual exit status via an incomplete (i.e. missing the newline) last line.
     do
@@ -44,7 +45,7 @@ getInstalledYumGroups()
 	else
 	    isInInstalledSection=
 	fi
-    done < <(LC_ALL=C yum groups list 2>/dev/null; printf %d "$?")
+    done < <(LC_ALL=C "${yumCommand[@]}" groups list 2>/dev/null; printf %d "$?")
     if [ $exitStatus -eq 124 ]; then
 	echo >&2 'ERROR: Failed to obtain installed yum groups due to another concurrent yum execution; aborting.'
 	exit 3
