@@ -58,7 +58,7 @@ getInstalledYumPackages()
     # querying after 2 seconds (which should give the warning just once, yet
     # allow for successful querying of installed packages should we be wrong
     # about the PID file or it suddenly vanished.
-    typeset -a repoqueryCommand=(repoquery)
+    typeset -a repoqueryCommand=(invocationStderrSpinner --message 'Retrieving installed package list...' --initial-delay 2 --clear all -- repoquery)
     [ -e /var/run/yum.pid ] && repoqueryCommand=(timeout 2s repoquery)
 
     local exitStatus package; while IFS=$'\n' read -r package || { exitStatus="$package"; break; }	# Exit status from the process substitution (<(repoquery)) is lost; return the actual exit status via an incomplete (i.e. missing the newline) last line.
