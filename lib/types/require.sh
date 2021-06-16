@@ -54,9 +54,9 @@ getRequirementExecutable()
     local requirement="${1?}"; shift
     [ -n "$requirement" ] || return 1
 
-    local dirspec; for dirspec in "${requireActionsDirspecs[@]}"
+    local dirspec; for dirspec in "${additionalBaseDirs[@]}" "$baseDir"
     do
-	local requirementFilespec="${dirspec}/${requirement}"
+	local requirementFilespec="${dirspec}/require/${requirement}"
 	if [ -x "$requirementFilespec" ]; then
 	    printf %s "$requirementFilespec"
 	    return 0

@@ -61,9 +61,9 @@ getCustomFilespec()
     local customAction="${1?}"; shift
     [ -n "$customAction" ] || return 1
 
-    local dirspec; for dirspec in "${customActionsDirspecs[@]}"
+    local dirspec; for dirspec in "${additionalBaseDirs[@]}" "$baseDir"
     do
-	local customFilespec="${dirspec}/${customAction}"
+	local customFilespec="${dirspec}/custom/${customAction}"
 	if [ $compareOp "$customFilespec" ]; then
 	    printf %s "$customFilespec"
 	    return 0
