@@ -140,7 +140,7 @@ addCustom()
 
 installCustom()
 {
-    [ ${#addedCustomActions[@]} -eq ${#addedCustomActionList[@]} ] || { echo >&2 'ASSERT: Invalid whatever'; exit 3; }
+    [ ${#addedCustomActions[@]} -eq ${#addedCustomActionList[@]} ] || { echo >&2 'ASSERT: Custom actions dict and list sizes disagree.'; exit 3; }
     [ ${#addedCustomActionList[@]} -gt 0 ] || return
 
     local customAction; for customAction in "${addedCustomActionList[@]}"
