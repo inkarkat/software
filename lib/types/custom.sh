@@ -111,7 +111,7 @@ hasCustom()
     fi
 }
 
-typeset -A itemActions=()
+typeset -A itemCustomActions=()
 addCustom()
 {
     # Note: Do not support pre-/postinstall hooks here, as we have no short
@@ -131,7 +131,7 @@ addCustom()
 	if [ -n "$prefix" ]; then
 	    local typeFunction="${typeRegistry["${prefix}"]}"
 	    if [ -n "$typeFunction" ]; then
-		itemActions["$customAction"]=t
+		itemCustomActions["$customAction"]=t
 		"add${typeFunction}" "$name"
 	    fi
 	fi
@@ -150,7 +150,7 @@ installCustom()
 	local sudoPrefix="${customAction%"$customActionWithoutSudo"}"
 	local customFilespec
 
-	if [ "${itemActions["$customAction"]}" ]; then
+	if [ "${itemCustomActions["$customAction"]}" ]; then
 	    # The corresponding action item has already been added to the item's
 	    # type; do nothing here.
 	    continue
