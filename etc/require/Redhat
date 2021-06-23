@@ -1,5 +1,4 @@
 #!/bin/bash
-shopt -qs extglob
 
 printUsage()
 {
@@ -17,35 +16,10 @@ esac
 
 source /etc/os-release || exit 3
 [ -n "$ID" -a -n "$VERSION_ID" ] || exit 3
-redhatVersion="$VERSION_ID"
 
 contains rhel "$ID" $ID_LIKE || exit 3
 [ -z "$variantRequirement" ] || [ "$ID" = "$variantRequirement" ] || exit 1
 
 [ $# -eq 0 ] && exit 0
 
-for versionRequirement
-do
-    case "$versionRequirement" in
-	-+([0-9.]))		versionCompare $redhatVersion -le ${versionRequirement#-} && exit 0;;
-	+([0-9.])+)		versionCompare $redhatVersion -ge ${versionRequirement%+} && exit 0;;
-	+([0-9.])-+([0-9.]))	minVersion=${versionRequirement%-*}
-				maxVersion=${versionRequirement#*-}
-				if versionCompare $redhatVersion -ge $minVersion && versionCompare $redhatVersion -le $maxVersion; then
-				    exit 0
-				fi
-				;;
-	+([0-9.])%+([0-9.]))	minVersion=${versionRequirement%\%*}
-				maxVersion=${versionRequirement#*%}
-				if versionCompare $redhatVersion -lt $minVersion || versionCompare $redhatVersion -gt $maxVersion; then
-				    exit 0
-				fi
-				;;
-	!+([0-9.]))		versionCompare $redhatVersion -eq ${versionRequirement#!} || exit 0;;
-	+([0-9.]))		versionCompare $redhatVersion -eq $versionRequirement && exit 0;;
-	*)			printf >&2 'ERROR: Invalid version requirement: %s\n' "$versionRequirement"
-				exit 2
-				;;
-    esac
-done
-exit 1
+VERSIONREQUIREMENT_BASE_VERSION="$VERSION_ID" exec versionRequirement "$@"
