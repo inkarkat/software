@@ -86,10 +86,11 @@ parseInstallUrl()
     urls+=("${@:1:$(($#-1))}")
     local urlArgs; [ ${#urls[@]} -gt 0 ] && printf -v urlArgs ' --url %q' "${urls[@]}"
     local quotedFileAttributeArgs; [ ${#fileAttributeArgs[@]} -gt 0 ] && printf -v quotedFileAttributeArgs ' %q' "${fileAttributeArgs[@]}"
+    local quotedInstallArgs; [ ${#installArgs[@]} -gt 0 ] && printf -v quotedInstallArgs ' %q' "${installArgs[@]}"
 
     local destination="${!#}"
     printf '%q ' "${fileAttributeArgs[@]}" -- "$destination"
-    printf '\n%s -- %q\n' "file-download-installer${isBatch:+ --batch}${applicationName:+ --application-name }${applicationName} --expression ${fileGlob}${maxAge:+ --max-age }$maxAge${urlArgs}${outputNameArg:+ --output }${outputNameArg}${quotedFileAttributeArgs}" "$destination"
+    printf '\n%s -- %q\n' "file-download-installer${isBatch:+ --batch}${applicationName:+ --application-name }${applicationName} --expression ${fileGlob}${maxAge:+ --max-age }$maxAge${urlArgs}${outputNameArg:+ --output }${outputNameArg}${quotedFileAttributeArgs}${quotedInstallArgs}" "$destination"
 }
 
 typeset -A addedInstallUrlActions=()
