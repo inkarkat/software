@@ -1,13 +1,17 @@
 #!/bin/bash source-this-script
 
+: ${SETUPSOFTWARE_INSTALL_TEMPLATE_EXTENSION:=.template}
+
 configUsageInstall()
 {
-    cat <<'HELPTEXT'
+    cat <<HELPTEXT
 install: items consist of
     [INSTALL-ARGS ...] SOURCE-FILE DEST-FILE
 SOURCE-FILE is either relative to the ./etc/files directory tree, or an absolute
 filespec and is copied over to (absolute) DEST-FILE unless it already is
-up-to-date.
+up-to-date. If SOURCE-FILE ends with ${SETUPSOFTWARE_INSTALL_TEMPLATE_EXTENSION}, environment variables
+(\$VARIABLE / \${VARIABLE}) and shell command substitutions (\$(COMMAND) /
+\`COMMAND\`) are evaluated and the result is copied to DEST-FILE.
 You can specify additional install arguments:
     --sudo		Do the copy with sudo unless already running as the
 			superuser.
@@ -83,7 +87,11 @@ parseInstall()
 	sourceFilespec="$1"
     fi
 
-    printf '%q ' addInstalledFile "${addInstalledFileArgs[@]}" "${installArgs[@]}" -- "$sourceFilespec" "$2"
+    local addCommand=addInstalledFile
+    [ ".$(fileExtension --single -- "$sourceFilespec")" = "$SETUPSOFTWARE_INSTALL_TEMPLATE_EXTENSION" ] && \
+	addCommand=addInstalledTemplate
+
+    printf '%q ' "$addCommand" "${addInstalledFileArgs[@]}" "${installArgs[@]}" -- "$sourceFilespec" "$2"
 }
 
 typeset -A addedInstallActions=()
