@@ -1,18 +1,27 @@
 #!/bin/bash source-this-script
 
+: ${SETUPSOFTWARE_INSTALL_TEMPLATE_EXTENSION:=.template}
+
 configUsageInstallUrl()
 {
     : ${INSTALL_DIR:=~/install}
-    cat <<'HELPTEXT'
+    cat <<HELPTEXT
 install+url: items consist of
     [INSTALL-ARGS ...] [MAX-AGE[SUFFIX]:][[SUBDIR/]NAME/]FILE-GLOB:[URL [...]] DEST-FILE
-If ${INSTALL_DIR}/(SUBDIR|*)/(NAME|*)/FILE-GLOB already exists [and if it is
-younger than MAX-AGE[SUFFIX]], it will be used; else, URL(s) (first that
-succeeds) will be downloaded (and put into ${INSTALL_DIR}/* if it exists) and
-copied over to (absolute) DEST-FILE unless it already is up-to-date.
+If ${INSTALL_DIR}/(SUBDIR|*)/(NAME|*)/FILE-GLOB already exists
+[and if it is younger than MAX-AGE[SUFFIX]], it will be used; else, URL(s)
+(first that succeeds) will be downloaded (and put into
+${INSTALL_DIR}/* if it exists) and copied over to (absolute)
+DEST-FILE unless it already is up-to-date.
+If the downloaded file ends with *${SETUPSOFTWARE_INSTALL_TEMPLATE_EXTENSION}, environment variables
+(\$VARIABLE / \${VARIABLE}) and shell command substitutions (\$(COMMAND) /
+\`COMMAND\`) are evaluated and the result is copied to DEST-FILE.
 You can specify additional install arguments:
     --sudo		Do the copy with sudo unless already running as the
 			superuser.
+    --expand-template   Evaluate environment variables and shell command
+                        substitutions also when the file does not end with
+                        .template
     --owner=OWNER	Set ownership (this will automatically use --sudo then)
     --group=GROUP	Set group ownership.
     --mode=MODE		Set permission mode (as in chmod), instead of rwxr-xr-x
@@ -49,7 +58,7 @@ parseInstallUrl()
 	    --mode=*)	fileAttributeArgs+=("$1"); shift;;
 
 	    -+([bpCZ]))	installArgs+=("$1"); shift;;
-	    --@(compare|preserve-context|preserve-timestamps|sudo))
+	    --@(compare|expand-template|preserve-context|preserve-timestamps|sudo))
 			installArgs+=("$1"); shift;;
 	    -S)		installArgs+=("$1" "$2"); shift; shift;;
 	    --@(backup|suffix)=*)
@@ -115,6 +124,9 @@ addInstallUrl()
     # short "name" that we could use. The DEST-FILE's whole path may be a bit
     # long, and just the filename itself may be ambiguous.
     addedInstallUrlActions["$fileDownloadInstallerCommand"]=t
+
+    [ "$SETUPSOFTWARE_INSTALL_TEMPLATE_EXTENSION" = ${FILEDOWNLOADINSTALLER_TEMPLATE_EXTENSION:-.template} ] || \
+	printf -v fileDownloadInstallerCommand 'FILEDOWNLOADINSTALLER_TEMPLATE_EXTENSION=%q %s' "$SETUPSOFTWARE_INSTALL_TEMPLATE_EXTENSION" "$fileDownloadInstallerCommand"
     addedInstallUrlActionList+=("$fileDownloadInstallerCommand")
 }
 installInstallUrl()
