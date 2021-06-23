@@ -1,13 +1,17 @@
 #!/bin/bash source-this-script
 
+: ${SETUPSOFTWARE_INSTALL_TEMPLATE_EXTENSION:=.template}
+
 configUsageInstall()
 {
-    cat <<'HELPTEXT'
+    cat <<HELPTEXT
 install: items consist of
     [INSTALL-ARGS ...] SOURCE-FILE DEST-FILE
 SOURCE-FILE is either relative to the ./etc/files directory tree, or an absolute
 filespec and is copied over to (absolute) DEST-FILE unless it already is
-up-to-date.
+up-to-date. If SOURCE-FILE ends with ${SETUPSOFTWARE_INSTALL_TEMPLATE_EXTENSION}, environment variables
+(\$VARIABLE / \${VARIABLE}) and shell command substitutions (\$(COMMAND) /
+\`COMMAND\`) are evaluated and the result is copied to DEST-FILE.
 You can specify additional install arguments:
     --sudo		Do the copy with sudo unless already running as the
 			superuser.
@@ -46,6 +50,7 @@ getInstallFilespec()
 parseInstall()
 {
     local installItem="${1:?}"; shift
+    typeset -a addInstalledFileArgs=("$@")
     eval "set -- $installItem"
 
     typeset -a installArgs=()
@@ -82,39 +87,40 @@ parseInstall()
 	sourceFilespec="$1"
     fi
 
-    printf '%q ' "${installArgs[@]}" -- "$sourceFilespec" "$2"
+    local addCommand=addInstalledFile
+    [ ".$(fileExtension --single -- "$sourceFilespec")" = "$SETUPSOFTWARE_INSTALL_TEMPLATE_EXTENSION" ] && \
+	addCommand=addInstalledTemplate
+
+    printf '%q ' "$addCommand" "${addInstalledFileArgs[@]}" "${installArgs[@]}" -- "$sourceFilespec" "$2"
 }
 
 typeset -A addedInstallActions=()
 typeset -a addedInstallActionList=()
 hasInstall()
 {
-    local quotedInstallArgs
-    quotedInstallArgs="$(parseInstall "${1:?}")" || exit 3
+    local quotedInstallCommand; quotedInstallCommand="$(parseInstall "${1:?}" --check)" || exit 3
 
-    [ "${addedInstallActions["$quotedInstallArgs"]}" ] && return 0	# This install action has already been selected for installation.
+    [ "${addedInstallActions["$quotedInstallCommand"]}" ] && return 0	# This install action has already been selected for installation.
 
-    eval "addInstalledFile --check $quotedInstallArgs"
+    eval "$quotedInstallCommand"
 }
 
 addInstall()
 {
-    local quotedInstallArgs="$(parseInstall "${1:?}")"
-
     # Note: Do not support pre-/postinstall hooks here (yet), as there's no good
     # short "name" that we could use. The DEST-FILE's whole path may be a bit
     # long, and just the filename itself may be ambiguous.
-    addedInstallActions["$quotedInstallArgs"]=t
-    addedInstallActionList+=("$quotedInstallArgs")
+    addedInstallActions["$(parseInstall "${1:?}" --check)"]=t	# Note: Need to supply --check here, as in hasInstall(), to be able to recognize the action there.
+    addedInstallActionList+=("$(parseInstall "${1:?}")")
 }
 installInstall()
 {
     [ ${#addedInstallActions[@]} -eq ${#addedInstallActionList[@]} ] || { echo >&2 'ASSERT: Install actions dict and list sizes disagree.'; exit 3; }
     [ ${#addedInstallActionList[@]} -gt 0 ] || return
 
-    local quotedInstallArgs; for quotedInstallArgs in "${addedInstallActionList[@]}"
+    local quotedInstallCommand; for quotedInstallCommand in "${addedInstallActionList[@]}"
     do
-	toBeInstalledCommands+=("addInstalledFile $quotedInstallArgs")
+	toBeInstalledCommands+=("$quotedInstallCommand")
     done
 }
 
