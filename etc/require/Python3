@@ -1,0 +1,12 @@
+#!/bin/bash
+
+pythonInterpreter=python
+
+exists python3 && pythonInterpreter=python3 || \
+    VERSIONREQUIREMENT_BASE_COMMANDLINE='python --version' versionRequirement 3 || \
+    exit 1
+[ $# -eq 0 ] && exit 0
+
+VERSIONREQUIREMENT_WHAT='Python3'
+VERSIONREQUIREMENT_BASE_COMMANDLINE="$pythonInterpreter --version"
+source versionRequirement
