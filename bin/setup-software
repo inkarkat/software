@@ -152,6 +152,9 @@ printConfigUsageForTypes()
 	elif [ "$prefix" = config ]; then
 	    printf "$padding"
 	    configUsageConfig | highlightPrefix
+	elif [ "$prefix" = decorate ]; then
+	    printf "$padding"
+	    configUsageDecorate | highlightPrefix
 	elif [ "$prefix" = preinstall ]; then
 	    printf "$padding"
 	    configUsagePreinstall | highlightPrefix
@@ -454,6 +457,19 @@ undefined, but needs to be a single line, and often is in the form
 VARIABLE=VALUE, so that it can simply be eval'd by the type.
 HELPTEXT
 }
+configUsageDecorate()
+{
+    cat <<'HELPTEXT'
+decorate: items prepend CMDPREFIX to the non-config non-pre/postinstall item
+preceding it in the current definition if that item is missing, but has now been
+selected. The same item (if it appears multiple times) must be decorated
+consistently, or individual items may go undecorated; a mixture of decorations
+is not supported.
+Types that process multiple items with a single install command may not accept
+decorations, or a single decoration that then applies to the whole set of items,
+or may split off decorated items into separate install commands.
+HELPTEXT
+}
 configUsagePreinstall()
 {
     cat <<'HELPTEXT'
@@ -532,6 +548,32 @@ addConfig()
 	local existingValue="${configuration["$item"]}"
 	configuration["$item"]="${existingValue}${existingValue:+$'\n'}${newValue}"
     fi
+}
+
+typeset -A decoration=()
+addDecorate()
+{
+    local name="${1:?}"; shift
+    local item="${name#*$'\n'}"
+    if [ "${addedItems["$item"]}" ]; then
+	# Convert the "decorate:VALUE\nITEM" to decoration[ITEM]=VALUE.
+	# This can be queried by install${typeFunction}() and considered when
+	# rendering the install command.
+	local newValue="${name%%$'\n'*}"
+	local existingValue="${decoration["$item"]}"
+	if [ -n "$existingValue" -a "$existingValue" != "$newValue" ]; then
+	    printf >&2 'ERROR: Differing decoration "%s" and "%s" for %s\n' "$existingValue" "$newValue" "$item"
+	    exit 3
+	fi
+	decoration["$item"]="$newValue"
+    fi
+}
+submitInstallCommand()
+{
+    local installCommand="${1:?}"; shift
+    local decoration="$1"; shift
+
+    toBeInstalledCommands+=("${decoration}${decoration:+ }$installCommand")
 }
 
 typeset -a addedPreinstallArgs=()
@@ -649,6 +691,8 @@ addItems()
 	    "add${typeFunction}" "$name"
 	elif [ "$prefix" = config: ]; then
 	    addConfig "$name"
+	elif [ "$prefix" = decorate: ]; then
+	    addDecorate "$name"
 	elif [ "$prefix" = preinstall: ]; then
 	    addPreinstall "$name"
 	elif [ "$prefix" = postinstall: ]; then
@@ -657,7 +701,7 @@ addItems()
 	    printf >&2 'ERROR: Invalid type: %s\n' "$prefix"
 	    exit 3
 	fi
-	addedItems["$item"]=t	# Record all added items for the config type / preinstall check.
+	addedItems["$item"]=t	# Record all added items for the config, decorate type / preinstall check.
     done
 }
 hasOrAddItems()
@@ -667,8 +711,8 @@ hasOrAddItems()
     do
 	local name="${item#*:}"
 	local prefix="${item%"$name"}"
-	if contains "$prefix" "${!definitionFilterTypeRegistry[@]}" "${!definitionGroupFilterTypeRegistry[@]}" config: preinstall: postinstall: postinstall-or-once:; then
-	    printf >&2 'ERROR: Cannot use a %s type within a config / preinstall / postinstall[-or-once] item.\n' "$prefix"
+	if contains "$prefix" "${!definitionFilterTypeRegistry[@]}" "${!definitionGroupFilterTypeRegistry[@]}" config: decorate: preinstall: postinstall: postinstall-or-once:; then
+	    printf >&2 'ERROR: Cannot use a %s type within a config / decorate / preinstall / postinstall[-or-once] item.\n' "$prefix"
 	    exit 3
 	fi
 
@@ -1082,7 +1126,7 @@ do
 	elif contains "$prefix" "${!definitionGroupFilterTypeRegistry[@]}"; then
 	    printf >&2 'ERROR: Definition group filter types (like %s) must only appear the beginning of a definition group: %s.\n' "$prefix" "$item"
 	    exit 3
-	elif contains "$prefix" config: preinstall: postinstall:; then
+	elif contains "$prefix" config: decorate: preinstall: postinstall:; then
 	    if [ -z "$lastRealItem" ]; then
 		printf >&2 'ERROR: No previous item before %s.\n' "$item"
 		exit 3
