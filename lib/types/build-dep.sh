@@ -49,7 +49,7 @@ hasDebSrc()
 
     if askTo --subject 'deb-src' --verb 'are not yet' --state 'enabled in sources.list' --action 'enable them'; then
 	local debSrcEnable; printf -v debSrcEnable %q "${projectDir}/lib/enableDebSrc.sh"
-	toBeInstalledCommands+=("${SUDO}${SUDO:+ }$debSrcEnable $APT_SOURCES")
+	submitInstallCommand "${SUDO}${SUDO:+ }$debSrcEnable $APT_SOURCES"
     else
 	return 1
     fi
@@ -76,6 +76,6 @@ installDebBuild()
     local databaseUpdate; printf -v databaseUpdate %q "${scriptDir}/${scriptName}"
     local buildDep; for buildDep in "${!addedDebBuildDependencies[@]}"
     do
-	toBeInstalledCommands+=("${SUDO}${SUDO:+ }apt-get${isBatch:+ --assume-yes} build-dep $buildDep && ${databaseUpdate}${isVerbose:+ --verbose} --database debBuildDependencies --add $buildDep")
+	submitInstallCommand "${SUDO}${SUDO:+ }apt-get${isBatch:+ --assume-yes} build-dep $buildDep && ${databaseUpdate}${isVerbose:+ --verbose} --database debBuildDependencies --add $buildDep"
     done
 }

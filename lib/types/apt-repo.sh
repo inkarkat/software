@@ -68,7 +68,7 @@ installAptRepo()
     do
 	printf -v quotedDebLine '%q' "${addedAptRepos["$name"]}"
 
-	toBeInstalledCommands+=("printf %s\\\\n $quotedDebLine|${SUDO}${SUDO:+ }tee ${APT_SOURCES_DIR}/${name}.list")
+	submitInstallCommand "printf %s\\\\n $quotedDebLine|${SUDO}${SUDO:+ }tee ${APT_SOURCES_DIR}/${name}.list"
     done
-    toBeInstalledCommands+=("${SUDO}${SUDO:+ }apt${isBatch:+ --assume-yes} update")
+    submitInstallCommand "${SUDO}${SUDO:+ }apt${isBatch:+ --assume-yes} update"
 }

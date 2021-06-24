@@ -63,5 +63,5 @@ installApt()
 {
     [ ${#addedAptPackages[@]} -gt 0 ] || return
     local IFS=' '
-    toBeInstalledCommands+=("${SUDO}${SUDO:+ }apt${isBatch:+ --assume-yes} install ${!addedAptPackages[*]}")
+    submitInstallCommand "${SUDO}${SUDO:+ }apt${isBatch:+ --assume-yes} install ${!addedAptPackages[*]}"
 }

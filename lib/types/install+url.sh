@@ -134,7 +134,10 @@ installInstallUrl()
     [ ${#addedInstallUrlActions[@]} -eq ${#addedInstallUrlActionList[@]} ] || { echo >&2 'ASSERT: InstallUrl actions dict and list sizes disagree.'; exit 3; }
     [ ${#addedInstallUrlActionList[@]} -gt 0 ] || return
 
-    toBeInstalledCommands+=("${addedInstallUrlActionList[@]}")
+    local installUrlAction; for installUrlAction in "${addedInstallUrlActionList[@]}"
+    do
+	submitInstallCommand "$installUrlAction"
+    done
 }
 
 typeRegistry+=([install+url:]=InstallUrl)

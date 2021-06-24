@@ -123,7 +123,7 @@ installArchiveUrl()
 	typeset -a urls=(); IFS=' ' read -r -a urls <<<"$urlList"
 	local urlArgs; printf -v urlArgs ' --url %q' "${urls[@]}"
 
-	toBeInstalledCommands+=("${extractionDirspecCreationCommand}${archiveDownloadInstallerCommand}${isBatch:+ --batch} ${archiveDownloadInstallerArgs[*]}${archiveDownloadInstallerArgs:+ }--destination-dir ${quotedExtractionDirspec}${applicationName:+ --application-name }${applicationName} --expression ${packageGlob}${maxAge:+ --max-age }$maxAge${urlArgs}${outputNameArg:+ --output }${outputNameArg}")
+	submitInstallCommand "${extractionDirspecCreationCommand}${archiveDownloadInstallerCommand}${isBatch:+ --batch} ${archiveDownloadInstallerArgs[*]}${archiveDownloadInstallerArgs:+ }--destination-dir ${quotedExtractionDirspec}${applicationName:+ --application-name }${applicationName} --expression ${packageGlob}${maxAge:+ --max-age }$maxAge${urlArgs}${outputNameArg:+ --output }${outputNameArg}"
     done
 }
 installTarUrl()

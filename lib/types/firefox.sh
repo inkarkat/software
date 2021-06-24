@@ -124,7 +124,7 @@ installFirefoxAddon()
 
     for profileName in "${!firefoxAddonUrlsByProfile[@]}"
     do
-	toBeInstalledCommands+=("${firefoxExecutableByProfile["$profileName"]} -no-remote -P $profileName ${firefoxAddonUrlsByProfile["$profileName"]}")
+	submitInstallCommand "${firefoxExecutableByProfile["$profileName"]} -no-remote -P $profileName ${firefoxAddonUrlsByProfile["$profileName"]}"
     done
 }
 

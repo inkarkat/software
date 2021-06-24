@@ -120,7 +120,7 @@ installInstall()
 
     local quotedInstallCommand; for quotedInstallCommand in "${addedInstallActionList[@]}"
     do
-	toBeInstalledCommands+=("$quotedInstallCommand")
+	submitInstallCommand "$quotedInstallCommand"
     done
 }
 
