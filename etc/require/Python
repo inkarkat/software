@@ -4,5 +4,5 @@ exists python || exit 1
 [ $# -eq 0 ] && exit 0
 
 VERSIONREQUIREMENT_WHAT='default Python'
-VERSIONREQUIREMENT_BASE_COMMANDLINE='python --version'
+VERSIONREQUIREMENT_BASE_COMMANDLINE='python --version 2>&1'
 source versionRequirement
