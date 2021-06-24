@@ -116,8 +116,9 @@ addCustom()
 {
     # Note: Do not support pre-/postinstall hooks here, as we have no short
     # "name" that we could use.
-    local customAction="${1#*:}"
-    addedCustomActions["$customAction"]=t
+    local customRecord="${1:?}"; shift
+    local customAction="${customRecord#*:}"
+    addedCustomActions["$customAction"]="$customRecord"
     addedCustomActionList+=("$customAction")
 
     local customActionWithoutSudo="${customAction#\$SUDO }"
@@ -149,6 +150,7 @@ installCustom()
 	local customActionWithoutSudoAndArgs="${customActionWithoutSudo%% *}"
 	local sudoPrefix="${customAction%"$customActionWithoutSudo"}"
 	local customFilespec
+	local decoration="${decoration["custom:${addedCustomActions["$customAction"]}"]}"
 
 	if [ "${itemCustomActions["$customAction"]}" ]; then
 	    # The corresponding action item has already been added to the item's
@@ -159,10 +161,10 @@ installCustom()
 	    customActionWithoutSudo="${customFilespec}${customArgs}"
 	elif customFilespec="$(getCustomFilespec -e "${customAction}")"; then
 	    local quotedCustomNotification; printf -v quotedCustomNotification %s "$customFilespec"
-	    toBeInstalledCommands+=("addLoginNotification --file $quotedCustomNotification --immediate")
+	    submitInstallCommand "addLoginNotification --file $quotedCustomNotification --immediate" "$decoration"
 	    continue
 	fi
-	toBeInstalledCommands+=("${sudoPrefix:+${SUDO}${SUDO:+ }}${customActionWithoutSudo}")
+	submitInstallCommand "${sudoPrefix:+${SUDO}${SUDO:+ }}${customActionWithoutSudo}" "$decoration"
     done
 }
 
