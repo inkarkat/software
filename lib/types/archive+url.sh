@@ -86,6 +86,7 @@ addZipUrl()
 
 installArchiveUrl()
 {
+    local prefix="${1:?}"; shift
     local archiveDownloadInstallerCommand="${1:?}"; shift
     local archiveUrlPackagesDictName="${1:?}"; shift
     eval "[ \${#${archiveUrlPackagesDictName}[@]} -gt 0 ]" || return
@@ -123,16 +124,18 @@ installArchiveUrl()
 	typeset -a urls=(); IFS=' ' read -r -a urls <<<"$urlList"
 	local urlArgs; printf -v urlArgs ' --url %q' "${urls[@]}"
 
-	submitInstallCommand "${extractionDirspecCreationCommand}${archiveDownloadInstallerCommand}${isBatch:+ --batch} ${archiveDownloadInstallerArgs[*]}${archiveDownloadInstallerArgs:+ }--destination-dir ${quotedExtractionDirspec}${applicationName:+ --application-name }${applicationName} --expression ${packageGlob}${maxAge:+ --max-age }$maxAge${urlArgs}${outputNameArg:+ --output }${outputNameArg}"
+	submitInstallCommand \
+	    "${extractionDirspecCreationCommand}${archiveDownloadInstallerCommand}${isBatch:+ --batch} ${archiveDownloadInstallerArgs[*]}${archiveDownloadInstallerArgs:+ }--destination-dir ${quotedExtractionDirspec}${applicationName:+ --application-name }${applicationName} --expression ${packageGlob}${maxAge:+ --max-age }$maxAge${urlArgs}${outputNameArg:+ --output }${outputNameArg}" \
+	    "${decoration["${prefix}:$archiveUrlRecord"]}"
     done
 }
 installTarUrl()
 {
-    installArchiveUrl tar-download-installer addedTarUrlPackages "$@"
+    installArchiveUrl tar+url tar-download-installer addedTarUrlPackages "$@"
 }
 installZipUrl()
 {
-    installArchiveUrl zip-download-installer addedZipUrlPackages "$@"
+    installArchiveUrl zip+url zip-download-installer addedZipUrlPackages "$@"
 }
 
 typeRegistry+=([tar+url:]=TarUrl)
