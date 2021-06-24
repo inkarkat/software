@@ -91,7 +91,8 @@ parseInstall()
     [ ".$(fileExtension --single -- "$sourceFilespec")" = "$SETUPSOFTWARE_INSTALL_TEMPLATE_EXTENSION" ] && \
 	addCommand=addInstalledTemplate
 
-    printf '%q ' "$addCommand" "${addInstalledFileArgs[@]}" "${installArgs[@]}" -- "$sourceFilespec" "$2"
+    printf '%q ' "$addCommand" "${addInstalledFileArgs[@]}" "${installArgs[@]}" -- "$sourceFilespec"
+    printf %q "$2"
 }
 
 typeset -A addedInstallActions=()
