@@ -99,20 +99,24 @@ typeset -A addedInstallActions=()
 typeset -a addedInstallActionList=()
 hasInstall()
 {
-    local quotedInstallCommand; quotedInstallCommand="$(parseInstall "${1:?}" --check)" || exit 3
+    local installRecord="${1:?}"
+    local quotedCheckCommand; quotedCheckCommand="$(parseInstall "$installRecord" --check)" || exit 3
+    local quotedInstallCommand; quotedInstallCommand="$(parseInstall "$installRecord")" || exit 3
 
     [ "${addedInstallActions["$quotedInstallCommand"]}" ] && return 0	# This install action has already been selected for installation.
 
-    eval "$quotedInstallCommand"
+    eval "$quotedCheckCommand"
 }
 
 addInstall()
 {
+    local installRecord="${1:?}"
+    local quotedInstallCommand; quotedInstallCommand="$(parseInstall "$installRecord")" || exit 3
     # Note: Do not support pre-/postinstall hooks here (yet), as there's no good
     # short "name" that we could use. The DEST-FILE's whole path may be a bit
     # long, and just the filename itself may be ambiguous.
-    addedInstallActions["$(parseInstall "${1:?}" --check)"]=t	# Note: Need to supply --check here, as in hasInstall(), to be able to recognize the action there.
-    addedInstallActionList+=("$(parseInstall "${1:?}")")
+    addedInstallActions["$quotedInstallCommand"]=t
+    addedInstallActionList+=("$quotedInstallCommand")
 }
 installInstall()
 {
