@@ -115,7 +115,7 @@ addInstall()
     # Note: Do not support pre-/postinstall hooks here (yet), as there's no good
     # short "name" that we could use. The DEST-FILE's whole path may be a bit
     # long, and just the filename itself may be ambiguous.
-    addedInstallActions["$quotedInstallCommand"]=t
+    addedInstallActions["$quotedInstallCommand"]="$installRecord"
     addedInstallActionList+=("$quotedInstallCommand")
 }
 installInstall()
@@ -125,7 +125,7 @@ installInstall()
 
     local quotedInstallCommand; for quotedInstallCommand in "${addedInstallActionList[@]}"
     do
-	submitInstallCommand "$quotedInstallCommand"
+	submitInstallCommand "$quotedInstallCommand" "${decoration["install:${addedInstallActions["$quotedInstallCommand"]}"]}"
     done
 }
 
