@@ -460,11 +460,12 @@ HELPTEXT
 configUsageDecorate()
 {
     cat <<'HELPTEXT'
-decorate: items prepend CMDPREFIX to the non-config non-pre/postinstall item
-preceding it in the current definition if that item is missing, but has now been
-selected. The same item (if it appears multiple times) must be decorated
-consistently, or individual items may go undecorated; a mixture of decorations
-is not supported.
+decorate: items either prepend CMD-PREFIX to or replace all occurrences of {} in
+CMD-DECORATION with the quoted installation command of the non-config
+non-pre/postinstall item preceding it in the current definition if that item is
+missing, but has now been selected.
+The same item (if it appears multiple times) must be decorated consistently, or
+individual items may go undecorated; a mixture of decorations is not supported.
 Types that process multiple items with a single install command may not accept
 decorations, or a single decoration that then applies to the whole set of items,
 or may split off decorated items into separate install commands.
@@ -573,7 +574,14 @@ submitInstallCommand()
     local installCommand="${1:?}"; shift
     local decoration="$1"; shift
 
-    toBeInstalledCommands+=("${decoration}${decoration:+ }$installCommand")
+    if [[ "$decoration" =~ \{\} ]]; then
+	printf -v quotedInstallCommand '%q' "$installCommand"
+	toBeInstalledCommands+=("${decoration//\{\}/"$quotedInstallCommand"}")
+    elif [ -n "$decoration" ]; then
+	toBeInstalledCommands+=("${decoration}${decoration:+ }$installCommand")
+    else
+	toBeInstalledCommands+=("$installCommand")
+    fi
 }
 
 typeset -a addedPreinstallArgs=()
