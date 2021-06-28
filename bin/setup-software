@@ -463,9 +463,10 @@ configUsageDecorate()
 {
     cat <<'HELPTEXT'
 decorate: items either prepend CMD-PREFIX to or replace all occurrences of {} in
-CMD-DECORATION with the quoted installation command of the non-config
-non-pre/postinstall item preceding it in the current definition if that item is
-missing, but has now been selected.
+CMD-DECORATION with the quoted installation command (and possibly a check
+command as well if the type has such) of the non-config non-pre/postinstall item
+following it in the current definition if that item is missing, but has now been
+selected.
 The same item (if it appears multiple times) must be decorated consistently, or
 individual items may go undecorated; a mixture of decorations is not supported.
 Types that process multiple items with a single install command may not accept
@@ -558,18 +559,16 @@ addDecorate()
 {
     local name="${1:?}"; shift
     local item="${name#*$'\n'}"
-    if [ "${addedItems["$item"]}" ]; then
-	# Convert the "decorate:VALUE\nITEM" to decoration[ITEM]=VALUE.
-	# This can be queried by install${typeFunction}() and considered when
-	# rendering the install command.
-	local newValue="${name%%$'\n'*}"
-	local existingValue="${decoration["$item"]}"
-	if [ -n "$existingValue" -a "$existingValue" != "$newValue" ]; then
-	    printf >&2 'ERROR: Differing decoration "%s" and "%s" for %s\n' "$existingValue" "$newValue" "$item"
-	    exit 3
-	fi
-	decoration["$item"]="$newValue"
+    # Convert the "decorate:VALUE\nITEM" to decoration[ITEM]=VALUE.
+    # This can be queried by install${typeFunction}() and considered when
+    # rendering the install command.
+    local newValue="${name%%$'\n'*}"
+    local existingValue="${decoration["$item"]}"
+    if [ -n "$existingValue" -a "$existingValue" != "$newValue" ]; then
+	printf >&2 'ERROR: Differing decoration "%s" and "%s" for %s\n' "$existingValue" "$newValue" "$item"
+	exit 3
     fi
+    decoration["$item"]="$newValue"
 }
 decorateCommand()
 {
@@ -1127,6 +1126,7 @@ do
     let handledDefinitionCount+=1
     typeset -a missingItems=()
     lastRealItem=
+    lastDecoration=
     lastMissingItem=
     let realItemCnt=0
     let missingRealItemCnt=0
@@ -1140,7 +1140,7 @@ do
 	elif contains "$prefix" "${!definitionGroupFilterTypeRegistry[@]}"; then
 	    printf >&2 'ERROR: Definition group filter types (like %s) must only appear the beginning of a definition group: %s.\n' "$prefix" "$item"
 	    exit 3
-	elif contains "$prefix" config: decorate: preinstall: postinstall:; then
+	elif contains "$prefix" config: preinstall: postinstall:; then
 	    if [ -z "$lastRealItem" ]; then
 		printf >&2 'ERROR: No previous item before %s.\n' "$item"
 		exit 3
@@ -1152,6 +1152,9 @@ do
 		# it on a new line.
 		missingItems+=("$item"$'\n'"$lastMissingItem")
 	    fi
+	elif [ "$prefix" = decorate: ]; then
+	    lastDecoration="$item"
+	    continue
 	elif [ "$prefix" = postinstall-or-once: ]; then
 	    if [ -z "$lastRealItem" ]; then
 		printf >&2 'ERROR: No previous item before %s.\n' "$item"
@@ -1184,6 +1187,11 @@ do
 		esac
 	    fi
 	else
+	    if [ -n "$lastDecoration" ]; then
+		addDecorate "${lastDecoration#decorate:}"$'\n'"$item"
+		lastDecoration=''
+	    fi
+
 	    lastRealItem="$item"
 	    hasItem "$item"
 	    case $? in

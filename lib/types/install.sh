@@ -105,7 +105,8 @@ hasInstall()
 
     [ "${addedInstallActions["$quotedInstallCommand"]}" ] && return 0	# This install action has already been selected for installation.
 
-    eval "$quotedCheckCommand"
+    local decoration="${decoration["install:$installRecord"]}"
+    eval "$(decorateCommand "$quotedCheckCommand" "$decoration")"
 }
 
 addInstall()

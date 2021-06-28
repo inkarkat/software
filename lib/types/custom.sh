@@ -76,8 +76,9 @@ typeset -A addedCustomActions=()
 typeset -a addedCustomActionList=()
 hasCustom()
 {
-    local customAction="${1#*:}"
-    local customCheck="${1%":$customAction"}"
+    local customRecord="${1:?}"; shift
+    local customAction="${customRecord#*:}"
+    local customCheck="${customRecord%":$customAction"}"
     local customCheckWithoutSudo="${customCheck#\$SUDO }"
     local sudoPrefix="${customCheck%"$customCheckWithoutSudo"}"
     local customActionWithoutSudoAndArgs="${customAction#\$SUDO }"; customActionWithoutSudoAndArgs="${customActionWithoutSudoAndArgs%% *}"
@@ -89,11 +90,14 @@ hasCustom()
 
     [ "${addedCustomActions["$customAction"]}" ] && return 0	# This custom action has already been selected for installation.
 
-    local customFilespec
+    local customFilespec customCheckCommand
+    local customDecoration="${decoration["custom:${customRecord}"]}"
     if customFilespec="$(getCustomFilespec -x "${customCheckWithoutSudo}")"; then
-	eval "${sudoPrefix:+${SUDO}${SUDO:+ }}\"\$customFilespec\""
+	customCheckCommand="${sudoPrefix:+${SUDO}${SUDO:+ }}\"\$customFilespec\""
+	eval "$(decorateCommand "$customCheckCommand" "$customDecoration")"
     elif [[ "$customCheckWithoutSudo" =~ ^\& ]] && customFilespec="$(getCustomFilespec -x "${customActionWithoutSudoAndArgs}${customCheckWithoutSudo#\&}")"; then
-	eval "${sudoPrefix:+${SUDO}${SUDO:+ }}\"\$customFilespec\""
+	customCheckCommand="${sudoPrefix:+${SUDO}${SUDO:+ }}\"\$customFilespec\""
+	eval "$(decorateCommand "$customCheckCommand" "$customDecoration")"
     elif [[ "$customCheck" =~ ^\!.*\?$ ]]; then
 	customCheck="${customCheck#\!}"
 	! customPathOrGlobCheck "${customCheck%\?}"
@@ -107,7 +111,8 @@ hasCustom()
 	    customCheckWithoutSudo="${customActionWithoutSudoAndArgs}${customCheckWithoutSudo#\&}"
 	fi
 
-	eval "${sudoPrefix:+${SUDO}${SUDO:+ }}$customCheckWithoutSudo"
+	customCheckCommand="${sudoPrefix:+${SUDO}${SUDO:+ }}$customCheckWithoutSudo"
+	eval "$(decorateCommand "$customCheckCommand" "$customDecoration")"
     fi
 }
 
@@ -150,7 +155,8 @@ installCustom()
 	local customActionWithoutSudoAndArgs="${customActionWithoutSudo%% *}"
 	local sudoPrefix="${customAction%"$customActionWithoutSudo"}"
 	local customFilespec
-	local decoration="${decoration["custom:${addedCustomActions["$customAction"]}"]}"
+	local customRecord="${addedCustomActions["$customAction"]}"
+	local customDecoration="${decoration["custom:$customRecord"]}"
 
 	if [ "${itemCustomActions["$customAction"]}" ]; then
 	    # The corresponding action item has already been added to the item's
@@ -161,10 +167,10 @@ installCustom()
 	    customActionWithoutSudo="${customFilespec}${customArgs}"
 	elif customFilespec="$(getCustomFilespec -e "${customAction}")"; then
 	    local quotedCustomNotification; printf -v quotedCustomNotification %s "$customFilespec"
-	    submitInstallCommand "addLoginNotification --file $quotedCustomNotification --immediate" "$decoration"
+	    submitInstallCommand "addLoginNotification --file $quotedCustomNotification --immediate" "$customDecoration"
 	    continue
 	fi
-	submitInstallCommand "${sudoPrefix:+${SUDO}${SUDO:+ }}${customActionWithoutSudo}" "$decoration"
+	submitInstallCommand "${sudoPrefix:+${SUDO}${SUDO:+ }}${customActionWithoutSudo}" "$customDecoration"
     done
 }
 
