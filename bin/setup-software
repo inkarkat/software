@@ -571,19 +571,23 @@ addDecorate()
 	decoration["$item"]="$newValue"
     fi
 }
-submitInstallCommand()
+decorateCommand()
 {
     local installCommand="${1:?}"; shift
     local decoration="$1"; shift
 
     if [[ "$decoration" =~ \{\} ]]; then
 	printf -v quotedInstallCommand '%q' "$installCommand"
-	toBeInstalledCommands+=("${decoration//\{\}/"$quotedInstallCommand"}")
+	printf %s "${decoration//\{\}/"$quotedInstallCommand"}"
     elif [ -n "$decoration" ]; then
-	toBeInstalledCommands+=("${decoration}${decoration:+ }$installCommand")
+	printf %s "${decoration}${decoration:+ }$installCommand"
     else
-	toBeInstalledCommands+=("$installCommand")
+	printf %s "$installCommand"
     fi
+}
+submitInstallCommand()
+{
+    toBeInstalledCommands+=("$(decorateCommand "$@")")
 }
 
 typeset -a addedPreinstallArgs=()
