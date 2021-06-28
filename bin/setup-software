@@ -221,6 +221,8 @@ HELPTEXT
 	echo
 	configUsageConfig | highlightPrefix
 	echo
+	configUsageDecorate | highlightPrefix
+	echo
 	configUsagePreinstall | highlightPrefix
 	echo
 	configUsagePostinstall | highlightPrefix
