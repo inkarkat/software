@@ -1,6 +1,6 @@
 #!/bin/bash source-this-script
 
-configUsageGroupRequire()
+configUsageGroupRequireGroup()
 {
     cat <<'HELPTEXT'
 group-require-group: items refer to a GROUP-NAME. If that group has not yet been
