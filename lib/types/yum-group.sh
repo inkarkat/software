@@ -83,5 +83,5 @@ installYumGroup()
 {
     [ ${#addedYumGroups[@]} -gt 0 ] || return
     printf -v quotedYumGroups '%q ' "${!addedYumGroups[@]}"; quotedYumGroups="${quotedYumGroups% }"
-    toBeInstalledCommands+=("${SUDO}${SUDO:+ }yum${isBatch:+ --assumeyes} group install ${quotedYumGroups}")
+    submitInstallCommand "${SUDO}${SUDO:+ }yum${isBatch:+ --assumeyes} group install ${quotedYumGroups}"
 }

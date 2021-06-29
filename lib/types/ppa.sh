@@ -64,7 +64,9 @@ installPpa()
     [ ${#addedPpaRepositories[@]} -gt 0 ] || return
     local repo; for repo in "${!addedPpaRepositories[@]}"
     do
-	toBeInstalledCommands+=("${SUDO}${SUDO:+ }add-apt-repository${isBatch:+ --yes} ppa:$repo")
+	submitInstallCommand \
+	    "${SUDO}${SUDO:+ }add-apt-repository${isBatch:+ --yes} ppa:$repo" \
+	    "${decoration["ppa:$repo"]}"
     done
-    toBeInstalledCommands+=("${SUDO}${SUDO:+ }apt${isBatch:+ --assume-yes} update")
+    submitInstallCommand "${SUDO}${SUDO:+ }apt${isBatch:+ --assume-yes} update"
 }

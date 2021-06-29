@@ -117,13 +117,14 @@ hasInstallUrl()
 
 addInstallUrl()
 {
-    local parse; parse="$(parseInstallUrl "${1:?}")" || exit 3
+    local installUrlRecord="${1:?}"
+    local parse; parse="$(parseInstallUrl "$installUrlRecord")" || exit 3
     local fileDownloadInstallerCommand="${parse#*$'\n'}"
 
     # Note: Do not support pre-/postinstall hooks here (yet), as there's no good
     # short "name" that we could use. The DEST-FILE's whole path may be a bit
     # long, and just the filename itself may be ambiguous.
-    addedInstallUrlActions["$fileDownloadInstallerCommand"]=t
+    addedInstallUrlActions["$fileDownloadInstallerCommand"]="$installUrlRecord"
 
     [ "$SETUPSOFTWARE_INSTALL_TEMPLATE_EXTENSION" = ${FILEDOWNLOADINSTALLER_TEMPLATE_EXTENSION:-.template} ] || \
 	printf -v fileDownloadInstallerCommand 'FILEDOWNLOADINSTALLER_TEMPLATE_EXTENSION=%q %s' "$SETUPSOFTWARE_INSTALL_TEMPLATE_EXTENSION" "$fileDownloadInstallerCommand"
@@ -134,7 +135,10 @@ installInstallUrl()
     [ ${#addedInstallUrlActions[@]} -eq ${#addedInstallUrlActionList[@]} ] || { echo >&2 'ASSERT: InstallUrl actions dict and list sizes disagree.'; exit 3; }
     [ ${#addedInstallUrlActionList[@]} -gt 0 ] || return
 
-    toBeInstalledCommands+=("${addedInstallUrlActionList[@]}")
+    local installUrlAction; for installUrlAction in "${addedInstallUrlActionList[@]}"
+    do
+	submitInstallCommand "$installUrlAction" "${decoration["install+url:${addedInstallUrlActions["$installUrlAction"]}"]}"
+    done
 }
 
 typeRegistry+=([install+url:]=InstallUrl)

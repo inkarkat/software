@@ -117,7 +117,7 @@ installThunderbirdAddon()
     for profileName in "${!thunderbirdAddonUrlsByProfile[@]}"
     do
 	profileComment=" # for the $profileName profile"; [ "$profileName" = "$thunderbirdDefaultProfileName" ] && profileComment=''
-	toBeInstalledCommands+=("browse ${thunderbirdAddonUrlsByProfile["$profileName"]}${profileComment}")
+	submitInstallCommand "browse ${thunderbirdAddonUrlsByProfile["$profileName"]}${profileComment}"
     done
 }
 

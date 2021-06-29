@@ -103,5 +103,5 @@ installYum()
 {
     [ ${#addedYumPackages[@]} -gt 0 ] || return
     local IFS=' '
-    toBeInstalledCommands+=("${SUDO}${SUDO:+ }yum${isBatch:+ --assumeyes} install ${!addedYumPackages[*]}")
+    submitInstallCommand "${SUDO}${SUDO:+ }yum${isBatch:+ --assumeyes} install ${!addedYumPackages[*]}"
 }

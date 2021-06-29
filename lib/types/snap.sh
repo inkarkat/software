@@ -62,7 +62,7 @@ installSnap()
 {
     [ ${#addedSnapPackages[@]} -gt 0 ] || return
     local IFS=' '
-    toBeInstalledCommands+=("${SUDO}${SUDO:+ }snap install ${!addedSnapPackages[*]}")
+    submitInstallCommand "${SUDO}${SUDO:+ }snap install ${!addedSnapPackages[*]}"
 }
 
 typeRegistry+=([snap:]=Snap)

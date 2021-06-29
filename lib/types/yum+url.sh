@@ -63,5 +63,5 @@ installYumUrl()
     [ ${#addedYumUrls[@]} -gt 0 ] || return
 
     local quotedYumUrls; printf -v quotedYumUrls ' %q' "${addedYumUrls[@]}"
-    toBeInstalledCommands+=("${SUDO}${SUDO:+ }yum${isBatch:+ --assumeyes} install$quotedYumUrls")
+    submitInstallCommand "${SUDO}${SUDO:+ }yum${isBatch:+ --assumeyes} install$quotedYumUrls"
 }

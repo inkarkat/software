@@ -59,7 +59,7 @@ installNpm()
 {
     [ ${#addedNpmPackages[@]} -gt 0 ] || return
     local IFS=' '
-    toBeInstalledCommands+=("${SUDO}${SUDO:+ }npm install --global ${!addedNpmPackages[*]}")
+    submitInstallCommand "${SUDO}${SUDO:+ }npm install --global ${!addedNpmPackages[*]}"
 }
 
 typeRegistry+=([npm:]=Npm)
