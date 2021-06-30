@@ -451,7 +451,7 @@ HELPTEXT
 configUsageConfig()
 {
     cat <<'HELPTEXT'
-config: items supply special (type-specific) configuration to the non-config
+config: meta items supply special (type-specific) configuration to the non-meta
 non-pre/postinstall item following it in the current definition if that item is
 missing, but has now been selected. The configuration is available to both
 add*() and install() functions. If there are multiple configurations for an
@@ -463,9 +463,9 @@ HELPTEXT
 configUsageDecorate()
 {
     cat <<'HELPTEXT'
-decorate: items either prepend CMD-PREFIX to or replace all occurrences of {} in
-CMD-DECORATION with the quoted installation command (and possibly a check
-command as well if the type has such) of the non-config non-pre/postinstall item
+decorate: meta items either prepend CMD-PREFIX to or replace all occurrences of
+{} in CMD-DECORATION with the quoted installation command (and possibly a check
+command as well if the type has such) of the non-meta non-pre/postinstall item
 following it in the current definition if that item is missing, but has now been
 selected.
 The same item (if it appears multiple times) must be decorated consistently, or
@@ -490,7 +490,7 @@ preinstall: items consist of an ACTION that is one of the following:
   distribution's package manager, use the special "native:" prefix here
 - a PREINSTALL-EXPRESSION (whitespace must be escaped or the entire expression
   quoted!) that is eval'd (prepend $SUDO if it needs to be invoked as root)
-A preinstall item runs (before other installation actions) if the non-config
+A preinstall item runs (before other installation actions) if the non-meta
 non-pre/postinstall item preceding it in the current definition is missing, but
 has now been selected.
 HELPTEXT
@@ -510,9 +510,9 @@ postinstall: items consist of an ACTION that is one of the following:
   distribution's package manager, use the special "native:" prefix here
 - a POSTINSTALL-EXPRESSION (whitespace must be escaped or the entire expression
   quoted!) that is eval'd (prepend $SUDO if it needs to be invoked as root)
-A postinstall item runs if the non-config non-pre/postinstall item preceding it
-in the current definition was missing, but has been successfully installed by
-the installation commands.
+A postinstall item runs if the non-meta non-pre/postinstall item preceding it in
+the current definition was missing, but has been successfully installed by the
+installation commands.
 HELPTEXT
 }
 configUsagePostinstallOrOnce()
@@ -532,9 +532,9 @@ following:
 - a POSTINSTALL-EXPRESSION (whitespace must be escaped or the entire expression
   quoted!) that is eval'd (prepend $SUDO if it needs to be invoked as root)
 Like a postinstall item, a postinstall-or-once item runs if the
-non-config non-pre/postinstall item preceding it in the current definition was
+non-meta non-pre/postinstall item preceding it in the current definition was
 missing, but has been successfully installed by the installation commands.
-Additionally, if the non-config non-pre/postinstall item preceding it already
+Additionally, if the non-meta non-pre/postinstall item preceding it already
 existed (e.g. it comes preinstalled), it will also run once (until it succeeds);
 ID or ACTION itself is used for that uniqueness check.
 HELPTEXT
