@@ -5,6 +5,9 @@ configUsageSnap()
     cat <<'HELPTEXT'
 snap: items refer to packages from the Snap store that work across many
 different Linux distributions, are segregated and update automatically.
+Configure classic mode installations (disabled security confinement) via a
+    config:CLASSIC=true
+configuration item following it.
 HELPTEXT
 }
 
@@ -32,6 +35,7 @@ getInstalledSnapPackages()
 }
 
 typeset -A addedSnapPackages=()
+typeset -A addedSnapClassicPackages=()
 typeset -A externallyAddedSnapPackages=()
 hasSnap()
 {
@@ -40,7 +44,10 @@ hasSnap()
 	messagePrintf >&2 'ERROR: Failed to obtain installed Snap store package list; skipping %s.\n' "$snapPackageName"
 	return 99
     fi
-    [ "${installedSnapPackages["$snapPackageName"]}" ] || [ "${addedSnapPackages["$snapPackageName"]}" ] || [ "${externallyAddedSnapPackages["$snapPackageName"]}" ]
+    [ "${installedSnapPackages["$snapPackageName"]}" ] || \
+	[ "${addedSnapPackages["$snapPackageName"]}" ] || \
+	[ "${addedSnapClassicPackages["$snapPackageName"]}" ] || \
+	[ "${externallyAddedSnapPackages["$snapPackageName"]}" ]
 }
 
 addSnap()
@@ -48,8 +55,15 @@ addSnap()
     local snapPackageName="${1:?}"; shift
     isAvailableOrUserAcceptsNative snap snapd || return $?
 
+    CLASSIC=
+    eval "${configuration["snap:$snapPackageName"]}"
+
     preinstallHook "$snapPackageName"
-    addedSnapPackages["$snapPackageName"]=t
+    if [ "$CLASSIC" = true ]; then
+	addedSnapClassicPackages["$snapPackageName"]=t
+    else
+	addedSnapPackages["$snapPackageName"]=t
+    fi
     postinstallHook "$snapPackageName"
 }
 
@@ -60,9 +74,12 @@ isAvailableSnap()
 
 installSnap()
 {
-    [ ${#addedSnapPackages[@]} -gt 0 ] || return
     local IFS=' '
-    submitInstallCommand "${SUDO}${SUDO:+ }snap install ${!addedSnapPackages[*]}"
+
+    [ ${#addedSnapPackages[@]} -gt 0 ] && \
+	submitInstallCommand "${SUDO}${SUDO:+ }snap install ${!addedSnapPackages[*]}"
+    [ ${#addedSnapClassicPackages[@]} -gt 0 ] && \
+	submitInstallCommand "${SUDO}${SUDO:+ }snap install --classic ${!addedSnapClassicPackages[*]}"
 }
 
 typeRegistry+=([snap:]=Snap)
