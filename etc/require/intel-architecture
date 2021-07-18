@@ -13,7 +13,8 @@ case "$1" in
 esac
 
 case "$(uname --machine)" in
-    x86)    exec [ -z "$1" -o "$1" = 32 ];;
+    i686|x86)
+	    exec [ -z "$1" -o "$1" = 32 ];;
     x86_64) exec [ -z "$1" -o "$1" = 64 ];;
     *)	    exit 1;;
 esac
