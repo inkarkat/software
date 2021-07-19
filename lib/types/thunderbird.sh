@@ -14,6 +14,16 @@ HELPTEXT
 
 readonly THUNDERBIRD_PROFILES_DIRSPEC=~/.thunderbird
 
+typeRegistry+=([thunderbird:]=ThunderbirdAddon)
+typeInstallOrder+=([810]=ThunderbirdAddon)
+
+if ! exists thunderbird || ! hasNative thunderbird; then
+    hasThunderbirdAddon() { return 98; }
+    installThunderbirdAddon() { :; }
+    isAvailableThunderbirdAddon() { return 98; }
+    return
+fi
+
 typeset -A installedThunderbirdProfileAddonIds=()
 typeset -A isInstalledThunderbirdAddonsAvailable=()
 getInstalledThunderbirdAddons()
@@ -120,6 +130,3 @@ installThunderbirdAddon()
 	submitInstallCommand "browse ${thunderbirdAddonUrlsByProfile["$profileName"]}${profileComment}"
     done
 }
-
-typeRegistry+=([thunderbird:]=ThunderbirdAddon)
-typeInstallOrder+=([810]=ThunderbirdAddon)

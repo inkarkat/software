@@ -17,6 +17,16 @@ HELPTEXT
 
 readonly FIREFOX_PROFILES_DIRSPEC=~/.mozilla/firefox
 
+typeRegistry+=([firefox:]=FirefoxAddon)
+typeInstallOrder+=([800]=FirefoxAddon)
+
+if ! exists firefox || ! hasNative firefox; then
+    hasFirefoxAddon() { return 98; }
+    installFirefoxAddon() { :; }
+    isAvailableFirefoxAddon() { return 98; }
+    return
+fi
+
 typeset -A installedFirefoxProfileAddonIds=()
 typeset -A isInstalledFirefoxAddonsAvailable=()
 getInstalledFirefoxAddons()
@@ -127,6 +137,3 @@ installFirefoxAddon()
 	submitInstallCommand "${firefoxExecutableByProfile["$profileName"]} -no-remote -P $profileName ${firefoxAddonUrlsByProfile["$profileName"]}"
     done
 }
-
-typeRegistry+=([firefox:]=FirefoxAddon)
-typeInstallOrder+=([800]=FirefoxAddon)
