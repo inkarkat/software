@@ -694,7 +694,7 @@ isAvailableOrUserAcceptsNative()
 
     if askToInstall "$packageManagerSubject"; then
 	if [ "$isPreinstall" ]; then
-	    addPreinstall "native:${packageManagerPackageName}"$'\ndummy'	# dummy ITEM is ignored for preinstall actions, anyway.
+	    addPreinstallArgs dummy "native:${packageManagerPackageName}"   # dummy ITEM is ignored for preinstall actions, anyway.
 	else
 	    addNative "$packageManagerPackageName"
 	fi
@@ -721,7 +721,7 @@ isDependencyAvailableOrUserAcceptsNative()
 	if [ -n "$dependencyInstallCommand" ]; then
 	    eval "$dependencyInstallCommand"
 	else
-	    addPreinstall "native:${dependencyPackageName}"$'\ndummy'	# dummy ITEM is ignored for preinstall actions, anyway.
+	    addPreinstallArgs dummy "native:${dependencyPackageName}"	# dummy ITEM is ignored for preinstall actions, anyway.
 	    preInstall --execute
 	fi
 
