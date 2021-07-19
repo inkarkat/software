@@ -702,6 +702,7 @@ isDependencyAvailableOrUserAcceptsNative()
     local dependencyExecutable="${1:?}"; shift
     local dependencyPackageName="${1:-$dependencyExecutable}"; shift
     local dependencySubject="${1:-$dependencyPackageName}"; shift
+    local dependencyInstallCommand="$1"; shift
 
     exists "$dependencyExecutable" && return 0
     if [ ! "${dependency["$dependencyExecutable"]}" ]; then
@@ -711,8 +712,12 @@ isDependencyAvailableOrUserAcceptsNative()
 	preinstallHook "$dependencyPackageName"
 	preInstall --execute
 
+	if [ -n "$dependencyInstallCommand" ]; then
+	    eval "$dependencyInstallCommand"
+	else
 	    addPreinstall "native:${dependencyPackageName}"$'\ndummy'	# dummy ITEM is ignored for preinstall actions, anyway.
 	    preInstall --execute
+	fi
 
 	postinstallHook "$dependencyPackageName"
 	postInstall --execute
