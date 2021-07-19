@@ -688,7 +688,7 @@ isAvailableOrUserAcceptsNative()
 
     if askToInstall "$packageManagerSubject"; then
 	if [ "$isPreinstall" ]; then
-	    addPreinstall "native:${packageManagerPackageName}"$'\nppa'	# ppa is a dummy ITEM that is ignored for preinstall actions, anyway.
+	    addPreinstall "native:${packageManagerPackageName}"$'\ndummy'	# dummy ITEM is ignored for preinstall actions, anyway.
 	else
 	    addNative "$packageManagerPackageName"
 	fi
@@ -696,6 +696,30 @@ isAvailableOrUserAcceptsNative()
 	return 1
     fi
 }
+typeset -A dependency=()
+isDependencyAvailableOrUserAcceptsNative()
+{
+    local dependencyExecutable="${1:?}"; shift
+    local dependencyPackageName="${1:-$dependencyExecutable}"; shift
+    local dependencySubject="${1:-$dependencyPackageName}"; shift
+
+    exists "$dependencyExecutable" && return 0
+    if [ ! "${dependency["$dependencyExecutable"]}" ]; then
+	dependency["$dependencyExecutable"]=t
+	askToInstall "$dependencySubject" || return 1
+
+	preinstallHook "$dependencyPackageName"
+	preInstall --execute
+
+	    addPreinstall "native:${dependencyPackageName}"$'\ndummy'	# dummy ITEM is ignored for preinstall actions, anyway.
+	    preInstall --execute
+
+	postinstallHook "$dependencyPackageName"
+	postInstall --execute
+    fi
+    exists "$dependencyExecutable"
+}
+
 typeset -A addedItems=()
 addItems()
 {

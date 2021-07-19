@@ -19,6 +19,10 @@ else
     return
 fi
 
+# Note: Cannot use isDependencyAvailableOrUserAcceptsNative() because the
+# recursive preinstall invocation would again try to initialize this yum type,
+# resulting in endless recursion. The problem here is that we need yum to
+# install a dependency for the yum type.
 didRepoqueryCheck=
 haveRepoquery()
 {
