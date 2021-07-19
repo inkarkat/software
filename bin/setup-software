@@ -233,6 +233,15 @@ HELPTEXT
     fi
 }
 
+# Make this available already before sourcing the type libraries so that types
+# can use it for a guard whether the base application is installed
+# (e.g. if ! exists firefox || ! hasNative firefox; then ...)
+# Native type libraries start with 00*.sh so that they are loaded first.
+hasNative()
+{
+    has${nativeRegistry[0]} "$@"
+}
+
 typeset -a commandLineHelpExtensions=()
 typeset -A commandLineOptions=()
 typeset -A commandLineParameters=()
@@ -431,10 +440,6 @@ case ${#nativeRegistry[@]} in
     1)	readonly nativePackageManager="${nativeRegistry[0]}";;
     *)	printf >&2 'ERROR: Multiple native package managers found: %s\n' "$(joinBy ', ' "${nativeRegistry[@]}")"; exit 3;;
 esac
-hasNative()
-{
-    has$nativePackageManager "$@"
-}
 addNative()
 {
     add$nativePackageManager "$@"
