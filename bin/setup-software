@@ -594,6 +594,12 @@ submitInstallCommand()
 }
 
 typeset -a addedPreinstallArgs=()
+addPreinstallArgs()
+{
+    local item="${1:?}"; shift
+    local action="${1:?}"; shift
+    addedPreinstallArgs+=(--pre "$item" --action "$action")
+}
 addPreinstall()
 {
     local name="${1:?}"; shift
@@ -605,7 +611,7 @@ addPreinstall()
 	# ITEM will populate all the addedITEM* arrays, and everything will be
 	# intermingled and later printed type by type in the static order, but
 	# the purpose of preinstall is to execute stuff before anything else.
-	addedPreinstallArgs+=(--pre "${name#*$'\n'}" --action "${name%%$'\n'*}")
+	addPreinstallArgs "${name#*$'\n'}" "${name%%$'\n'*}"
     fi
 }
 preinstallHook()
