@@ -594,6 +594,12 @@ submitInstallCommand()
 }
 
 typeset -a addedPreinstallArgs=()
+addPreinstallArgs()
+{
+    local item="${1:?}"; shift
+    local action="${1:?}"; shift
+    addedPreinstallArgs+=(--pre "$item" --action "$action")
+}
 addPreinstall()
 {
     local name="${1:?}"; shift
@@ -605,7 +611,7 @@ addPreinstall()
 	# ITEM will populate all the addedITEM* arrays, and everything will be
 	# intermingled and later printed type by type in the static order, but
 	# the purpose of preinstall is to execute stuff before anything else.
-	addedPreinstallArgs+=(--pre "${name#*$'\n'}" --action "${name%%$'\n'*}")
+	addPreinstallArgs "${name#*$'\n'}" "${name%%$'\n'*}"
     fi
 }
 preinstallHook()
@@ -688,7 +694,7 @@ isAvailableOrUserAcceptsNative()
 
     if askToInstall "$packageManagerSubject"; then
 	if [ "$isPreinstall" ]; then
-	    addPreinstall "native:${packageManagerPackageName}"$'\nppa'	# ppa is a dummy ITEM that is ignored for preinstall actions, anyway.
+	    addPreinstallArgs dummy "native:${packageManagerPackageName}"   # dummy ITEM is ignored for preinstall actions, anyway.
 	else
 	    addNative "$packageManagerPackageName"
 	fi
@@ -696,6 +702,35 @@ isAvailableOrUserAcceptsNative()
 	return 1
     fi
 }
+typeset -A dependency=()
+isDependencyAvailableOrUserAcceptsNative()
+{
+    local dependencyExecutable="${1:?}"; shift
+    local dependencyPackageName="${1:-$dependencyExecutable}"; shift
+    local dependencySubject="${1:-$dependencyPackageName}"; shift
+    local dependencyInstallCommand="$1"; shift
+
+    exists "$dependencyExecutable" && return 0
+    if [ ! "${dependency["$dependencyExecutable"]}" ]; then
+	dependency["$dependencyExecutable"]=t
+	askToInstall "$dependencySubject" || return 1
+
+	preinstallHook "$dependencyPackageName"
+	preInstall --execute
+
+	if [ -n "$dependencyInstallCommand" ]; then
+	    eval "$dependencyInstallCommand"
+	else
+	    addPreinstallArgs dummy "native:${dependencyPackageName}"	# dummy ITEM is ignored for preinstall actions, anyway.
+	    preInstall --execute
+	fi
+
+	postinstallHook "$dependencyPackageName"
+	postInstall --execute
+    fi
+    exists "$dependencyExecutable"
+}
+
 typeset -A addedItems=()
 addItems()
 {

@@ -19,30 +19,25 @@ else
     return
 fi
 
-didRepoqueryCheck=
 haveRepoquery()
 {
     # repoquery is provided by the optional yum-utils package; it may not be
     # there yet. Unlike with pip3 or npm, its non-existence does not imply that
     # no packages have yet been installed, so we need to have this dependency to
     # do any Yum install operations.
-    exists repoquery && return 0
-    if [ ! "$didRepoqueryCheck" ]; then
-	didRepoqueryCheck=t
-	askToInstall 'yum-utils' || return 1
 
-	preinstallHook 'yum-utils'
-	preInstall --execute
-	    # Unless we're directly executing the generated install commands, we
-	    # must not produce anything on stdout, as that might get captured by
-	    # a client and then attempted to be executed as install commands.
-	    local redirectStdoutToStderr; [ "$isExecute" ] || redirectStdoutToStderr='>&2'
+    # Unless we're directly executing the generated install commands, we must
+    # not produce anything on stdout, as that might get captured by a client and
+    # then attempted to be executed as install commands.
+    local redirectStdoutToStderr; [ "$isExecute" ] || redirectStdoutToStderr='>&2'
 
-	    eval "\$SUDO yum${isBatch:+ --assumeyes} install yum-utils${redirectStdoutToStderr:+ }${redirectStdoutToStderr}"
-	postinstallHook 'yum-utils'
-	postInstall --execute
-    fi
-    exists repoquery
+    # Note: The default recursive preinstall invocation would again try to
+    # initialize this yum type, resulting in endless recursion. The problem here
+    # is that we need yum to install a dependency for the yum type. We need to
+    # directly pass a custom yum install command-line to break this recursion.
+    local installCommand="\$SUDO yum${isBatch:+ --assumeyes} install yum-utils${redirectStdoutToStderr:+ }${redirectStdoutToStderr}"
+
+    isDependencyAvailableOrUserAcceptsNative repoquery yum-utils '' "$installCommand"
 }
 
 typeset -A installedYumPackages=()
