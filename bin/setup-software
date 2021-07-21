@@ -953,8 +953,8 @@ checkAndExit()
     [ $addedDefinitionCount -eq 0 ] && exit 0 || exit 1
 }
 
-
-for typeLib in "${typeDir}"/00*.sh
+readarray -t nativeTypeLibs < <(grep --files-with-matches 'nativeRegistry+=(' "${typeDir}"/*.sh)
+for typeLib in "${nativeTypeLibs[@]}"
 do
     source "$typeLib" || exit $?
 done
@@ -963,8 +963,9 @@ case ${#nativeRegistry[@]} in
     1)	readonly nativePackageManager="${nativeRegistry[0]}";;
     *)	printf >&2 'ERROR: Multiple native package managers found: %s\n' "$(joinBy ', ' "${nativeRegistry[@]}")"; exit 3;;
 esac
-for typeLib in "${typeDir}"/[^0][^0]*.sh
+for typeLib in "${typeDir}"/*.sh
 do
+    contains "$typeLib" "${nativeTypeLibs[@]}" && continue
     source "$typeLib" || exit $?
 done
 set -o noglob
