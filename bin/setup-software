@@ -237,10 +237,6 @@ HELPTEXT
 # can use it for a guard whether the base application is installed
 # (e.g. if ! exists firefox || ! hasNative firefox; then ...)
 # Native type libraries start with 00*.sh so that they are loaded first.
-hasNative()
-{
-    has${nativeRegistry[0]} "$@"
-}
 
 typeset -a commandLineHelpExtensions=()
 typeset -A commandLineOptions=()
@@ -251,11 +247,15 @@ typeset -A typeRegistry=([native:]=Native)
 typeset -A typeInstallOrder=([100]=Native)
 typeset -A definitionFilterTypeRegistry=()
 typeset -A definitionGroupFilterTypeRegistry=()
-for typeLib in "${typeDir}"/*.sh
-do
-    source "$typeLib" || exit $?
-done
-set -o noglob
+
+hasNative()
+{
+    [ ${#nativeRegistry[@]} -gt 0 ] && has${nativeRegistry[0]} "$@"
+}
+addNative()
+{
+    add$nativePackageManager "$@"
+}
 
 messagePrintf()
 {
@@ -433,16 +433,6 @@ createSetupName()
 {
     setupName="$(basename -- "$(dirname -- "$(simplifyPath "${1:?}")")")"
     setupName="setup-${setupName#setup-}"
-}
-
-case ${#nativeRegistry[@]} in
-    0)	echo >&2 'ERROR: No native package management found.'; exit 3;;
-    1)	readonly nativePackageManager="${nativeRegistry[0]}";;
-    *)	printf >&2 'ERROR: Multiple native package managers found: %s\n' "$(joinBy ', ' "${nativeRegistry[@]}")"; exit 3;;
-esac
-addNative()
-{
-    add$nativePackageManager "$@"
 }
 
 configUsageNative()
@@ -962,6 +952,22 @@ checkAndExit()
 {
     [ $addedDefinitionCount -eq 0 ] && exit 0 || exit 1
 }
+
+
+for typeLib in "${typeDir}"/00*.sh
+do
+    source "$typeLib" || exit $?
+done
+case ${#nativeRegistry[@]} in
+    0)	echo >&2 'ERROR: No native package management found.'; exit 3;;
+    1)	readonly nativePackageManager="${nativeRegistry[0]}";;
+    *)	printf >&2 'ERROR: Multiple native package managers found: %s\n' "$(joinBy ', ' "${nativeRegistry[@]}")"; exit 3;;
+esac
+for typeLib in "${typeDir}"/[^0][^0]*.sh
+do
+    source "$typeLib" || exit $?
+done
+set -o noglob
 
 
 installExitStatus=0
