@@ -21,7 +21,7 @@ printShortUsage()
 
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s\n' "$(basename "$1")" '-?|-h|--help | -H|--config-help [TYPE]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '--clear-group-recall|--clear-definition-recall | -?|-h|--help | -H|--config-help [TYPE]'
     echo
     printf 'Usage: %q %s | tee install-script.sh && sh install-script.sh\n' "$(basename "$1")" "[--check|--dry-run] [-q|--quiet|--silence-no-definitions|-v|--verbose] [-y|--yes|--recall-only] [-b|--batch] [-s|--select DEFINITION [-s ...]] [--base-dir BASE-DIR] [--name NAME]${commandLineOptionExtensions:+ }${commandLineOptionExtensions}${commandLineParameterExtensions:+ }${commandLineParameterExtensions} -a|--all|--group-recall-only|GROUP-NAME|GROUP-FILESPEC [...]"
     echo
@@ -111,6 +111,13 @@ HELPDESCRIPTION
 			persistently accepted when executed with --all.
 			Useful to rerun a setup to catch those definitions that
 			failed to install the first time.
+    --clear-group-recall
+			Forget any persisted definition group choices made in
+			previous invocations, and re-query all existing groups
+			again.
+    --clear-definition-recall
+			Forget any persisted definition choices made in previous
+			invocations, and re-query all definitions again.
     GROUP-NAME		Consider definitions from GROUP-NAME, as stored inside
 			this project / BASE-DIR.
     GROUP-FILESPEC	Consider definitions from GROUP-FILESPEC, which can
@@ -1026,6 +1033,14 @@ do
 			else
 			    obtainGroups=recallDecision
 			fi
+			;;
+	--clear-group-recall)
+			shift
+			specialHandlingCommands+=('memoizeDecision --memoize-group "${setupName}${setupAppendix:+-}${setupAppendix}-groups" --delete-all-decisions')
+			;;
+	--clear-definition-recall)
+			shift
+			specialHandlingCommands+=('memoizeDecision --memoize-group "${setupName}${setupAppendix:+-}${setupAppendix}" --delete-all-decisions')
 			;;
 	--name)		shift; setupName="${1:?}"; shift;;
 	--database)	shift; database "$@"; exit $?;;
