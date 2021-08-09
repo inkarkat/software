@@ -1,0 +1,5 @@
+#!/usr/bin/env setup-software-silent
+
+require:'Ubuntu -18.10' \
+    ppa:alexlarsson/flatpak \
+    # PPA for legacy Flatpak installation
