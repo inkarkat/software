@@ -1,0 +1,5 @@
+#!/usr/bin/env setup-software-silent
+
+require:'Ubuntu 19.04+' \
+    gnome-software-plugin-flatpak \
+    # Flatpak plugin for the Software app makes it possible to install apps without needing the command line

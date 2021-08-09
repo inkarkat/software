@@ -56,7 +56,6 @@ addFlatpak()
     local flatpakPackageName="${1#"${flatpakRemote}:"}"
 
     isAvailableOrUserAcceptsNative flatpak || return $?
-    isAvailableOrUserAcceptsNative gnome-software-plugin-flatpak || return $?
 
     preinstallHook "$flatpakPackageName"
     addedFlatpakPackages["$flatpakPackageName"]=t
