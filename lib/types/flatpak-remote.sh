@@ -7,8 +7,8 @@ flatpak-remote: items consist of a
     REMOTE:LOCATION
 pair, where the remote LOCATION will be registered under REMOTE, and then in
 turn is referenced by flatpak: items.
-Note: As this is only used for installing, it's recommended to use this with a
-preinstall: prefix.
+Note: Do not use this with a preinstall: prefix, because that could lead to the
+flatpak dependency getting installed twice.
 HELPTEXT
 }
 
@@ -54,6 +54,8 @@ addFlatpakRemote()
     local flatpakRemoteName="${1%%:*}"
     local flatpakLocation="${1#"${flatpakRemoteName}:"}"
 
+    isAvailableOrUserAcceptsNative flatpak || return $?
+
     addedFlatpakRemotes["$flatpakRemoteName"]="$flatpakLocation"
 }
 
@@ -68,4 +70,4 @@ installFlatpakRemote()
 }
 
 typeRegistry+=([flatpak-remote:]=FlatpakRemote)
-typeInstallOrder+=([82]=FlatpakRemote)
+typeInstallOrder+=([201]=FlatpakRemote)

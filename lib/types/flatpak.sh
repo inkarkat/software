@@ -82,4 +82,4 @@ installFlatpak()
 }
 
 typeRegistry+=([flatpak:]=Flatpak)
-typeInstallOrder+=([201]=Flatpak)
+typeInstallOrder+=([202]=Flatpak)
