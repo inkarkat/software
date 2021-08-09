@@ -66,7 +66,7 @@ installAptRepo()
     [ ${#addedAptRepos[@]} -gt 0 ] || return
     local name; for name in "${!addedAptRepos[@]}"
     do
-	printf -v quotedDebLine '%q' "${addedAptRepos["$name"]}"
+	local quotedDebLine; printf -v quotedDebLine '%q' "${addedAptRepos["$name"]}"
 
 	submitInstallCommand "printf %s\\\\n $quotedDebLine|${SUDO}${SUDO:+ }tee ${APT_SOURCES_DIR}/${name}.list"
     done
