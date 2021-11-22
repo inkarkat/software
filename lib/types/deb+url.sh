@@ -61,7 +61,7 @@ installDebUrl()
 	applicationName="${applicationName%/}"
 	printf -v applicationName %q "$applicationName"
 	typeset -a urls=(); IFS=' ' read -r -a urls <<<"$urlList"
-	local urlArgs; printf -v urlArgs ' --url %q' "${urls[@]}"
+	local urlArgs=''; [ ${#urls[@]} -gt 0 ] && printf -v urlArgs ' --url %q' "${urls[@]}"
 
 	# Note: No sudo here, as the downloading will happen as the current user
 	# and only the installation itself will be done through sudo.

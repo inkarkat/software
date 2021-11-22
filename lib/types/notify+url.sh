@@ -48,7 +48,7 @@ installNotifyUrl()
 	notificationName="${notificationName%/}"
 	printf -v notificationName %q "$notificationName"
 	typeset -a notificationUrls=(); IFS=' ' read -r -a notificationUrls <<<"$notificationUrlList"
-	local notificationUrlArgs; printf -v notificationUrlArgs ' --url %q' "${notificationUrls[@]}"
+	local notificationUrlArgs=''; [ ${#notificationUrls[@]} -gt 0 ] && printf -v notificationUrlArgs ' --url %q' "${notificationUrls[@]}"
 
 	# Note: No sudo here, as the downloading will happen as the current user
 	# and only the installation itself will be done through sudo.

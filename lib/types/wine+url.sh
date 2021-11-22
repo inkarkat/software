@@ -123,7 +123,7 @@ installWine()
 	applicationName="${applicationName%/}"
 	printf -v applicationName %q "$applicationName"
 	typeset -a urls=(); IFS=' ' read -r -a urls <<<"$urlList"
-	local urlArgs; printf -v urlArgs ' --url %q' "${urls[@]}"
+	local urlArgs=''; [ ${#urls[@]} -gt 0 ] && printf -v urlArgs ' --url %q' "${urls[@]}"
 
 	# Note: No sudo here, as downloading and installation will happen as the
 	# current user.

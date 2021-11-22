@@ -122,7 +122,7 @@ installArchiveUrl()
 	applicationName="${applicationName%/}"
 	printf -v applicationName %q "$applicationName"
 	typeset -a urls=(); IFS=' ' read -r -a urls <<<"$urlList"
-	local urlArgs; printf -v urlArgs ' --url %q' "${urls[@]}"
+	local urlArgs=''; [ ${#urls[@]} -gt 0 ] && printf -v urlArgs ' --url %q' "${urls[@]}"
 
 	submitInstallCommand \
 	    "${extractionDirspecCreationCommand}${archiveDownloadInstallerCommand}${isBatch:+ --batch} ${archiveDownloadInstallerArgs[*]}${archiveDownloadInstallerArgs:+ }--destination-dir ${quotedExtractionDirspec}${applicationName:+ --application-name }${applicationName} --expression ${packageGlob}${maxAge:+ --max-age }$maxAge${urlArgs}${outputNameArg:+ --output }${outputNameArg}" \
