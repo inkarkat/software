@@ -896,14 +896,10 @@ runPostInstallCheck()
 		# special "native:" prefix should it be necessary to install a
 		# package via the distribution's package manager after a
 		# successful installation.
-		hasOrAddItems "${action#native:}" && \
-		    generateInstallCommands
-		printInstallCommands || \
+		hasOrAddItems "${action#native:}" || \
 		    messagePrintf 'Skipping postinstall action, because %s indicated that no action is needed.\n' "$action"
 	    elif [ -n "$prefix" ] && [ -n "${typeRegistry["$prefix"]}" ]; then
-		hasOrAddItems "$action" && \
-		    generateInstallCommands
-		printInstallCommands || \
+		hasOrAddItems "$action" || \
 		    messagePrintf 'Skipping postinstall action, because %s indicated that no action is needed.\n' "$action"
 	    else
 		eval "$action"
@@ -1059,6 +1055,7 @@ do
 			shift; action="$1"; shift
 			printf -v specialCommand 'runPostInstallCheck %q %q' "$item" "$action"
 			specialHandlingCommands+=("${specialCommand% }")
+			specialHandlingFinalCommand='generateAndPrintInstallCommands'
 			;;
 	--post-or-once)	shift; item="$1"; shift
 			if [ "$1" != '--action' ]; then
@@ -1071,6 +1068,7 @@ do
 			shift; id="$1"; shift
 			printf -v specialCommand 'runPostInstallCheck %q %q && onceMarker --update %q' "$item" "$action" "$id"
 			specialHandlingCommands+=("${specialCommand% }")
+			specialHandlingFinalCommand='generateAndPrintInstallCommands'
 			;;
 	--)		shift; break;;
 	-*)		if [ -n "${commandLineOptions["$1"]}" ]; then
