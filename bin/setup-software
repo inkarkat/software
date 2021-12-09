@@ -943,8 +943,7 @@ printInstallCommands()
     if [ "$isExecute" ]; then
 	local installCommandline="$(joinBy '; ' "${toBeInstalledCommands[@]}")"
 	set -e
-	eval "$installCommandline"
-	exit $?	# Exit the script now because else installation failure would be treated as if there were no installation commands.
+	eval "$installCommandline" || exit $?	# Exit the script now because else installation failure would be treated as if there were no installation commands.
     else
 	printf '%s\n' "${toBeInstalledCommands[@]}"
     fi
