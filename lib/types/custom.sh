@@ -167,7 +167,7 @@ installCustom()
 	    customActionWithoutSudo="${customFilespec}${customArgs}"
 	elif customFilespec="$(getCustomFilespec -e "${customAction}")"; then
 	    local quotedCustomNotification; printf -v quotedCustomNotification %s "$customFilespec"
-	    submitInstallCommand "addLoginNotification --file $quotedCustomNotification --immediate" "$customDecoration"
+	    submitInstallCommand "addLoginNotification --file $quotedCustomNotification --immediate --no-blocking-gui" "$customDecoration"
 	    continue
 	fi
 	submitInstallCommand "${sudoPrefix:+${SUDO}${SUDO:+ }}${customActionWithoutSudo}" "$customDecoration"

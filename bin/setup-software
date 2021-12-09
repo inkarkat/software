@@ -886,7 +886,7 @@ runPostInstallCheck()
 	    local actionArgs="${actionWithoutSudo#"${actionWithoutSudoAndArgs}"}"
 	    ${sudoPrefix:+$SUDO} "$actionFilespec" $actionArgs
 	elif actionFilespec="$(getPostinstallFilespec -e "${action}")"; then
-	    addLoginNotification --file "$actionFilespec" --immediate
+	    addLoginNotification --file "$actionFilespec" --immediate --no-blocking-gui
 	else
 	    local name="${action#*:}"
 	    local prefix="${action%"$name"}"
