@@ -2,17 +2,17 @@
 
 configUsageTarUrl()
 {
-    : ${INSTALL_DIR:=~/install}
+    : ${INSTALL_REPO:=~/install}
     cat <<HELPTEXT
 tar+url: items consist of a
     /PATH/TO[/.]/DESTINATION[:MAX-AGE[SUFFIX]]:[[SUBDIR/]NAME/]PACKAGE-GLOB:[URL [...]]
 triplet / quadruplet.
 If /PATH/TO/DESTINATION does not yet exist, the tape or disk archive will be
 downloaded and extracted to create it.
-If ${INSTALL_DIR}/(SUBDIR|*)/(NAME|*)/PACKAGE-GLOB already exists
+If ${INSTALL_REPO}/(SUBDIR|*)/(NAME|*)/PACKAGE-GLOB already exists
 [and if it is younger than MAX-AGE[SUFFIX]], it will be used; else, the tape or
 disk archive from URL(s) (first that succeeds) will be downloaded (and put into
-${INSTALL_DIR}/* if it exists), and then extracted.
+${INSTALL_REPO}/* if it exists), and then extracted.
 If /PATH/TO/./DESTINATION contains a ..././... path element, /PATH/TO will be
 passed to tar as the extraction directory (to handle archives that contain
 relative subpaths and assume a certain installation base directory).
@@ -21,17 +21,17 @@ HELPTEXT
 }
 configUsageZipUrl()
 {
-    : ${INSTALL_DIR:=~/install}
+    : ${INSTALL_REPO:=~/install}
     cat <<HELPTEXT
 zip+url: items consist of a
     /PATH/TO[/.]/DESTINATION[:MAX-AGE[SUFFIX]]:[[SUBDIR/]NAME/]PACKAGE-GLOB:[URL [...]]
 triplet / quadruplet.
 If /PATH/TO/DESTINATION does not yet exist, the ZIP archive will be downloaded
 and extracted to create it.
-If ${INSTALL_DIR}/(SUBDIR|*)/(NAME|*)/PACKAGE-GLOB already exists
+If ${INSTALL_REPO}/(SUBDIR|*)/(NAME|*)/PACKAGE-GLOB already exists
 [and if it is younger than MAX-AGE[SUFFIX]], it will be used; else, the *.zip
 from URL(s) (first that succeeds) will be downloaded (and put into
-${INSTALL_DIR}/* if it exists), and then extracted.
+${INSTALL_REPO}/* if it exists), and then extracted.
 If /PATH/TO/./DESTINATION contains a ..././... path element, /PATH/TO will be
 passed to zip as the extraction directory (to handle archives that contain
 relative subpaths and assume a certain installation base directory).

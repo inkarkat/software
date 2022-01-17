@@ -2,15 +2,15 @@
 
 configUsageNotifyUrl()
 {
-    : ${INSTALL_DIR:=~/install}
+    : ${INSTALL_REPO:=~/install}
     cat <<HELPTEXT
 notify+url: items consist of a
     [MAX-AGE[SUFFIX]]:[[SUBDIR/]NAME/]FILE-GLOB:[URL [...]]
 triplet.
-If ${INSTALL_DIR}/(SUBDIR|*)/(NAME|*)/FILE-GLOB already exists
+If ${INSTALL_REPO}/(SUBDIR|*)/(NAME|*)/FILE-GLOB already exists
 [and if it is younger than MAX-AGE[SUFFIX]], it will be used; else, the
 notification file from URL(s) (first that succeeds) will be downloaded (and put
-into ${INSTALL_DIR}/* if it exists).
+into ${INSTALL_REPO}/* if it exists).
 If no URL is given and the notification file does not exist, the installation
 will fail.
 HELPTEXT

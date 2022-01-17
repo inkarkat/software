@@ -2,14 +2,14 @@
 
 configUsageAptKey()
 {
-    : ${INSTALL_DIR:=~/install}
+    : ${INSTALL_REPO:=~/install}
     cat <<HELPTEXT
 apt-key: items consist of a
     [MAX-AGE[SUFFIX]]:[[SUBDIR/]NAME/]KEY-GLOB:[URL]
 triplet.
-If ${INSTALL_DIR}/(SUBDIR|*)/(NAME|*)/KEY-GLOB already exists
+If ${INSTALL_REPO}/(SUBDIR|*)/(NAME|*)/KEY-GLOB already exists
 [and if it is younger than MAX-AGE[SUFFIX]], it will be used; else, the APT key
-from URL will be downloaded (and put into ${INSTALL_DIR}/*
+from URL will be downloaded (and put into ${INSTALL_REPO}/*
 if it exists).
 If no URL is given and the key does not exist, the installation will fail.
 Note: As there's no checking whether the key has already been installed, it is

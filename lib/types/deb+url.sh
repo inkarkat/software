@@ -2,15 +2,15 @@
 
 configUsageDebUrl()
 {
-    : ${INSTALL_DIR:=~/install}
+    : ${INSTALL_REPO:=~/install}
     cat <<HELPTEXT
 deb+url: items consist of a
     PACKAGE[:MAX-AGE[SUFFIX]]:[[SUBDIR/]NAME/]PACKAGE-GLOB:[URL [...]]
 triplet / quadruplet.
-If ${INSTALL_DIR}/(SUBDIR|*)/(NAME|*)/PACKAGE-GLOB already exists
+If ${INSTALL_REPO}/(SUBDIR|*)/(NAME|*)/PACKAGE-GLOB already exists
 [and if it is younger than MAX-AGE[SUFFIX]], it will be used; else, the *.deb
 from URL(s) (first that succeeds) will be downloaded (and put into
-${INSTALL_DIR}/* if it exists).
+${INSTALL_REPO}/* if it exists).
 If no URL is given and the package does not exist, the installation will fail.
 HELPTEXT
 }

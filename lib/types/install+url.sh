@@ -4,14 +4,14 @@
 
 configUsageInstallUrl()
 {
-    : ${INSTALL_DIR:=~/install}
+    : ${INSTALL_REPO:=~/install}
     cat <<HELPTEXT
 install+url: items consist of
     [INSTALL-ARGS ...] [MAX-AGE[SUFFIX]:][[SUBDIR/]NAME/]FILE-GLOB:[URL [...]] DEST-FILE
-If ${INSTALL_DIR}/(SUBDIR|*)/(NAME|*)/FILE-GLOB already exists
+If ${INSTALL_REPO}/(SUBDIR|*)/(NAME|*)/FILE-GLOB already exists
 [and if it is younger than MAX-AGE[SUFFIX]], it will be used; else, URL(s)
 (first that succeeds) will be downloaded (and put into
-${INSTALL_DIR}/* if it exists) and copied over to (absolute)
+${INSTALL_REPO}/* if it exists) and copied over to (absolute)
 DEST-FILE unless it already is up-to-date.
 If the downloaded file ends with *${SETUPSOFTWARE_INSTALL_TEMPLATE_EXTENSION}, environment variables
 (\$VARIABLE / \${VARIABLE}) and shell command substitutions (\$(COMMAND) /
