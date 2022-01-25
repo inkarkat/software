@@ -49,7 +49,7 @@ requirePathOrGlobCheck()
 	expandglob -- "$executableNameOrGlob" >/dev/null 2>&1
 }
 
-getRequirementExecutable()
+getQuotedRequirementExecutable()
 {
     local requirement="${1?}"; shift
     [ -n "$requirement" ] || return 1
@@ -58,7 +58,7 @@ getRequirementExecutable()
     do
 	local requirementFilespec="${dirspec}/require/${requirement}"
 	if [ -x "$requirementFilespec" ]; then
-	    printf %s "$requirementFilespec"
+	    printf %q "$requirementFilespec"
 	    return 0
 	fi
     done
@@ -90,24 +90,24 @@ isDefinitionAcceptedByRequire()
     else
 	local requirementWithoutSudo="${requirement#\$SUDO }"
 	local sudoPrefix="${requirement%"$requirementWithoutSudo"}"
-	local requirementFilespec requirementWithoutSudoAndArgs="${requirement%% *}"
-	if ! if requirementFilespec="$(getRequirementExecutable "$requirementWithoutSudo")"; then
-	    eval "${sudoPrefix:+${SUDO}${SUDO:+ }}\"\$requirementFilespec\""
-	elif requirementFilespec="$(getRequirementExecutable "${requirementWithoutSudo#!}")"; then
-	    eval "${sudoPrefix:+${SUDO}${SUDO:+ }}! \"\$requirementFilespec\""
-	elif requirementFilespec="$(getRequirementExecutable "${requirementWithoutSudoAndArgs}")"; then
-	    requirementArgs="${requirementWithoutSudo#"${requirementWithoutSudoAndArgs}"}"
-	    eval "${sudoPrefix:+${SUDO}${SUDO:+ }}\"\$requirementFilespec\" $requirementArgs"
-	elif requirementFilespec="$(getRequirementExecutable "${requirementWithoutSudoAndArgs#!}")"; then
-	    requirementArgs="${requirementWithoutSudo#"${requirementWithoutSudoAndArgs}"}"
-	    eval "${sudoPrefix:+${SUDO}${SUDO:+ }}! \"\$requirementFilespec\" $requirementArgs"
+	local quotedRequirementFilespec requirementWithoutSudoAndArgs="${requirement%% *}"
+	if ! if quotedRequirementFilespec="$(getQuotedRequirementExecutable "$requirementWithoutSudo")"; then
+	    invokeCheck "${sudoPrefix:+${SUDO}${SUDO:+ }}$quotedRequirementFilespec"
+	elif quotedRequirementFilespec="$(getQuotedRequirementExecutable "${requirementWithoutSudo#!}")"; then
+	    invokeCheck "${sudoPrefix:+${SUDO}${SUDO:+ }}! $quotedRequirementFilespec"
+	elif quotedRequirementFilespec="$(getQuotedRequirementExecutable "${requirementWithoutSudoAndArgs}")"; then
+	    requirementArgs="${requirementWithoutSudo#"${requirementWithoutSudoAndArgs} "}"
+	    invokeCheck "${sudoPrefix:+${SUDO}${SUDO:+ }}$quotedRequirementFilespec $requirementArgs"
+	elif quotedRequirementFilespec="$(getQuotedRequirementExecutable "${requirementWithoutSudoAndArgs#!}")"; then
+	    requirementArgs="${requirementWithoutSudo#"${requirementWithoutSudoAndArgs} "}"
+	    invokeCheck "${sudoPrefix:+${SUDO}${SUDO:+ }}! $quotedRequirementFilespec $requirementArgs"
 	elif [[ "$requirement" =~ ^\!.*\?$ ]]; then
 	    requirement="${requirement#\!}"
 	    ! requirePathOrGlobCheck "${requirement%\?}"
 	elif [[ "$requirement" =~ \?$ ]]; then
 	    requirePathOrGlobCheck "${requirement%\?}"
 	else
-	    eval "${sudoPrefix:+${SUDO}${SUDO:+ }}$requirementWithoutSudo"
+	    invokeCheck "${sudoPrefix:+${SUDO}${SUDO:+ }}$requirementWithoutSudo"
 	fi; then
 	    [ "$isVerbose" ] && messagePrintf 'Skipping because requirement %s is not passed: %s\n' "$requirement" "$definition"
 	    return 1

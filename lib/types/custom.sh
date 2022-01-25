@@ -94,10 +94,10 @@ hasCustom()
     local customDecoration="${decoration["custom:${customRecord}"]}"
     if customFilespec="$(getCustomFilespec -x "${customCheckWithoutSudo}")"; then
 	customCheckCommand="${sudoPrefix:+${SUDO}${SUDO:+ }}\"\$customFilespec\""
-	eval "$(decorateCommand "$customCheckCommand" "$customDecoration")"
+	invokeCheck "$(decorateCommand "$customCheckCommand" "$customDecoration")"
     elif [[ "$customCheckWithoutSudo" =~ ^\& ]] && customFilespec="$(getCustomFilespec -x "${customActionWithoutSudoAndArgs}${customCheckWithoutSudo#\&}")"; then
 	customCheckCommand="${sudoPrefix:+${SUDO}${SUDO:+ }}\"\$customFilespec\""
-	eval "$(decorateCommand "$customCheckCommand" "$customDecoration")"
+	invokeCheck "$(decorateCommand "$customCheckCommand" "$customDecoration")"
     elif [[ "$customCheck" =~ ^\!.*\?$ ]]; then
 	customCheck="${customCheck#\!}"
 	! customPathOrGlobCheck "${customCheck%\?}"
@@ -112,7 +112,7 @@ hasCustom()
 	fi
 
 	customCheckCommand="${sudoPrefix:+${SUDO}${SUDO:+ }}$customCheckWithoutSudo"
-	eval "$(decorateCommand "$customCheckCommand" "$customDecoration")"
+	invokeCheck "$(decorateCommand "$customCheckCommand" "$customDecoration")"
     fi
 }
 

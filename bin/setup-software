@@ -650,6 +650,11 @@ postinstallHook()
     set -o noglob
 }
 
+invokeCheck()
+{
+    invocationMessage --or-passthrough --clear all --message "Checking${subject:+ }${subject}... " --initial-delay 500ms --spinner --render-timer 1s --command "${1:?}"
+}
+
 hasItem()
 {
     local item="${1:?}"; shift
