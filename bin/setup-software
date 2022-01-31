@@ -1239,7 +1239,7 @@ do
 			onceMarker --query "$escapedId"
 			case $? in
 			    0)	;;  # The item already is installed, and the check has been run already.
-			    1)	# The item already is installed, but the check did not run yet.
+			    4)	# The item already is installed, but the check did not run yet.
 				addPostinstall "$rest"$'\n'"$lastRealItem" --post-or-once --id "$escapedId"
 				noMissingItemMessage="Only postinstall required for $subject"
 				;;
