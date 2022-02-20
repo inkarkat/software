@@ -125,7 +125,7 @@ installArchiveUrl()
 	local urlArgs=''; [ ${#urls[@]} -gt 0 ] && printf -v urlArgs ' --url %q' "${urls[@]}"
 
 	submitInstallCommand \
-	    "${extractionDirspecCreationCommand}${archiveDownloadInstallerCommand}${isBatch:+ --batch} ${archiveDownloadInstallerArgs[*]}${archiveDownloadInstallerArgs:+ }--destination-dir ${quotedExtractionDirspec}${applicationName:+ --application-name }${applicationName} --expression ${packageGlob}${maxAge:+ --max-age }$maxAge${urlArgs}${outputNameArg:+ --output }${outputNameArg}" \
+	    "${extractionDirspecCreationCommand}${archiveDownloadInstallerCommand}${isBatch:+ --batch}${archiveDownloadInstallerArgs:+ }${archiveDownloadInstallerArgs[*]} --destination-dir ${quotedExtractionDirspec}${applicationName:+ --application-name }${applicationName} --expression ${packageGlob}${maxAge:+ --max-age }$maxAge${urlArgs}${outputNameArg:+ --output }${outputNameArg}" \
 	    "${decoration["${prefix}:$archiveUrlRecord"]}"
     done
 }

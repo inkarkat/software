@@ -106,6 +106,10 @@ typeset -A addedInstallUrlActions=()
 typeset -a addedInstallUrlActionList=()
 hasInstallUrl()
 {
+    if [[ ! "$1" =~ ^[^:]+: ]]; then
+	printf >&2 'ERROR: Invalid install+url item: "install+url:%s"\n' "$1"
+	exit 3
+    fi
     local parse; parse="$(parseInstallUrl "${1:?}")" || exit 3
     local quotedFileAttributeArgs="${parse%%$'\n'*}"
     local fileDownloadInstallerCommand="${parse#*$'\n'}"
