@@ -27,7 +27,12 @@ fi
 typeset -A addedDebUrlPackages=()
 hasDebUrl()
 {
-    hasApt "${1%%:*}" || [ "${addedDebUrlPackages["${1:?}"]}" ]
+    if [[ ! "$1" =~ ^[^:]+:.+: ]]; then
+	printf >&2 'ERROR: Invalid deb+url item: "deb+url:%s"\n' "$1"
+	exit 3
+    fi
+
+    hasApt "${1%%:*}" || [ "${addedDebUrlPackages["$1"]}" ]
 }
 
 addDebUrl()
