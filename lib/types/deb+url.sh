@@ -24,7 +24,7 @@ if ! exists dpkg; then
     return
 fi
 
-typeset -A addedDebUrlPackages=()
+typeset -A addedDebUrlRecords=()
 hasDebUrl()
 {
     if [[ ! "$1" =~ ^[^:]+:.+: ]]; then
@@ -32,7 +32,7 @@ hasDebUrl()
 	exit 3
     fi
 
-    hasApt "${1%%:*}" || [ "${addedDebUrlPackages["$1"]}" ]
+    hasApt "${1%%:*}" || [ "${addedDebUrlRecords["$1"]}" ]
 }
 
 addDebUrl()
@@ -41,15 +41,15 @@ addDebUrl()
     local packageName="${debUrlRecord%%:*}"
 
     preinstallHook "$packageName"
-    addedDebUrlPackages["$debUrlRecord"]=t
+    addedDebUrlRecords["$debUrlRecord"]=t
     externallyAddedAptPackages["$packageName"]=t
     postinstallHook "$packageName"
 }
 
 installDebUrl()
 {
-    [ ${#addedDebUrlPackages[@]} -gt 0 ] || return
-    local debUrlRecord; for debUrlRecord in "${!addedDebUrlPackages[@]}"
+    [ ${#addedDebUrlRecords[@]} -gt 0 ] || return
+    local debUrlRecord; for debUrlRecord in "${!addedDebUrlRecords[@]}"
     do
 	local maxAge=
 	local applicationNamePackageGlobUrl="${debUrlRecord#*:}"
@@ -72,6 +72,6 @@ installDebUrl()
 	# and only the installation itself will be done through sudo.
 	submitInstallCommand \
 	    "deb-download-installer${isBatch:+ --batch}${applicationName:+ --application-name }${applicationName} --expression ${packageGlob}${maxAge:+ --max-age }$maxAge${urlArgs}${outputNameArg:+ --output }${outputNameArg}" \
-	    "${decoration["deb+url:${addedDebUrlPackages["$debUrlRecord"]}"]}"
+	    "${decoration["deb+url:${addedDebUrlRecords["$debUrlRecord"]}"]}"
     done
 }
