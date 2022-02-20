@@ -72,6 +72,6 @@ installDebUrl()
 	# and only the installation itself will be done through sudo.
 	submitInstallCommand \
 	    "deb-download-installer${isBatch:+ --batch}${applicationName:+ --application-name }${applicationName} --expression ${packageGlob}${maxAge:+ --max-age }$maxAge${urlArgs}${outputNameArg:+ --output }${outputNameArg}" \
-	    "${decoration["deb+url:${addedDebUrlRecords["$debUrlRecord"]}"]}"
+	    "${decoration["deb+url:$debUrlRecord"]}"
     done
 }
