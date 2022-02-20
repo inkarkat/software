@@ -28,6 +28,31 @@ configUsageAutostartUrl()
     configUsageSpecialInstallUrl autostart+url "the user's startup applications"
 }
 
+getSpecialInstallCommandFromUrlRecord()
+{
+    local specialDownloadInstallerCommand="${1:?}"; shift
+    local specialInstallUrlRecord="${1:?}"; shift
+
+    local maxAge=
+    local specialNamePackageGlobUrl="$specialInstallUrlRecord"
+    if [[ "$specialNamePackageGlobUrl" =~ ^[0-9]+([smhdwyg]|mo): ]]; then
+	maxAge="${BASH_REMATCH[0]%:}"
+	specialNamePackageGlobUrl="${specialNamePackageGlobUrl#"${BASH_REMATCH[0]}"}"
+    fi
+    local urlList="${specialNamePackageGlobUrl#*:}"
+    local specialNameAndPackageGlob="${specialNamePackageGlobUrl%:$urlList}"
+    local packageGlob="${specialNameAndPackageGlob##*/}"
+    local specialName="${specialNameAndPackageGlob%"$packageGlob"}"
+    local outputNameArg=; isglob "$packageGlob" || printf -v outputNameArg %q "$packageGlob"
+    printf -v packageGlob %q "$packageGlob"
+    specialName="${specialName%/}"
+    printf -v specialName %q "$specialName"
+    typeset -a urls=(); IFS=' ' read -r -a urls <<<"$urlList"
+    local urlArgs=''; [ ${#urls[@]} -gt 0 ] && printf -v urlArgs ' --url %q' "${urls[@]}"
+
+    printf '%s\n' "${specialDownloadInstallerCommand}${isBatch:+ --batch} ${specialName:+ --application-name }${specialName} --expression ${packageGlob}${maxAge:+ --max-age }$maxAge${urlArgs}${outputNameArg:+ --output }${outputNameArg}"
+}
+
 typeset -A addedIconUrlPackages=()
 typeset -A addedStartmenuUrlPackages=()
 typeset -A addedAutostartUrlPackages=()
@@ -87,25 +112,9 @@ installSpecialInstallUrl()
     eval "typeset -a addedSpecialInstallUrlRecords=\"\${!${specialInstallUrlPackagesDictName}[@]}\""
     local specialInstallUrlRecord; for specialInstallUrlRecord in "${addedSpecialInstallUrlRecords[@]}"
     do
-	local maxAge=
-	local specialNamePackageGlobUrl="$specialInstallUrlRecord"
-	if [[ "$specialNamePackageGlobUrl" =~ ^[0-9]+([smhdwyg]|mo): ]]; then
-	    maxAge="${BASH_REMATCH[0]%:}"
-	    specialNamePackageGlobUrl="${specialNamePackageGlobUrl#"${BASH_REMATCH[0]}"}"
-	fi
-	local urlList="${specialNamePackageGlobUrl#*:}"
-	local specialNameAndPackageGlob="${specialNamePackageGlobUrl%:$urlList}"
-	local packageGlob="${specialNameAndPackageGlob##*/}"
-	local specialName="${specialNameAndPackageGlob%"$packageGlob"}"
-	local outputNameArg=; isglob "$packageGlob" || printf -v outputNameArg %q "$packageGlob"
-	printf -v packageGlob %q "$packageGlob"
-	specialName="${specialName%/}"
-	printf -v specialName %q "$specialName"
-	typeset -a urls=(); IFS=' ' read -r -a urls <<<"$urlList"
-	local urlArgs=''; [ ${#urls[@]} -gt 0 ] && printf -v urlArgs ' --url %q' "${urls[@]}"
 
 	submitInstallCommand \
-	    "${specialDownloadInstallerCommand}${isBatch:+ --batch} ${specialName:+ --application-name }${specialName} --expression ${packageGlob}${maxAge:+ --max-age }$maxAge${urlArgs}${outputNameArg:+ --output }${outputNameArg}" \
+	    "$(getSpecialInstallCommandFromUrlRecord "$specialDownloadInstallerCommand" "$specialInstallUrlRecord")" \
 	    "${decoration["${prefix}:$specialInstallUrlRecord"]}"
     done
 }
