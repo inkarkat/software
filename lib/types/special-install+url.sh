@@ -58,26 +58,40 @@ typeset -A addedStartmenuUrlPackages=()
 typeset -A addedAutostartUrlPackages=()
 hasSpecialInstallUrl()
 {
+    local prefix="${1:?}"; shift
+    local specialDownloadInstallerCommand="${1:?}"; shift
     local specialInstallUrlPackagesDictName="${1:?}"; shift
     local specialInstallUrlRecord="${1:?}"; shift
-    local destinationFilespec="${specialInstallUrlRecord%%:*}"
-    if [[ "$destinationFilespec" =~ ^(.*)/\.(/.*)?$ ]]; then
-	destinationFilespec="${BASH_REMATCH[1]}${BASH_REMATCH[2]}"
+
+    if [[ ! "$specialInstallUrlRecord" =~ ^[^:]+: ]]; then
+	printf >&2 'ERROR: Invalid %s item: "%s:%s"\n' "$prefix" "$prefix" "$specialInstallUrlRecord"
+	exit 3
     fi
 
-    [ -e "$destinationFilespec" ] || eval "[ \"\${${specialInstallUrlPackagesDictName}[\"\$specialInstallUrlRecord\"]}\" ]"
+    eval "[ \"\${${specialInstallUrlPackagesDictName}[\"\$specialInstallUrlRecord\"]}\" ]" && return 0
+
+    # As there's no (fixed) destination filespec to test, we need to run the
+    # special download-installer command with the --check option. This will
+    # already download the file, so it's quite expensive for a test. However,
+    # this type will mostly be used as a postinstall: item, so it will only run
+    # after the application itself got installed (and then both the check and
+    # the installation will happen right after each other).
+    local checkCommand="$(getSpecialInstallCommandFromUrlRecord "$specialDownloadInstallerCommand --check" "$specialInstallUrlRecord")"
+    [ -n "$checkCommand" ] || exit 3
+    local decoratedCheckCommand="$(decorateCommand "$checkCommand" "${decoration["${prefix}:$specialInstallUrlRecord"]}")"
+    eval "$decoratedCheckCommand"
 }
 hasIconUrl()
 {
-    hasSpecialInstallUrl addedIconUrlPackages "$@"
+    hasSpecialInstallUrl icon+url icon-download-installer addedIconUrlPackages "$@"
 }
 hasStartmenuUrl()
 {
-    hasSpecialInstallUrl addedStartmenuUrlPackages "$@"
+    hasSpecialInstallUrl startmenu+url desktop-entry-download-installer addedStartmenuUrlPackages "$@"
 }
 hasAutostartUrl()
 {
-    hasSpecialInstallUrl addedAutostartUrlPackages "$@"
+    hasSpecialInstallUrl autostart+url 'desktop-entry-download-installer --autostart' addedAutostartUrlPackages "$@"
 }
 
 addSpecialInstallUrl()
