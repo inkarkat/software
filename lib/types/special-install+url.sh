@@ -50,7 +50,7 @@ getSpecialInstallCommandFromUrlRecord()
     typeset -a urls=(); IFS=' ' read -r -a urls <<<"$urlList"
     local urlArgs=''; [ ${#urls[@]} -gt 0 ] && printf -v urlArgs ' --url %q' "${urls[@]}"
 
-    printf '%s\n' "${specialDownloadInstallerCommand}${isBatch:+ --batch} ${specialName:+ --application-name }${specialName} --expression ${packageGlob}${maxAge:+ --max-age }$maxAge${urlArgs}${outputNameArg:+ --output }${outputNameArg}"
+    printf '%s\n' "${specialDownloadInstallerCommand}${isBatch:+ --batch}${specialName:+ --application-name }${specialName} --expression ${packageGlob}${maxAge:+ --max-age }$maxAge${urlArgs}${outputNameArg:+ --output }${outputNameArg}"
 }
 
 typeset -A addedIconUrlPackages=()
