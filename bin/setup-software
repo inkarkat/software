@@ -25,7 +25,7 @@ printShortUsage()
     echo
     printf 'Usage: %q %s | tee install-script.sh && sh install-script.sh\n' "$(basename "$1")" "[--check|--dry-run] [-q|--quiet|--silence-no-definitions|-v|--verbose] [-y|--yes|--recall-only] [-b|--batch] [-s|--select DEFINITION [-s ...]] [--base-dir BASE-DIR] [--name NAME]${commandLineOptionExtensions:+ }${commandLineOptionExtensions}${commandLineParameterExtensions:+ }${commandLineParameterExtensions} -a|--all|--group-recall-only|GROUP-NAME|GROUP-FILESPEC [...]"
     echo
-    printf 'Usage: %q %s\n' "$(basename "$1")" '-e|--execute [...]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '-p|--print|-e|--execute [...]'
     echo
     echo 'Suggestions for automation in a script:'
     echo
@@ -71,6 +71,9 @@ HELPDESCRIPTION
 			installation action would be required; failure means
 			not), and also print related messages; just omit the
 			installation commands.
+    --print|-p		Just print the installation commands to standard output;
+			by default, the command will balk when output is to the
+			terminal, as it is supposed to be captured and executed.
     --execute|-e	Directly execute the installation commands (as long as
 			they succeed; like with set -e) instead of just printing
 			them.
@@ -990,6 +993,7 @@ typeset -a selections=()
 typeset -a specialHandlingCommands=()
 specialHandlingFinalCommand=
 isBatch=
+isPrint=
 isExecute=
 isQuiet=
 isSilenceNoDefinitions=
@@ -1010,6 +1014,7 @@ do
 	--dry-run)	shift; action=false;;
 	--base-dir)	recursiveArgs+=("$1" "$2"); shift; baseDir="${1:?}"; shift;;
 	--add-base-dir)	recursiveArgs+=("$1" "$2"); shift; additionalBaseDirs=("${1:?}" "${additionalBaseDirs[@]}"); shift;;
+	--print|-p)	recursiveArgs+=("$1"); shift; isPrint=t;;
 	--execute|-e)	recursiveArgs+=("$1"); shift; isExecute=t;;
 	--quiet|-q)	recursiveArgs+=("$1"); shift; isQuiet=t; messagePrintf() { :; };;   # Optimization: Make messagePrintf() a no-op.
 	--silence-no-definitions)
@@ -1099,6 +1104,17 @@ if [ "$isQuiet" ]; then
 	printUsage "$0"
 	exit 2
     fi >&2
+fi
+if [ -t 1 ] && [ ! "$isExecute" ] && [ ! "$isPrint" ]; then
+    echo >&2 'ERROR: Will not output installation commands to the terminal without -p|--print; either redirect output or directly execute via -e|--execute.'
+    echo >&2
+    printUsage "$0" >&2
+    exit 2
+elif [ "$isExecute" ] && [ "$isPrint" ]; then
+    echo >&2 'ERROR: Cannot combine -e|--execute with -p|--print.'
+    echo >&2
+    printUsage "$0" >&2
+    exit 2
 fi
 typeset -a preinstallActionsDirspecs=()
 typeset -a postinstallActionsDirspecs=()
