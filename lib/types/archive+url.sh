@@ -146,7 +146,7 @@ installArchiveUrl()
 }
 installTarUrl()
 {
-    installArchiveUrl tar+url tar-download-installer addedTarUrlPackages "$@"
+    installArchiveUrl tar+url 'tar-download-installer --no-same-owner' addedTarUrlPackages "$@"
 }
 installZipUrl()
 {
