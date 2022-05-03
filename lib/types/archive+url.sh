@@ -117,6 +117,7 @@ installArchiveUrl()
 		[ -w "$extractionDirspec" ] || archiveDownloadInstallerArgs+=(--sudo)
 	    else
 		extractionDirspecCreationCommand="${SUDO}${SUDO:+ }mkdir --parents -- $quotedExtractionDirspec && "
+		[ -z "$SUDO" ] || archiveDownloadInstallerArgs+=(--sudo)
 	    fi
 	    [ $stripPathComponentsCount -eq 0 ] || additionalArchiveArgs+=("--strip-components=$stripPathComponentsCount")
 	fi
