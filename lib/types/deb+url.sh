@@ -11,6 +11,7 @@ If ${INSTALL_REPO}/(SUBDIR|*)/(NAME|*)/PACKAGE-GLOB already exists
 [and if it is younger than MAX-AGE[SUFFIX]], it will be used; else, the *.deb
 from URL(s) (first that succeeds) will be downloaded (and put into
 ${INSTALL_REPO}/* if it exists).
+You can use %ARCH% to refer to the machine architecture${debArch:+ (}${debArch}${debArch:+)} in PACKAGE-GLOB and URL.
 If no URL is given and the package does not exist, the installation will fail.
 HELPTEXT
 }
@@ -23,6 +24,15 @@ if ! exists dpkg; then
     installDebUrl() { :; }
     return
 fi
+
+readonly debArch="$(dpkg --print-architecture)"
+
+expandDebKeywords()
+{
+    local debLine="${1:?}"; shift
+    debLine="${debLine//%ARCH%/$debArch}"
+    printf %s "$debLine"
+}
 
 typeset -A addedDebUrlRecords=()
 hasDebUrl()
@@ -62,10 +72,10 @@ installDebUrl()
 	local packageGlob="${applicationNameAndPackageGlob##*/}"
 	local applicationName="${applicationNameAndPackageGlob%"$packageGlob"}"
 	local outputNameArg=; isglob "$packageGlob" || printf -v outputNameArg %q "$packageGlob"
-	printf -v packageGlob %q "$packageGlob"
+	printf -v packageGlob %q "$(expandDebKeywords "$packageGlob")"
 	applicationName="${applicationName%/}"
 	printf -v applicationName %q "$applicationName"
-	typeset -a urls=(); IFS=' ' read -r -a urls <<<"$urlList"
+	typeset -a urls=(); IFS=' ' read -r -a urls <<<"$(expandDebKeywords "$urlList")"
 	local urlArgs=''; [ ${#urls[@]} -gt 0 ] && printf -v urlArgs ' --url %q' "${urls[@]}"
 
 	# Note: No sudo here, as the downloading will happen as the current user
