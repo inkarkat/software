@@ -837,8 +837,9 @@ runPreInstallCheck()
     local actionWithoutSudoAndArgs="${actionWithoutSudo%% *}"
     local actionFilespec
     if actionFilespec="$(getPreinstallFilespec -x "${actionWithoutSudoAndArgs}")"; then
-	actionWithoutSudo="${actionFilespec}${actionWithoutSudo#"$actionWithoutSudoAndArgs"}"
-	addUniqueToBeInstalledCommand "${sudoPrefix:+${SUDO}${SUDO:+ }}${actionWithoutSudo}"
+	printf -v quotedActionFilespec '%q' "$actionFilespec"
+	local actionArgs="${actionWithoutSudo#"${actionWithoutSudoAndArgs}"}"
+	addUniqueToBeInstalledCommand "${sudoPrefix:+${SUDO}${SUDO:+ }}${quotedActionFilespec}${actionArgs:+ }${actionArgs}"
     elif actionFilespec="$(getPreinstallFilespec -e "${action}")"; then
 	local quotedPreinstallNotification; printf -v quotedPreinstallNotification %q "$actionFilespec"
 	addUniqueToBeInstalledCommand "addLoginNotification --file $quotedPreinstallNotification --immediate --no-blocking-gui"
@@ -897,8 +898,9 @@ runPostInstallCheck()
 	    printf -v quotedActionFilespec '%q' "$actionFilespec"
 	    addUniqueToBeInstalledCommand "$quotedActionFilespec"
 	elif actionFilespec="$(getPostinstallFilespec -x "${actionWithoutSudoAndArgs}")"; then
+	    printf -v quotedActionFilespec '%q' "$actionFilespec"
 	    local actionArgs="${actionWithoutSudo#"${actionWithoutSudoAndArgs}"}"
-	    addUniqueToBeInstalledCommand "${sudoPrefix:+${SUDO}${SUDO:+ }}${actionFilespec}${actionArgs:+ }${actionArgs}"
+	    addUniqueToBeInstalledCommand "${sudoPrefix:+${SUDO}${SUDO:+ }}${quotedActionFilespec}${actionArgs:+ }${actionArgs}"
 	elif actionFilespec="$(getPostinstallFilespec -e "${action}")"; then
 	    local quotedPostinstallNotification; printf -v quotedPostinstallNotification %q "$actionFilespec"
 	    addUniqueToBeInstalledCommand "addLoginNotification --file $quotedPostinstallNotification --immediate --no-blocking-gui"
