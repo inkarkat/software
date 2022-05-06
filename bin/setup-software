@@ -1060,8 +1060,8 @@ do
 			if [ "$1" != '--action' ]; then
 			    printf >&2 'ASSERT: No --action following after --pre %q.\n' "$item"; exit 3
 			fi
-			shift; action="$1"; shift
-			printf -v specialCommand 'runPreInstallCheck %q %q' "$item" "$action"
+			shift; specialAction="$1"; shift
+			printf -v specialCommand 'runPreInstallCheck %q %q' "$item" "$specialAction"
 			specialHandlingCommands+=("$specialCommand")
 			specialHandlingFinalCommand='generateAndPrintInstallCommands'
 			;;
@@ -1069,8 +1069,8 @@ do
 			if [ "$1" != '--action' ]; then
 			    printf >&2 'ASSERT: No --action following after --post %q.\n' "$item"; exit 3
 			fi
-			shift; action="$1"; shift
-			printf -v specialCommand 'runPostInstallCheck %q %q' "$item" "$action"
+			shift; specialAction="$1"; shift
+			printf -v specialCommand 'runPostInstallCheck %q %q' "$item" "$specialAction"
 			specialHandlingCommands+=("${specialCommand% }")
 			specialHandlingFinalCommand='generateAndPrintInstallCommands'
 			;;
@@ -1078,12 +1078,12 @@ do
 			if [ "$1" != '--action' ]; then
 			    printf >&2 'ASSERT: No --action following after --post-or-once %q.\n' "$item"; exit 3
 			fi
-			shift; action="$1"; shift
+			shift; specialAction="$1"; shift
 			if [ "$1" != '--id' ]; then
 			    printf >&2 'ASSERT: No --id following after --post-or-once %q.\n' "$item"; exit 3
 			fi
 			shift; id="$1"; shift
-			printf -v specialCommand 'runPostInstallCheck %q %q && onceMarker --update %q' "$item" "$action" "$id"
+			printf -v specialCommand 'runPostInstallCheck %q %q && onceMarker --update %q' "$item" "$specialAction" "$id"
 			specialHandlingCommands+=("${specialCommand% }")
 			specialHandlingFinalCommand='generateAndPrintInstallCommands'
 			;;
