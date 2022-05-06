@@ -840,7 +840,7 @@ runPreInstallCheck()
 	actionWithoutSudo="${actionFilespec}${actionWithoutSudo#"$actionWithoutSudoAndArgs"}"
 	addUniqueToBeInstalledCommand "${sudoPrefix:+${SUDO}${SUDO:+ }}${actionWithoutSudo}"
     elif actionFilespec="$(getPreinstallFilespec -e "${action}")"; then
-	local quotedPreinstallNotification; printf -v quotedPreinstallNotification %s "$actionFilespec"
+	local quotedPreinstallNotification; printf -v quotedPreinstallNotification %q "$actionFilespec"
 	addUniqueToBeInstalledCommand "addLoginNotification --file $quotedPreinstallNotification --immediate --no-blocking-gui"
     else
 	local name="${action#*:}"
