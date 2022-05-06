@@ -894,12 +894,14 @@ runPostInstallCheck()
     local actionFilespec
     if [ "$isForce" ] || hasItem "$item"; then
 	if actionFilespec="$(getPostinstallFilespec -x "${action}")"; then
-	    "$actionFilespec"
+	    printf -v quotedActionFilespec '%q' "$actionFilespec"
+	    addUniqueToBeInstalledCommand "$quotedActionFilespec"
 	elif actionFilespec="$(getPostinstallFilespec -x "${actionWithoutSudoAndArgs}")"; then
 	    local actionArgs="${actionWithoutSudo#"${actionWithoutSudoAndArgs}"}"
-	    ${sudoPrefix:+$SUDO} "$actionFilespec" $actionArgs
+	    addUniqueToBeInstalledCommand "${sudoPrefix:+${SUDO}${SUDO:+ }}${actionFilespec}${actionArgs:+ }${actionArgs}"
 	elif actionFilespec="$(getPostinstallFilespec -e "${action}")"; then
-	    addLoginNotification --file "$actionFilespec" --immediate --no-blocking-gui
+	    local quotedPostinstallNotification; printf -v quotedPostinstallNotification %q "$actionFilespec"
+	    addUniqueToBeInstalledCommand "addLoginNotification --file $quotedPostinstallNotification --immediate --no-blocking-gui"
 	else
 	    local name="${action#*:}"
 	    local prefix="${action%"$name"}"
@@ -915,7 +917,7 @@ runPostInstallCheck()
 		hasOrAddItems "$action" || \
 		    messagePrintf 'Skipping postinstall action, because %s indicated that no action is needed.\n' "$action"
 	    else
-		eval "$action"
+		addUniqueToBeInstalledCommand "${sudoPrefix:+${SUDO}${SUDO:+ }}${actionWithoutSudo}"
 	    fi
 	fi || return 1
     else
