@@ -8,8 +8,8 @@ configUsageAptRepo()
 apt-repo: items consist of a
     NAME:'DEB-LINE'
 pair, where DEB-LINE will be installed in ${APT_SOURCES_DIR}/NAME.list
-You can use %ARCH% to refer to the machine architecture${arch:+ (}${arch}${arch:+)} and %CODENAME%
-to refer to the current release's codename${codename:+ (}${codename}${codename:+)}.
+You can use %ARCH% to refer to the machine architecture${aptRepoArch:+ (}${aptRepoArch}${aptRepoArch:+)} and %CODENAME%
+to refer to the current release's aptRepoCodename${aptRepoCodename:+ (}${aptRepoCodename}${aptRepoCodename:+)}.
 Note: As this is only used for installing, it's recommended to use this with a
 preinstall: prefix.
 HELPTEXT
@@ -24,14 +24,14 @@ if ! exists apt; then
     return
 fi
 
-readonly arch="$(dpkg --print-architecture)"
-readonly codename="$(lsb_release --short --codename)"
+readonly aptRepoArch="$(dpkg --print-architecture)"
+readonly aptRepoCodename="$(lsb_release --short --codename)"
 
 expandDebLine()
 {
     local debLine="${1:?}"; shift
-    debLine="${debLine//%ARCH%/$arch}"
-    debLine="${debLine//%CODENAME%/$codename}"
+    debLine="${debLine//%ARCH%/$aptRepoArch}"
+    debLine="${debLine//%CODENAME%/$aptRepoCodename}"
     printf %s "$debLine"
 }
 
