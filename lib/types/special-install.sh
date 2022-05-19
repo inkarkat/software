@@ -8,7 +8,11 @@ configUsageSpecialInstall()
     cat <<HELPTEXT
 ${prefix}: items consist of createDesktopEntry arguments
     -e|--exec COMMAND [-n|--name NAME] [-i|--icon ICON] [-c|--comment COMMENT] [-t|--category CATEGORY [-t ...]] DESKTOP-ENTRY
-and the resulting desktop entry is added to ${specialWhere}.
+or just
+    SOURCE-FILE DESKTOP-ENTRY
+SOURCE-FILE is either relative to the ./etc/files directory tree, or an absolute
+filespec.
+In both cases, the resulting DESKTOP-ENTRY is added to ${specialWhere}.
 HELPTEXT
 }
 configUsageStartmenu()
@@ -18,6 +22,24 @@ configUsageStartmenu()
 configUsageAutostart()
 {
     configUsageSpecialInstall autostart "the user's startup applications"
+}
+
+getSpecialSourceFilespec()
+{
+    local sourceFile="${1:?}"; shift
+
+    local dirspec; for dirspec in "${additionalBaseDirs[@]}" "$baseDir"
+    do
+	local sourceFilespec="${dirspec}/files/${sourceFile}"
+	if [ -e "$sourceFilespec" ]; then
+	    printf %s "$sourceFilespec"
+	    return 0
+	fi
+    done
+
+    [ -e "$sourceFile" ] && \
+	printf %s "$sourceFile" || \
+	return 1
 }
 
 typeset -A addedStartmenuEntries=()
@@ -31,11 +53,11 @@ hasSpecialInstall()
 
     eval "[ \"\${${specialInstallEntriesDictName}[\"\$specialInstallRecord\"]}\" ]" && return 0
 
-    # Delegate the check to the addTo... commands with --check option (which
-    # only test the target's existence and do not need a valid source file);
-    # createDesktopEntry itself has no such check. These commands encapsulate
-    # the destination locations, avoiding that we need to duplicate them here
-    # one more.
+    # Always delegate the check to the addTo... commands with --check option
+    # (which only test the target's existence and do not need a valid source
+    # file); createDesktopEntry itself has no such check. These commands
+    # encapsulate the destination locations, avoiding that we need to duplicate
+    # them here one more.
     eval "set -- $specialInstallRecord"
     local specialName="${!#}"
     local checkCommand="$specialInstallerCommand --check ${specialName%.desktop}.desktop"
@@ -75,25 +97,34 @@ addAutostart()
 installSpecialInstall()
 {
     local prefix="${1:?}"; shift
+    local specialCreatorCommand="${1:?}"; shift
     local specialInstallerCommand="${1:?}"; shift
     local specialInstallEntriesDictName="${1:?}"; shift
     eval "[ \${#${specialInstallEntriesDictName}[@]} -gt 0 ]" || return
     eval "typeset -a addedSpecialInstallRecords=\"\${!${specialInstallEntriesDictName}[@]}\""
     local specialInstallRecord; for specialInstallRecord in "${addedSpecialInstallRecords[@]}"
     do
+	eval "set -- $specialInstallRecord"
+	local specialSourceFilespec specialCommand="$specialCreatorCommand"
+	if [ $# -eq 2 ] && specialSourceFilespec="$(getSpecialSourceFilespec "$1")"; then
+	    # This is the "SOURCE-FILE DESKTOP-ENTRY" variant. Reassemble the
+	    # specialInstallRecord with the expanded specialSourceFilespec.
+	    printf -v specialInstallRecord '%q %q' "$specialSourceFilespec" "$2"
+	    specialCommand="$specialInstallerCommand"
+	fi
 
 	submitInstallCommand \
-	    "$specialInstallerCommand $specialInstallRecord" \
+	    "$specialCommand $specialInstallRecord" \
 	    "${decoration["${prefix}:$specialInstallRecord"]}"
     done
 }
 installStartmenu()
 {
-    installSpecialInstall startmenu createDesktopEntry addedStartmenuEntries "$@"
+    installSpecialInstall startmenu createDesktopEntry addToStartMenu addedStartmenuEntries "$@"
 }
 installAutostart()
 {
-    installSpecialInstall autostart 'createDesktopEntry --autostart' addedAutostartEntries "$@"
+    installSpecialInstall autostart 'createDesktopEntry --autostart' addToAutostart addedAutostartEntries "$@"
 }
 
 typeRegistry+=([startmenu:]=Startmenu)
