@@ -17,9 +17,11 @@ HELPTEXT
 parseAppImageUrl()
 {
     typeset -a fileAttributeArgs=(--sudo --preserve-timestamps)
-    local item="${1:?}"; shift
+    local appimageUrlItem="${1:?}"; shift
+    eval "set -- $appimageUrlItem"
+
     local maxAge=
-    local applicationNameFileGlobUrl="$item"
+    local applicationNameFileGlobUrl="${1:?}"; shift
     if [[ "$applicationNameFileGlobUrl" =~ ^[0-9]+([smhdwyg]|mo): ]]; then
 	maxAge="${BASH_REMATCH[0]%:}"
 	applicationNameFileGlobUrl="${applicationNameFileGlobUrl#"${BASH_REMATCH[0]}"}"
@@ -38,7 +40,7 @@ parseAppImageUrl()
     local destinationName
     if [[ "${!#}" =~ / ]]; then
 	if isglob "$fileGlob"; then
-	    printf >&2 'ERROR: Invalid appimage+url item; a real FILE-GLOB needs a DEST-FILENAME: "appimage+url:%s"\n' "$item"
+	    printf >&2 'ERROR: Invalid appimage+url item; a real FILE-GLOB needs a DEST-FILENAME: "appimage+url:%s"\n' "$appimageUrlItem"
 	    exit 3
 	else
 	    destinationName="${fileGlob%.AppImage}"
