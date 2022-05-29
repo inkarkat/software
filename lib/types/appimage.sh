@@ -86,10 +86,9 @@ addAppImageUrl()
 	IFS=$'\n' read -r destinationName
     } <<<"$parse"
 
-    # Note: Do not support pre-/postinstall hooks here (yet), as there's no good
-    # short "name" that we could use. The DEST-FILE's whole path may be a bit
-    # long, and just the filename itself may be ambiguous.
+    preinstallHook "$destinationName"
     addedAppImageUrlActions["$fileDownloadInstallerCommand"]="$appimageUrlRecord"
+    postinstallHook "$destinationName"
 
     addedAppImageUrlActionList+=("$fileDownloadInstallerCommand")
 }
