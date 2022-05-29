@@ -17,11 +17,19 @@ HELPTEXT
 }
 configUsageIconUrl()
 {
-    configUsageSpecialInstallUrl icon+url "the user's application icons"
+    configUsageSpecialInstallUrl icon+url "the system-wide application icons"
+}
+configUsageUserIconUrl()
+{
+    configUsageSpecialInstallUrl usericon+url "the user's application icons"
 }
 configUsageStartmenuUrl()
 {
-    configUsageSpecialInstallUrl startmenu+url "the user's start menu"
+    configUsageSpecialInstallUrl startmenu+url "the system-wide start menu"
+}
+configUsageStartmenuUrl()
+{
+    configUsageSpecialInstallUrl userstartmenu+url "the user's start menu"
 }
 configUsageAutostartUrl()
 {
@@ -54,7 +62,9 @@ getSpecialInstallCommandFromUrlRecord()
 }
 
 typeset -A addedIconUrlPackages=()
+typeset -A addedUserIconUrlPackages=()
 typeset -A addedStartmenuUrlPackages=()
+typeset -A addedUserStartmenuUrlPackages=()
 typeset -A addedAutostartUrlPackages=()
 hasSpecialInstallUrl()
 {
@@ -83,7 +93,11 @@ hasSpecialInstallUrl()
 }
 hasIconUrl()
 {
-    hasSpecialInstallUrl icon+url icon-download-installer addedIconUrlPackages "$@"
+    hasSpecialInstallUrl icon+url 'icon-download-installer --system-wide' addedIconUrlPackages "$@"
+}
+hasUserIconUrl()
+{
+    hasSpecialInstallUrl usericon+url icon-download-installer addedIconUrlPackages "$@"
 }
 hasStartmenuUrl()
 {
@@ -108,9 +122,17 @@ addIconUrl()
 {
     addSpecialInstallUrl addedIconUrlPackages "$@"
 }
+addUserIconUrl()
+{
+    addSpecialInstallUrl addedUserIconUrlPackages "$@"
+}
 addStartmenuUrl()
 {
     addSpecialInstallUrl addedStartmenuUrlPackages "$@"
+}
+addUserStartmenuUrl()
+{
+    addSpecialInstallUrl addedUserStartmenuUrlPackages "$@"
 }
 addAutostartUrl()
 {
@@ -134,11 +156,19 @@ installSpecialInstallUrl()
 }
 installIconUrl()
 {
-    installSpecialInstallUrl icon+url icon-download-installer addedIconUrlPackages "$@"
+    installSpecialInstallUrl icon+url "${SUDO/#sudo/sudoWithUnixhome}${SUDO:+ }icon-download-installer --system-wide" addedIconUrlPackages "$@"
+}
+installUserIconUrl()
+{
+    installSpecialInstallUrl usericon+url icon-download-installer addedIconUrlPackages "$@"
 }
 installStartmenuUrl()
 {
-    installSpecialInstallUrl startmenu+url desktop-entry-download-installer addedStartmenuUrlPackages "$@"
+    installSpecialInstallUrl startmenu+url "${SUDO/#sudo/sudoWithUnixhome}${SUDO:+ }desktop-entry-download-installer --system-wide" addedStartmenuUrlPackages "$@"
+}
+installUserStartmenuUrl()
+{
+    installSpecialInstallUrl userstartmenu+url desktop-entry-download-installer addedStartmenuUrlPackages "$@"
 }
 installAutostartUrl()
 {
@@ -146,8 +176,12 @@ installAutostartUrl()
 }
 
 typeRegistry+=([icon+url:]=IconUrl)
+typeRegistry+=([usericon+url:]=UserIconUrl)
 typeRegistry+=([startmenu+url:]=StartmenuUrl)
+typeRegistry+=([userstartmenu+url:]=UserStartmenuUrl)
 typeRegistry+=([autostart+url:]=AutostartUrl)
 typeInstallOrder+=([891]=IconUrl)
-typeInstallOrder+=([892]=StartmenuUrl)
-typeInstallOrder+=([893]=AutostartUrl)
+typeInstallOrder+=([892]=UserIconUrl)
+typeInstallOrder+=([893]=StartmenuUrl)
+typeInstallOrder+=([894]=UserStartmenuUrl)
+typeInstallOrder+=([895]=AutostartUrl)

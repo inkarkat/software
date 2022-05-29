@@ -17,7 +17,11 @@ HELPTEXT
 }
 configUsageStartmenu()
 {
-    configUsageSpecialInstall startmenu "the user's start menu"
+    configUsageSpecialInstall startmenu "the system-wide start menu"
+}
+configUsageUserStartmenu()
+{
+    configUsageSpecialInstall userstartmenu "the user's start menu"
 }
 configUsageAutostart()
 {
@@ -43,6 +47,7 @@ getSpecialSourceFilespec()
 }
 
 typeset -A addedStartmenuEntries=()
+typeset -A addedUserStartmenuEntries=()
 typeset -A addedAutostartEntries=()
 hasSpecialInstall()
 {
@@ -66,7 +71,11 @@ hasSpecialInstall()
 }
 hasStartmenu()
 {
-    hasSpecialInstall startmenu addToStartMenu addedStartmenuEntries "$@"
+    hasSpecialInstall startmenu 'addToStartMenu --system-wide' addedStartmenuEntries "$@"
+}
+hasUserStartmenu()
+{
+    hasSpecialInstall userstartmenu addToStartMenu addedUserStartmenuEntries "$@"
 }
 hasAutostart()
 {
@@ -88,6 +97,10 @@ addSpecialInstall()
 addStartmenu()
 {
     addSpecialInstall addedStartmenuEntries "$@"
+}
+addUserStartmenu()
+{
+    addSpecialInstall addedUserStartmenuEntries "$@"
 }
 addAutostart()
 {
@@ -120,7 +133,11 @@ installSpecialInstall()
 }
 installStartmenu()
 {
-    installSpecialInstall startmenu createDesktopEntry addToStartMenu addedStartmenuEntries "$@"
+    installSpecialInstall startmenu "${SUDO/#sudo/sudoWithUnixhome}${SUDO:+ }createDesktopEntry --system-wide" 'addToStartMenu --system-wide' addedStartmenuEntries "$@"
+}
+installUserStartmenu()
+{
+    installSpecialInstall userstartmenu createDesktopEntry addToStartMenu addedUserStartmenuEntries "$@"
 }
 installAutostart()
 {
@@ -128,6 +145,8 @@ installAutostart()
 }
 
 typeRegistry+=([startmenu:]=Startmenu)
+typeRegistry+=([userstartmenu:]=UserStartmenu)
 typeRegistry+=([autostart:]=Autostart)
-typeInstallOrder+=([872]=Startmenu)
-typeInstallOrder+=([873]=Autostart)
+typeInstallOrder+=([873]=Startmenu)
+typeInstallOrder+=([874]=UserStartmenu)
+typeInstallOrder+=([875]=Autostart)
