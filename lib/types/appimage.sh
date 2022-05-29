@@ -62,8 +62,11 @@ hasAppImageUrl()
 	exit 3
     fi
     local parse; parse="$(parseAppImageUrl "${1:?}")" || exit 3
-    local quotedFileAttributeArgs="${parse%%$'\n'*}"
-    local fileDownloadInstallerCommand="${parse#*$'\n'}"
+    local quotedFileAttributeArgs fileDownloadInstallerCommand
+    {
+	IFS=$'\n' read -r quotedFileAttributeArgs
+	IFS=$'\n' read -r fileDownloadInstallerCommand
+    } <<<"$parse"
 
     [ "${addedAppImageUrlActions["$fileDownloadInstallerCommand"]}" ] && return 0	# This appimage+url action has already been selected for installation.
 
