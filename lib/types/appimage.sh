@@ -51,6 +51,7 @@ parseAppImageUrl()
 
     printf '%q ' "${fileAttributeArgs[@]}" -- "$destination"
     printf '\n%s -- %q\n' "file-download-installer${isBatch:+ --batch}${applicationName:+ --application-name }${applicationName} --expression ${fileGlob}${maxAge:+ --max-age }$maxAge${urlArgs}${outputNameArg:+ --output }${outputNameArg}${quotedFileAttributeArgs}${quotedInstallArgs}" "$destination"
+    printf '%s\n' "$destinationName"
 }
 
 typeset -A addedAppImageUrlActions=()
@@ -62,10 +63,11 @@ hasAppImageUrl()
 	exit 3
     fi
     local parse; parse="$(parseAppImageUrl "${1:?}")" || exit 3
-    local quotedFileAttributeArgs fileDownloadInstallerCommand
+    local quotedFileAttributeArgs fileDownloadInstallerCommand destinationName
     {
 	IFS=$'\n' read -r quotedFileAttributeArgs
 	IFS=$'\n' read -r fileDownloadInstallerCommand
+	IFS=$'\n' read -r destinationName
     } <<<"$parse"
 
     [ "${addedAppImageUrlActions["$fileDownloadInstallerCommand"]}" ] && return 0	# This appimage+url action has already been selected for installation.
@@ -77,7 +79,12 @@ addAppImageUrl()
 {
     local appimageUrlRecord="${1:?}"
     local parse; parse="$(parseAppImageUrl "$appimageUrlRecord")" || exit 3
-    local fileDownloadInstallerCommand="${parse#*$'\n'}"
+    local quotedFileAttributeArgs fileDownloadInstallerCommand destinationName
+    {
+	IFS=$'\n' read -r quotedFileAttributeArgs
+	IFS=$'\n' read -r fileDownloadInstallerCommand
+	IFS=$'\n' read -r destinationName
+    } <<<"$parse"
 
     # Note: Do not support pre-/postinstall hooks here (yet), as there's no good
     # short "name" that we could use. The DEST-FILE's whole path may be a bit
