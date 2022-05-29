@@ -133,7 +133,7 @@ installSpecialInstall()
 }
 installStartmenu()
 {
-    installSpecialInstall startmenu "${SUDO/#sudo/sudoWithUnixhome}${SUDO:+ }createDesktopEntry --system-wide" 'addToStartMenu --system-wide' addedStartmenuEntries "$@"
+    installSpecialInstall startmenu 'createDesktopEntry --system-wide' 'addToStartMenu --system-wide' addedStartmenuEntries "$@"
 }
 installUserStartmenu()
 {

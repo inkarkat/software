@@ -156,7 +156,7 @@ installSpecialInstallUrl()
 }
 installIconUrl()
 {
-    installSpecialInstallUrl icon+url "${SUDO/#sudo/sudoWithUnixhome}${SUDO:+ }icon-download-installer --system-wide" addedIconUrlPackages "$@"
+    installSpecialInstallUrl icon+url 'icon-download-installer --system-wide' addedIconUrlPackages "$@"
 }
 installUserIconUrl()
 {
@@ -164,7 +164,7 @@ installUserIconUrl()
 }
 installStartmenuUrl()
 {
-    installSpecialInstallUrl startmenu+url "${SUDO/#sudo/sudoWithUnixhome}${SUDO:+ }desktop-entry-download-installer --system-wide" addedStartmenuUrlPackages "$@"
+    installSpecialInstallUrl startmenu+url 'desktop-entry-download-installer --system-wide' addedStartmenuUrlPackages "$@"
 }
 installUserStartmenuUrl()
 {
