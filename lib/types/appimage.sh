@@ -16,7 +16,7 @@ HELPTEXT
 
 parseAppImageUrl()
 {
-    typeset -a fileAttributeArgs=(--sudo --preserve-timestamps)
+    typeset -a installArgs=(--sudo --preserve-timestamps)
     local appimageUrlItem="${1:?}"; shift
     eval "set -- $appimageUrlItem"
 
@@ -53,12 +53,10 @@ parseAppImageUrl()
 
     urls+=("$@")
     local urlArgs; [ ${#urls[@]} -gt 0 ] && printf -v urlArgs ' --url %q' "${urls[@]}"
-    local quotedFileAttributeArgs; [ ${#fileAttributeArgs[@]} -gt 0 ] && printf -v quotedFileAttributeArgs ' %q' "${fileAttributeArgs[@]}"
     local quotedInstallArgs; [ ${#installArgs[@]} -gt 0 ] && printf -v quotedInstallArgs ' %q' "${installArgs[@]}"
 
-    printf '%q ' "${fileAttributeArgs[@]}" -- "$destination"
-    printf '\n%s -- %q\n' "file-download-installer${isBatch:+ --batch}${applicationName:+ --application-name }${applicationName} --expression ${fileGlob}${maxAge:+ --max-age }$maxAge${urlArgs}${outputNameArg:+ --output }${outputNameArg}${quotedFileAttributeArgs}${quotedInstallArgs}" "$destination"
-    printf '%s\n' "$destinationName"
+    printf '%s -- %q\n' "file-download-installer${isBatch:+ --batch}${applicationName:+ --application-name }${applicationName} --expression ${fileGlob}${maxAge:+ --max-age }$maxAge${urlArgs}${outputNameArg:+ --output }${outputNameArg}${quotedInstallArgs}" "$destination"
+    printf '%s\n' "$destination"
 }
 
 typeset -A addedAppImageUrlActions=()
@@ -70,28 +68,21 @@ hasAppImageUrl()
 	exit 3
     fi
     local parse; parse="$(parseAppImageUrl "${1:?}")" || exit 3
-    local quotedFileAttributeArgs fileDownloadInstallerCommand destinationName
-    {
-	IFS=$'\n' read -r quotedFileAttributeArgs
-	IFS=$'\n' read -r fileDownloadInstallerCommand
-	IFS=$'\n' read -r destinationName
-    } <<<"$parse"
+    local fileDownloadInstallerCommand="${parse%%$'\n'*}"
+    local destination="${parse#*$'\n'}"
 
     [ "${addedAppImageUrlActions["$fileDownloadInstallerCommand"]}" ] && return 0	# This appimage+url action has already been selected for installation.
 
-    eval "hasFileAttributes $quotedFileAttributeArgs 2>/dev/null"   # Do both destination file existence check and attribute check with hasFileAttributes; suppress the "ERROR: FILE does not exist" for the former.
+    [ -x "$destination" ]
 }
 
 addAppImageUrl()
 {
     local appimageUrlRecord="${1:?}"
     local parse; parse="$(parseAppImageUrl "$appimageUrlRecord")" || exit 3
-    local quotedFileAttributeArgs fileDownloadInstallerCommand destinationName
-    {
-	IFS=$'\n' read -r quotedFileAttributeArgs
-	IFS=$'\n' read -r fileDownloadInstallerCommand
-	IFS=$'\n' read -r destinationName
-    } <<<"$parse"
+    local fileDownloadInstallerCommand="${parse%%$'\n'*}"
+    local destination="${parse#*$'\n'}"
+    local destinationName="$(basename -- "$destination")"
 
     preinstallHook "$destinationName"
     addedAppImageUrlActions["$fileDownloadInstallerCommand"]="$appimageUrlRecord"
