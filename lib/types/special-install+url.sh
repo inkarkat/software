@@ -27,7 +27,7 @@ configUsageStartmenuUrl()
 {
     configUsageSpecialInstallUrl startmenu+url "the system-wide start menu"
 }
-configUsageStartmenuUrl()
+configUsageUserStartmenuUrl()
 {
     configUsageSpecialInstallUrl userstartmenu+url "the user's start menu"
 }
