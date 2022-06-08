@@ -417,9 +417,11 @@ addAllAcceptedGroups()
 	local setupAppendix=''	# This may be modified by definition group filters (through isDefinitionGroupCompletelyFiltered()); reset it on every iteration here.
 	if isDefinitionGroupDir "${group}"; then
 	    groupDirectoryGroupCount=$(countGlob "${group}/*" "${groups[@]}")
-	    [ $groupDirectoryGroupCount -gt 1 ] || continue  # Ignore a group directory that has only one group in it; the query for the group itself will suffice.
 	    ! isDefinitionGroupCompletelyFiltered "${group}/${GROUPDIR_FILTER_FILENAME}" && \
-		$obtainGroups --memoize-group "${setupName}${setupAppendix:+-}${setupAppendix}-groups" --timespan "$SETUPSOFTWARE_GROUP_VALID_TIMESPAN" --subject "$groupSubject" --verb "directory (with $groupDirectoryGroupCount groups) is not" --state 'chosen' --action 'consider it' || \
+		if [ $groupDirectoryGroupCount -gt 1 ]; then
+		    # Ignore a group directory that has only one group in it; the query for the group itself will suffice.
+		    $obtainGroups --memoize-group "${setupName}${setupAppendix:+-}${setupAppendix}-groups" --timespan "$SETUPSOFTWARE_GROUP_VALID_TIMESPAN" --subject "$groupSubject" --verb "directory (with $groupDirectoryGroupCount groups) is not" --state 'chosen' --action 'consider it'
+		fi || \
 		readarray -O ${#filteredGroups[@]} -t filteredGroups < <(filterGlob "${group}/*" "${groups[@]}")
 	    continue
 	fi
