@@ -62,11 +62,12 @@ isAvailablePpa()
 installPpa()
 {
     [ ${#addedPpaRepositories[@]} -gt 0 ] || return
+    local isSingleRepository; [ ${#addedPpaRepositories[@]} -eq 1 ] && isSingleRepository=t
     local repo; for repo in "${!addedPpaRepositories[@]}"
     do
 	submitInstallCommand \
-	    "${SUDO}${SUDO:+ }apt-add-repository${isBatch:+ --yes} ppa:$repo" \
+	    "${SUDO}${SUDO:+ }apt-add-repository${isBatch:+ --yes}${isSingleRepository:+ --update} ppa:$repo" \
 	    "${decoration["ppa:$repo"]}"
     done
-    submitInstallCommand "${SUDO}${SUDO:+ }apt${isBatch:+ --assume-yes} update"
+    [ "$isSingleRepository" ] || submitInstallCommand "${SUDO}${SUDO:+ }apt${isBatch:+ --assume-yes} update"
 }
