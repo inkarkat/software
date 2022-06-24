@@ -11,7 +11,7 @@ HELPTEXT
 typeRegistry+=([ppa:]=Ppa)
 typeInstallOrder+=([11]=Ppa)
 
-if ! exists add-apt-repository; then
+if ! exists apt-add-repository; then
     hasPpa() { return 98; }
     installPpa() { :; }
     isAvailablePpa() { return 98; }
@@ -47,7 +47,7 @@ hasPpa()
 addPpa()
 {
     local ppaRepoName="${1:?}"; shift
-    isAvailableOrUserAcceptsNative --preinstall add-apt-repository software-properties-common 'apt repository abstraction' || return $?
+    isAvailableOrUserAcceptsNative --preinstall apt-add-repository software-properties-common 'apt repository abstraction' || return $?
 
     preinstallHook "$ppaRepoName"
     addedPpaRepositories["$ppaRepoName"]=t
@@ -65,7 +65,7 @@ installPpa()
     local repo; for repo in "${!addedPpaRepositories[@]}"
     do
 	submitInstallCommand \
-	    "${SUDO}${SUDO:+ }add-apt-repository${isBatch:+ --yes} ppa:$repo" \
+	    "${SUDO}${SUDO:+ }apt-add-repository${isBatch:+ --yes} ppa:$repo" \
 	    "${decoration["ppa:$repo"]}"
     done
     submitInstallCommand "${SUDO}${SUDO:+ }apt${isBatch:+ --assume-yes} update"
