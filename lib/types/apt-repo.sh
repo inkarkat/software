@@ -36,6 +36,7 @@ expandDebLine()
 }
 
 typeset -A addedAptRepos=()
+typeset -a expandedDebLines=()
 hasAptRepo()
 {
     local name="${1%%:*}"
@@ -47,7 +48,8 @@ hasAptRepo()
 
     [ "${addedAptRepos["$name"]}" ] && return 0	# This repo has already been selected for installation.
 
-    apt-add-debline --check --name "$name" -- "$(expandDebLine "$debLine")"; local status=$?
+    expandedDebLines["$name"]="$(expandDebLine "$debLine")"
+    apt-add-debline --check --name "$name" -- "${expandedDebLines["$name"]}"; local status=$?
     [ $status -eq 4 ] && return 99 # If the DEB-LINE does not point to an existing APT repository, the entire definition should be skipped, as we cannot ensure the correct installation.
     return $status
 }
@@ -58,7 +60,7 @@ addAptRepo()
     local name="${aptKeyRecord%%:*}"
     local debLine="${aptKeyRecord#"${name}:"}"
 
-    addedAptRepos["$name"]="$(expandDebLine "$debLine")"
+    addedAptRepos["$name"]=${expandedDebLines["$name"]}
 }
 
 installAptRepo()
