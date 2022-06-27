@@ -24,11 +24,9 @@ CHECK can be one of the following (in decreasing precedence):
   exists, and fail if it is missing, fail with 98 if this item and with 99 if
   the entire definition should be skipped; if TEST-EXPRESSION starts with a &,
   this is replaced by the following ACTION (without a $SUDO prefix and without
-  its command-line arguments), allowing you to re-use the same script for
-  checking and installing:
-	custom:'& --check':foo-installer
-    or save repeated typing:
-	custom:&-check:foo-installer
+  its command-line arguments); !* is replaced with any arguments given to
+  ACTION, allowing you to re-use the same script for checking and installing:
+	custom:'& --check !* --quiet':foo-installer --recursive
   Note: This cannot contain literal colons, as these would prematurely end the
   TEST-EXPRESSION; you can use $(echo -e \\x3a) instead of : as a workaround.
   (Prepend $SUDO if the expression needs to be invoked as root; but try your
@@ -109,6 +107,11 @@ hasCustom()
 		customActionWithoutSudoAndArgs="$customFilespec"
 	    fi
 	    customCheckWithoutSudo="${customActionWithoutSudoAndArgs}${customCheckWithoutSudo#\&}"
+	fi
+
+	if [[ "$customCheckWithoutSudo" =~ '!*' ]]; then
+	    local customActionArgs="${customAction#\$SUDO }"; customActionArgs="${customActionArgs#* }"
+	    customCheckWithoutSudo="${customCheckWithoutSudo//\!\*/"${customActionArgs}"}"
 	fi
 
 	customCheckCommand="${sudoPrefix:+${SUDO}${SUDO:+ }}$customCheckWithoutSudo"
