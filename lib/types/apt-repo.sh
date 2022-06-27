@@ -9,7 +9,9 @@ apt-repo: items consist of a
     NAME:'DEB-LINE'
 pair, where DEB-LINE will be installed in ${APT_SOURCES_DIR}/NAME.list
 You can use %ARCH% to refer to the machine architecture${aptRepoArch:+ (}${aptRepoArch}${aptRepoArch:+)} and %CODENAME%
-to refer to the current release's aptRepoCodename${aptRepoCodename:+ (}${aptRepoCodename}${aptRepoCodename:+)}.
+to refer to the current release's codename${aptRepoCodename:+ (}${aptRepoCodename}${aptRepoCodename:+)}.
+You can also specify a fallback as %CODENAME(fallback)%; that one will be tried
+if the codename is not available.
 Note: As this is only used for installing, it's recommended to use this with a
 preinstall: prefix.
 HELPTEXT
@@ -30,8 +32,19 @@ readonly aptRepoCodename="$(lsb_release --short --codename)"
 expandDebLine()
 {
     local debLine="${1:?}"; shift
+    local isFallback="$1"; shift
     debLine="${debLine//%ARCH%/$aptRepoArch}"
     debLine="${debLine//%CODENAME%/$aptRepoCodename}"
+    if [ "$isFallback" ]; then
+	if [[ "$debLine" =~ %CODENAME\(.*\)% ]]; then
+	    debLine="${debLine//%CODENAME\(/}"
+	    debLine="${debLine//\)%/}"
+	else
+	    return 1
+	fi
+    else
+	debLine="${debLine//%CODENAME(*([^)]))%/$aptRepoCodename}"
+    fi
     printf %s "$debLine"
 }
 
@@ -50,7 +63,13 @@ hasAptRepo()
 
     expandedDebLines["$name"]="$(expandDebLine "$debLine")"
     apt-add-debline --check --name "$name" -- "${expandedDebLines["$name"]}"; local status=$?
-    [ $status -eq 4 ] && return 99 # If the DEB-LINE does not point to an existing APT repository, the entire definition should be skipped, as we cannot ensure the correct installation.
+    if [ $status -eq 4 ]; then
+	# Try a fallback if the DEB-LINE does not point to an existing APT repository.
+	local fallbackDebLine; fallbackDebLine="$(expandDebLine "$debLine" t)" || return 99
+	apt-add-debline --check --name "$name" -- "$fallbackDebLine"; status=$?
+	[ $status -eq 4 ] && return 99 # If the DEB-LINE does not point to an existing APT repository, the entire definition should be skipped, as we cannot ensure the correct installation.
+	expandedDebLines["$name"]="$fallbackDebLine"
+    fi
     return $status
 }
 
