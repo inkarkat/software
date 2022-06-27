@@ -64,11 +64,12 @@ addAptRepo()
 installAptRepo()
 {
     [ ${#addedAptRepos[@]} -gt 0 ] || return
+    local isSingleRepository; [ ${#addedAptRepos[@]} -eq 1 ] && isSingleRepository=t
     local name; for name in "${!addedAptRepos[@]}"
     do
 	local quotedDebLine; printf -v quotedDebLine '%q' "${addedAptRepos["$name"]}"
 
-	submitInstallCommand "apt-add-debline --name $name -- $quotedDebLine"
+	submitInstallCommand "apt-add-debline${isSingleRepository:+ --update} --name $name -- $quotedDebLine"
     done
-    submitInstallCommand "${SUDO}${SUDO:+ }apt${isBatch:+ --assume-yes} update"
+    [ "$isSingleRepository" ] || submitInstallCommand "${SUDO}${SUDO:+ }apt${isBatch:+ --assume-yes} update"
 }
