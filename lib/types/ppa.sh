@@ -3,8 +3,10 @@
 configUsagePpa()
 {
     cat <<'HELPTEXT'
-ppa: items refer to Ubuntu personal package archives that enable additional
-packages (or other versions) to be installed through apt.
+ppa:USER[/PPA-NAME] items refer to Ubuntu personal package archives that enable
+additional packages (or other versions) to be installed through apt.
+You can provide a fallback release codename that will be tried if the PPA
+doesn't offer the current release yet: ppa:'USER[/PPA-NAME] (FALLBACK)'
 HELPTEXT
 }
 
@@ -36,7 +38,8 @@ typeset -A addedPpaRepositories=()
 typeset -A externallyAddedPpaRepositories=()
 hasPpa()
 {
-    local ppaRepoName="${1:?}"; shift
+    local arg="${1:?}"; shift
+    local ppaRepoName="${arg% \(*\)}"
     if ! getInstalledPpaRepositories; then
 	messagePrintf >&2 'ERROR: Failed to obtain installed Ubuntu personal package archives list; skipping %s.\n' "$ppaRepoName"
 	return 99
@@ -46,11 +49,12 @@ hasPpa()
 
 addPpa()
 {
-    local ppaRepoName="${1:?}"; shift
+    local arg="${1:?}"; shift
+    local ppaRepoName="${arg% \(*\)}"
     isAvailableOrUserAcceptsNative --preinstall apt-add-repository software-properties-common 'apt repository abstraction' || return $?
 
     preinstallHook "$ppaRepoName"
-    addedPpaRepositories["$ppaRepoName"]=t
+    addedPpaRepositories["$arg"]=t
     postinstallHook "$ppaRepoName"
 }
 
@@ -65,9 +69,22 @@ installPpa()
     local isSingleRepository; [ ${#addedPpaRepositories[@]} -eq 1 ] && isSingleRepository=t
     local repo; for repo in "${!addedPpaRepositories[@]}"
     do
-	submitInstallCommand \
-	    "${SUDO}${SUDO:+ }apt-add-repository${isBatch:+ --yes}${isSingleRepository:+ --update} ppa:$repo" \
-	    "${decoration["ppa:$repo"]}"
+	if [[ "$repo" =~ \ \((.*)\)$ ]]; then
+	    local codename="${BASH_REMATCH[1]}"
+	    repo="${repo% \(*\)}"
+	    if apt-add-debline --name dummy --validate -- "ppa:$repo"; then
+		submitInstallCommand \
+		    "${SUDO}${SUDO:+ }apt-add-repository${isBatch:+ --yes}${isSingleRepository:+ --update} ppa:$repo" \
+		    "${decoration["ppa:$repo"]}"
+	    else
+		submitInstallCommand "apt-add-debline${isSingleRepository:+ --update} --name ${repo//\//-} --codename $codename -- ppa:$repo" \
+		    "${decoration["ppa:$repo"]}"
+	    fi
+	else
+	    submitInstallCommand \
+		"${SUDO}${SUDO:+ }apt-add-repository${isBatch:+ --yes}${isSingleRepository:+ --update} ppa:$repo" \
+		"${decoration["ppa:$repo"]}"
+	fi
     done
     [ "$isSingleRepository" ] || submitInstallCommand "${SUDO}${SUDO:+ }apt${isBatch:+ --assume-yes} update"
 }
