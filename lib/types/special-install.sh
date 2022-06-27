@@ -9,7 +9,7 @@ configUsageSpecialInstall()
 ${prefix}: items consist of createDesktopEntry arguments
     -e|--exec COMMAND [-n|--name NAME] [-i|--icon ICON] [-c|--comment COMMENT] [-t|--category CATEGORY [-t ...]] DESKTOP-ENTRY
 or just
-    SOURCE-FILE DESKTOP-ENTRY
+    SOURCE-FILE
 SOURCE-FILE is either relative to the ./etc/files directory tree, or an absolute
 filespec.
 In both cases, the resulting DESKTOP-ENTRY is added to ${specialWhere}.
@@ -119,10 +119,10 @@ installSpecialInstall()
     do
 	eval "set -- $specialInstallRecord"
 	local specialSourceFilespec specialCommand="$specialCreatorCommand"
-	if [ $# -eq 2 ] && specialSourceFilespec="$(getSpecialSourceFilespec "$1")"; then
-	    # This is the "SOURCE-FILE DESKTOP-ENTRY" variant. Reassemble the
+	if [ $# -eq 1 ] && specialSourceFilespec="$(getSpecialSourceFilespec "$1")"; then
+	    # This is the SOURCE-FILE variant. Reassemble the
 	    # specialInstallRecord with the expanded specialSourceFilespec.
-	    printf -v specialInstallRecord '%q %q' "$specialSourceFilespec" "$2"
+	    printf -v specialInstallRecord '%q' "$specialSourceFilespec"
 	    specialCommand="$specialInstallerCommand"
 	fi
 
