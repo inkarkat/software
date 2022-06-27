@@ -47,9 +47,9 @@ hasAptRepo()
 
     [ "${addedAptRepos["$name"]}" ] && return 0	# This repo has already been selected for installation.
 
-    local aptSourceFilespec="${APT_SOURCES_DIR}/${name}.list"
-    [ -e "$aptSourceFilespec" ] || return 1
-    grep --quiet --fixed-strings --line-regexp "$(expandDebLine "$debLine")" -- "$aptSourceFilespec"
+    apt-add-debline --check --name "$name" -- "$(expandDebLine "$debLine")"; local status=$?
+    [ $status -eq 4 ] && return 99 # If the DEB-LINE does not point to an existing APT repository, the entire definition should be skipped, as we cannot ensure the correct installation.
+    return $status
 }
 
 addAptRepo()
@@ -68,7 +68,7 @@ installAptRepo()
     do
 	local quotedDebLine; printf -v quotedDebLine '%q' "${addedAptRepos["$name"]}"
 
-	submitInstallCommand "printf %s\\\\n $quotedDebLine|${SUDO}${SUDO:+ }tee ${APT_SOURCES_DIR}/${name}.list"
+	submitInstallCommand "apt-add-debline --name $name -- $quotedDebLine"
     done
     submitInstallCommand "${SUDO}${SUDO:+ }apt${isBatch:+ --assume-yes} update"
 }
