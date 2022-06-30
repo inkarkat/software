@@ -16,9 +16,8 @@ CHECK can be one of the following (in decreasing precedence):
 - an EXECUTABLE-NAME? (located through $PATH) or GLOB? (potentially prefixed
   with !), and succeeds if it's (with !: not) there / resolves to an existing
   file or directory
-- the special expression "false"; then, no check is performed and whether the
-  installation action will happen depends solely on the (potentially recalled or
-  derived from the whole definition) user's answer
+- the special expression "once"; then, no check is performed and the
+  installation action (if chosen by the user) will happen only once
 - a TEST-EXPRESSION (whitespace must be escaped or the entire expression
   quoted!) that is eval'd and should succeed if the application already
   exists, and fail if it is missing, fail with 98 if this item and with 99 if
@@ -70,6 +69,11 @@ getCustomFilespec()
     return 1
 }
 
+getQuotedCustomOnceMarkerCommand()
+{
+    printf '%q ' executionMarker --base-type data --namespace "$setupName" --group custom-once "$@"
+}
+
 typeset -A addedCustomActions=()
 typeset -a addedCustomActionList=()
 hasCustom()
@@ -90,7 +94,9 @@ hasCustom()
 
     local customFilespec customCheckCommand
     local customDecoration="${decoration["custom:${customRecord}"]}"
-    if customFilespec="$(getCustomFilespec -x "${customCheckWithoutSudo}")"; then
+    if [ "$customCheck" = 'once' ]; then
+	eval "$(getQuotedCustomOnceMarkerCommand --query "$customAction")"
+    elif customFilespec="$(getCustomFilespec -x "${customCheckWithoutSudo}")"; then
 	customCheckCommand="${sudoPrefix:+${SUDO}${SUDO:+ }}\"\$customFilespec\""
 	invokeCheck "$(decorateCommand "$customCheckCommand" "$customDecoration")"
     elif [[ "$customCheckWithoutSudo" =~ ^\& ]] && customFilespec="$(getCustomFilespec -x "${customActionWithoutSudoAndArgs}${customCheckWithoutSudo#\&}")"; then
@@ -120,14 +126,19 @@ hasCustom()
 }
 
 typeset -A itemCustomActions=()
+typeset -A onceCustomActions=()
 addCustom()
 {
     # Note: Do not support pre-/postinstall hooks here, as we have no short
     # "name" that we could use.
     local customRecord="${1:?}"; shift
     local customAction="${customRecord#*:}"
+    local customCheck="${customRecord%":$customAction"}"
     addedCustomActions["$customAction"]="$customRecord"
     addedCustomActionList+=("$customAction")
+    if [ "$customCheck" = 'once' ]; then
+	onceCustomActions["$customAction"]=t
+    fi
 
     local customActionWithoutSudo="${customAction#\$SUDO }"
     if ! getCustomFilespec -x "${customActionWithoutSudo%% *}" >/dev/null && \
@@ -142,6 +153,12 @@ addCustom()
 	    if [ -n "$typeFunction" ]; then
 		itemCustomActions["$customAction"]=t
 		"add${typeFunction}" "$name"
+
+		if [ "$customCheck" = 'once' ]; then
+		    # Synthesize a postinstall: command for ITEM actions that
+		    # set the marker for execution.
+		    addPostinstall "$(getQuotedCustomOnceMarkerCommand --update "$customAction")"$'\n'"$customAction"
+		fi
 	    fi
 	fi
     fi
@@ -160,6 +177,7 @@ installCustom()
 	local customFilespec
 	local customRecord="${addedCustomActions["$customAction"]}"
 	local customDecoration="${decoration["custom:$customRecord"]}"
+	local quotedCustomOnceMarkerCommand=; [ "${onceCustomActions["$customAction"]}" ] && quotedCustomOnceMarkerCommand="$(getQuotedCustomOnceMarkerCommand --update "$customAction")"
 
 	if [ "${itemCustomActions["$customAction"]}" ]; then
 	    # The corresponding action item has already been added to the item's
@@ -170,10 +188,10 @@ installCustom()
 	    customActionWithoutSudo="${customFilespec}${customArgs}"
 	elif customFilespec="$(getCustomFilespec -e "${customAction}")"; then
 	    local quotedCustomNotification; printf -v quotedCustomNotification %s "$customFilespec"
-	    submitInstallCommand "addLoginNotification --file $quotedCustomNotification --immediate --no-blocking-gui" "$customDecoration"
+	    submitInstallCommand "addLoginNotification --file $quotedCustomNotification --immediate --no-blocking-gui${quotedCustomOnceMarkerCommand:+ && }${quotedCustomOnceMarkerCommand}" "$customDecoration"
 	    continue
 	fi
-	submitInstallCommand "${sudoPrefix:+${SUDO}${SUDO:+ }}${customActionWithoutSudo}" "$customDecoration"
+	submitInstallCommand "${sudoPrefix:+${SUDO}${SUDO:+ }}${customActionWithoutSudo}${quotedCustomOnceMarkerCommand:+ && }${quotedCustomOnceMarkerCommand}" "$customDecoration"
     done
 }
 

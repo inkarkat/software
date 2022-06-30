@@ -1342,7 +1342,7 @@ do
 	    what="all $missingRealItemCnt items are missing"
 	fi
 
-	if [ $missingRealItemCnt -eq 1 ] && [[ "${missingItems[0]}" =~ 'custom:false:' ]]; then
+	if [ $missingRealItemCnt -eq 1 ] && [[ "${missingItems[0]}" =~ 'custom:once:' ]]; then
 	    itemVerb='may or may'
 	    itemAuxVerb=be
 	fi
