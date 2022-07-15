@@ -3,10 +3,10 @@
 configUsageDummy()
 {
     cat <<'HELPTEXT'
-dummy: either another ITEM that will be selected (unless it's already
-available), but will NOT actually installed, or an arbitrary NAME that is
-reported as missing and will be selected (once).
-Useful to execute a preinstall action without an actual package.
+dummy:ITEM|NAME
+- ITEM will be selected (unless it's already available), but will NOT actually
+  installed. Useful to execute a preinstall action without an actual package.
+- An arbitrary NAME will be reported as missing and will be selected (once).
 HELPTEXT
 }
 
