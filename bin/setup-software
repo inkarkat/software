@@ -680,6 +680,29 @@ hasItem()
     fi
 }
 
+typeset -A cachedDecisions=()
+memoizeAndCacheDecision()
+{
+    local subject
+    typeset -a memoizeDecisionArgs=()
+    while [ $# -ne 0 ]
+    do
+	case "$1" in
+	    --help|-h|-\?)	shift; printLongUsage "$0"; exit 0;;
+	    --subject|-s)	memoizeDecisionArgs+=("$1" "$2"); subject="$2"; shift; shift;;
+	    --)			memoizeDecisionArgs+=("$1"); shift; break;;
+	    *)			memoizeDecisionArgs+=("$1"); shift;;
+	esac
+    done
+
+    [ -n "${cachedDecisions["$subject"]}" ] && \
+	return ${cachedDecisions["$subject"]}
+
+    memoizeDecision "${memoizeDecisionArgs[@]}" "$@"; local status=$?
+    cachedDecisions["$subject"]=$status
+    return $status
+}
+
 askTo()
 {
     $obtainSelection --timespan "$SETUPSOFTWARE_DEFINITION_VALID_TIMESPAN" --memoize-group "${setupName}${setupAppendix:+-}${setupAppendix}" "$@"
@@ -997,7 +1020,7 @@ noopExitStatus=4
 action=generateAndPrintInstallCommands
 setupName=
 setupAppendix=
-obtainSelection=memoizeDecision
+obtainSelection=memoizeAndCacheDecision
 isAddAll=
 obtainGroups=memoizeDecision
 typeset -a selections=()
