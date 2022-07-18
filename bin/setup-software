@@ -695,11 +695,12 @@ memoizeAndCacheDecision()
 	esac
     done
 
-    [ "${cachedDecisions["$subject"]}" ] && \
-	return 0
+    [ -n "${cachedDecisions["$subject"]}" ] && \
+	return ${cachedDecisions["$subject"]}
 
-    memoizeDecision "${memoizeDecisionArgs[@]}" "$@" && \
-	cachedDecisions["$subject"]=t
+    memoizeDecision "${memoizeDecisionArgs[@]}" "$@"; local status=$?
+    cachedDecisions["$subject"]=$status
+    return $status
 }
 
 askTo()
