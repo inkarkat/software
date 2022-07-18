@@ -105,9 +105,18 @@ isAvailableDummy()
     isQuiet=t hasDummy "$@"
 }
 
+setInstalledDummyPackages()
+{
+    local dummyName; for dummyName
+    do
+	addedDummyPackages["$dummyName"]=t
+    done
+}
+
 installDummy()
 {
-    :
+    [ ${#addedDummyPackages[@]} -eq 0 ] && return
+    addPostinstallContextCommand setInstalledDummyPackages "${!addedDummyPackages[@]}"
 }
 
 typeRegistry+=([dummy:]=Dummy)

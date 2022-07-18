@@ -645,6 +645,13 @@ addPostinstall()
     # --post "$ITEM" --action "$ACTION".
     addedPostinstallArgs+=("${recursiveCallArg:---post}" "${name#*$'\n'}" --action "${name%%$'\n'*}" "$@")
 }
+typeset -a addedPostinstallContextArgs=()
+addPostinstallContextCommand()
+{
+    [ $# -gt 0 ] || exit 3
+    printf -v quotedContextCommand '%q ' "$@"; quotedContextCommand="${quotedContextCommand% }"
+    addedPostinstallContextArgs+=(--post-context "$quotedContextCommand")
+}
 postinstallHook()
 {
     set +o noglob
@@ -892,9 +899,11 @@ postInstall()
 
     typeset -a executeArg=(); [ "$isExecute" ] || executeArg=(--execute)    # Directly execute any postinstall commands; these already were authorized by the user when they executed the recursive script invocation. It's cumbersome when the execution just prints yet another command-line to be captured and executed, and especially when an automatic capture and execution is used (redirection into a file, into the bag, etc.), this printing then happens outside of the capture.
     local quotedPostInstallCommand
-    printf -v quotedPostInstallCommand '%q ' "${scriptDir}/${scriptName}" "$@" "${executeArg[@]}" "${recursiveArgs[@]}" "${addedPostinstallArgs[@]}"
-    addUniqueToBeInstalledCommand "${quotedPostInstallCommand% }" && \
+    printf -v quotedPostInstallCommand '%q ' "${scriptDir}/${scriptName}" "$@" "${executeArg[@]}" "${recursiveArgs[@]}" "${addedPostinstallContextArgs[@]}" "${addedPostinstallArgs[@]}"
+    if addUniqueToBeInstalledCommand "${quotedPostInstallCommand% }"; then
 	addedPostinstallArgs=()
+	addedPostinstallContextArgs=()
+    fi
 }
 getPostinstallFilespec()
 {
@@ -1094,6 +1103,7 @@ do
 			specialHandlingCommands+=("$specialCommand")
 			specialHandlingFinalCommand='generateAndPrintInstallCommands'
 			;;
+	--post-context)	shift; eval "$1"; shift;;
 	--post)		shift; item="$1"; shift
 			if [ "$1" != '--action' ]; then
 			    printf >&2 'ASSERT: No --action following after --post %q.\n' "$item"; exit 3
