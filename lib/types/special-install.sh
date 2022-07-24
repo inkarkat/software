@@ -28,24 +28,6 @@ configUsageAutostart()
     configUsageSpecialInstall autostart "the user's startup applications"
 }
 
-getSpecialSourceFilespec()
-{
-    local sourceFile="${1:?}"; shift
-
-    local dirspec; for dirspec in "${additionalBaseDirs[@]}" "$baseDir"
-    do
-	local sourceFilespec="${dirspec}/files/${sourceFile}"
-	if [ -e "$sourceFilespec" ]; then
-	    printf %s "$sourceFilespec"
-	    return 0
-	fi
-    done
-
-    [ -e "$sourceFile" ] && \
-	printf %s "$sourceFile" || \
-	return 1
-}
-
 typeset -A addedStartmenuEntries=()
 typeset -A addedUserStartmenuEntries=()
 typeset -A addedAutostartEntries=()
@@ -119,7 +101,7 @@ installSpecialInstall()
     do
 	eval "set -- $specialInstallRecord"
 	local specialSourceFilespec specialCommand="$specialCreatorCommand"
-	if [ $# -eq 1 ] && specialSourceFilespec="$(getSpecialSourceFilespec "$1")"; then
+	if [ $# -eq 1 ] && specialSourceFilespec="$(getAbsoluteOrFilesFilespec "$1")"; then
 	    # This is the SOURCE-FILE variant. Reassemble the
 	    # specialInstallRecord with the expanded specialSourceFilespec.
 	    printf -v specialInstallRecord '%q' "$specialSourceFilespec"

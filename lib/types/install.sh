@@ -33,23 +33,6 @@ A missing path to DEST-FILE is created automatically.
 HELPTEXT
 }
 
-getInstallFilespec()
-{
-    local sourceFile="${1:?}"; shift
-
-    local dirspec; for dirspec in "${additionalBaseDirs[@]}" "$baseDir"
-    do
-	local sourceFilespec="${dirspec}/files/${sourceFile}"
-	if [ -e "$sourceFilespec" ]; then
-	    printf %s "$sourceFilespec"
-	    return 0
-	fi
-    done
-
-    [ -e "$sourceFile" ] && \
-	printf %s "$sourceFile" || \
-	return 1
-}
 parseInstall()
 {
     local installItem="${1:?}"; shift
@@ -82,7 +65,7 @@ parseInstall()
 	exit 3
     fi
 
-    local sourceFilespec; if ! sourceFilespec="$(getInstallFilespec "$1")"; then
+    local sourceFilespec; if ! sourceFilespec="$(getAbsoluteOrFilesFilespec "$1")"; then
 	if [ ! -e "$1" ]; then
 	    printf >&2 'ERROR: Invalid install item: "install:%s" due to missing SOURCE-FILE: "%s".\n' "$installItem" "$1"
 	    exit 3
