@@ -45,7 +45,10 @@ getInstallFilespec()
 	    return 0
 	fi
     done
-    return 1
+
+    [ -e "$sourceFile" ] && \
+	printf %s "$sourceFile" || \
+	return 1
 }
 parseInstall()
 {
