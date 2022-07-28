@@ -4,10 +4,10 @@ printSyntaxRequire()
 {
     cat <<'HELPTEXT'
 - another ITEM (in abbreviated form, usually just having one "package name"
-  parameter); for packages installed via the distribution's package manager, use
-  the special "native:" prefix here. The check passes if that ITEM has already
-  been installed or has already been selected by the user in the current
-  session.
+  parameter, potentially prefixed with !); for packages installed via the
+  distribution's package manager, use the special "native:" prefix here. The
+  check passes if that ITEM has (with !: not) already been installed or has
+  already been selected by the user in the current session.
 - an EXECUTABLE-COMMAND (potentially prefixed with ! (which negates the status,
   just as in the shell) and/or followed by command-line arguments) in the
   ./etc/require directory tree that is invoked and should fail if the
@@ -72,11 +72,22 @@ isDefinitionAcceptedByRequire()
 
     local name="${requirement#*:}"
     local prefix="${requirement%"$name"}"
-    local typeFunction=; [ -n "$prefix" ] && typeFunction="${typeRegistry["$prefix"]}"
-    if [ -n "$typeFunction" ]; then
+    local typeFunction
+    if [ -n "$prefix" ] && typeFunction="${typeRegistry["$prefix"]}" && [ -n "$typeFunction" ]; then
 	local availabilityFunctionName="isAvailable${typeFunction}"
 	if type -t "$availabilityFunctionName" >/dev/null; then
 	    if ! "$availabilityFunctionName" "$name"; then
+		[ "$isVerbose" ] && messagePrintf 'Skipping because requirement %s is not passed: %s\n' "$requirement" "$definition"
+		return 1
+	    fi
+	else
+	    printf >&2 'ERROR: Type %s cannot be used for requirements checking.\n' "$prefix"
+	    exit 3
+	fi
+    elif [[ "$prefix" =~ ^! ]] && typeFunction="${typeRegistry["${prefix#!}"]}" && [ -n "$typeFunction" ]; then
+	local availabilityFunctionName="isAvailable${typeFunction}"
+	if type -t "$availabilityFunctionName" >/dev/null; then
+	    if "$availabilityFunctionName" "$name"; then
 		[ "$isVerbose" ] && messagePrintf 'Skipping because requirement %s is not passed: %s\n' "$requirement" "$definition"
 		return 1
 	    fi
