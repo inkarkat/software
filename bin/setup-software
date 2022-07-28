@@ -1338,6 +1338,33 @@ do
 			;;
 		esac
 	    fi
+	elif [ "$prefix" = dummy: ]; then
+	    # Don't do decorations on dummy items.
+
+	    # Treat dummy items as real items, so that we can do pre- and
+	    # postinstall actions on them.
+	    lastRealItem="$item"
+	    [ ! "$isForce" ] && hasItem "$item"
+	    case $? in
+		0)  lastMissingItem=;;
+		98) # Just skip this item.
+		    noMissingItemMessage="Just skipped items in $subject"
+		    continue
+		    ;;
+		99) # If one item's state cannot not be determined, the entire definition should be skipped, as we cannot ensure the correct installation.
+		    noMissingItemMessage="Skipped: $subject"
+		    let handledDefinitionCount-=1
+		    break
+		    ;;
+		*)  # Add missing dummy items to missingItemConfigurations instead of missingItems, so that a definition with just missing dummy items does not query the user, but if there are other missing items, the dummy one will be included, too.
+		    #missingItems+=("$item")
+		    missingItemConfigurations+=("$item")
+		    lastMissingItem="$item"
+		    let missingRealItemCnt+=1
+
+		    # Don't do configurations on dummy items.
+		    ;;
+	    esac
 	else
 	    if [ -n "$lastDecoration" ]; then
 		addDecorate "${lastDecoration#decorate:}"$'\n'"$item"
