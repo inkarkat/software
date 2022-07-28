@@ -5,7 +5,12 @@ scriptDir="$([ "${BASH_SOURCE[0]}" ] && dirname -- "${BASH_SOURCE[0]}" || exit 3
 projectDir="${scriptDir}/.."
 
 DUMPMOZILLAADDONS_SUBJECT=Firefox
-DUMPMOZILLAADDONS_PROFILES_DIRSPEC=~/.mozilla/firefox
 DUMPMOZILLAADDONS_SUBJECT_PACKAGE_NAME=firefox
+DUMPMOZILLAADDONS_PROFILES_DIRSPEC=~/snap/firefox/common/.mozilla/firefox
+[ -d "$DUMPMOZILLAADDONS_PROFILES_DIRSPEC" ] || DUMPMOZILLAADDONS_PROFILES_DIRSPEC=~/.mozilla/firefox
+if [ ! -d "$DUMPMOZILLAADDONS_PROFILES_DIRSPEC" ]; then
+    echo >&2 'ERROR: Firefox profiles directory not found.'
+    exit 3
+fi
 
 source "${projectDir}/lib/dumpMozillaAddons"
