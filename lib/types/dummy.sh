@@ -9,8 +9,9 @@ dummy: items can be followed by:
   package.
 - NAME is an arbitrary name that will be reported as missing and will be
   selected (once).
-- NAME:ITEM; the arbitrary NAME will be selected if it has already been
-  installed or has already been selected by the user in the current session.
+- NAME:ITEM; the arbitrary NAME will be selected if ITEM has already been
+  installed or has already been selected by the user in the current session
+  (when prefixed !: neither installed nor selected).
   Other definitions can then require:dummy:NAME, so this offers an abstraction
   over ITEMs (that may be different based on the environment (e.g. apt:firefox
   vs. snap:firefox)) to avoid duplicating related ITEMs (like many postinstall
@@ -39,7 +40,8 @@ hasDummy()
 	local dummyName="${prefix%:}"
 	local itemName="${potentialItem#*:}"
 	prefix="${potentialItem%"$itemName"}"
-	if [ -n "$prefix" ] && local typeFunction="${typeRegistry["$prefix"]}" && [ -n "$typeFunction" ]; then
+	local typeFunction
+	if [ -n "$prefix" ] && typeFunction="${typeRegistry["$prefix"]}" && [ -n "$typeFunction" ]; then
 	    local availabilityFunctionName="isAvailable${typeFunction}"
 	    if type -t "$availabilityFunctionName" >/dev/null; then
 		if "$availabilityFunctionName" "$itemName"; then
@@ -54,6 +56,20 @@ hasDummy()
 		fi
 	    else
 		printf >&2 'ERROR: Type %s cannot be used as a dummy item; it does not report availability.\n' "$prefix"
+		exit 3
+	    fi
+	elif [[ "$prefix" =~ ^! ]] && typeFunction="${typeRegistry["${prefix#!}"]}" && [ -n "$typeFunction" ]; then
+	    local availabilityFunctionName="isAvailable${typeFunction}"
+	    if type -t "$availabilityFunctionName" >/dev/null; then
+		# For the inverted dummy, it doesn't matter here whether the
+		# ITEM is installed or not, as it might still be selected.
+		# Check on add whether the item has been added; by reporting
+		# this dummy as missing, our addDummy() will later be
+		# invoked, too.
+		checkDummyPackages["$dummyName"]="$potentialItem"
+		return 1	# The dummy will be added together with the ITEM.
+	    else
+		printf >&2 'ERROR: Type %s cannot be used as a dummy item; it does not report availability.\n' "${prefix#!}"
 		exit 3
 	    fi
 	fi
@@ -89,11 +105,21 @@ addDummy()
 	# dummy item), but as we cannot be sure of that, better check it.
 	local itemName="${item#*:}"
 	prefix="${item%"$itemName"}"; [ -n "$prefix" ] || exit 3
-	local typeFunction="${typeRegistry["$prefix"]}"; [ -n "$typeFunction" ] || exit 3
-	local availabilityFunctionName="isAvailable${typeFunction}"; type -t "$availabilityFunctionName" >/dev/null || exit 3
-	if "$availabilityFunctionName" "$itemName"; then
-	    # ITEM indeed got added; add dummy package, too.
-	    addedDummyPackages["$dummyName"]=t
+	local typeFunction
+	if typeFunction="${typeRegistry["$prefix"]}" && [ -n "$typeFunction" ]; then
+	    local availabilityFunctionName="isAvailable${typeFunction}"; type -t "$availabilityFunctionName" >/dev/null || exit 3
+	    if "$availabilityFunctionName" "$itemName"; then
+		# ITEM indeed got added; add dummy package, too.
+		addedDummyPackages["$dummyName"]=t
+	    fi
+	elif [[ "$prefix" =~ ^! ]] && typeFunction="${typeRegistry["${prefix#!}"]}" && [ -n "$typeFunction" ]; then
+	    local availabilityFunctionName="isAvailable${typeFunction}"; type -t "$availabilityFunctionName" >/dev/null || exit 3
+	    if ! "$availabilityFunctionName" "$itemName"; then
+		# ITEM hasn't been installed and also hasn't been added; add the dummy package due to the inversion.
+		addedDummyPackages["$dummyName"]=t
+	    fi
+	else
+	    exit 3
 	fi
     else
 	addedDummyPackages["$dummyPackageName"]=t
