@@ -15,7 +15,7 @@ configuration item following it.
 HELPTEXT
 }
 
-FIREFOX_PROFILES_DIRSPEC="$("${projectDir}/lib/getFirefoxProfileDirspec.sh")" || return 98
+FIREFOX_PROFILES_DIRSPEC="$("${projectDir}/lib/getFirefoxProfileDirspec.sh" 2>/dev/null)" || return 98
 
 typeRegistry+=([firefox:]=FirefoxAddon)
 typeInstallOrder+=([800]=FirefoxAddon)
