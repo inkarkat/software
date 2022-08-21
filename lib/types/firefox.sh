@@ -15,12 +15,13 @@ configuration item following it.
 HELPTEXT
 }
 
-FIREFOX_PROFILES_DIRSPEC="$("${projectDir}/lib/getFirefoxProfileDirspec.sh" 2>/dev/null)" || return 98
-
 typeRegistry+=([firefox:]=FirefoxAddon)
 typeInstallOrder+=([800]=FirefoxAddon)
 
-if ! exists firefox; then
+if ! exists firefox || \
+    ! FIREFOX_PROFILES_DIRSPEC="$("${projectDir}/lib/getFirefoxProfileDirspec.sh" 2>/dev/null)" || \
+    [ ! -d "$FIREFOX_PROFILES_DIRSPEC" ]
+then
     hasFirefoxAddon() { return 98; }
     installFirefoxAddon() { :; }
     isAvailableFirefoxAddon() { return 98; }
