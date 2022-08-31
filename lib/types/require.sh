@@ -113,8 +113,8 @@ isDefinitionAcceptedByRequire()
 	    requirementArgs="${requirementWithoutSudo#"${requirementWithoutSudoAndArgs} "}"
 	    invokeCheck "${sudoPrefix:+${SUDO}${SUDO:+ }}! $quotedRequirementFilespec $requirementArgs"
 	elif [[ "$requirement" =~ ^\!.*\?$ ]]; then
-	    requirement="${requirement#\!}"
-	    ! requirePathOrGlobCheck "${requirement%\?}"
+	    local negatedRequirement="${requirement#\!}"
+	    ! requirePathOrGlobCheck "${negatedRequirement%\?}"
 	elif [[ "$requirement" =~ \?$ ]]; then
 	    requirePathOrGlobCheck "${requirement%\?}"
 	else
