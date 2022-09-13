@@ -39,7 +39,12 @@ hasPip3()
 	messagePrintf >&2 'ERROR: Failed to obtain installed Python package list; skipping %s.\n' "$pip3PackageName"
 	return 99
     fi
-    [ "${installedPip3Packages["$pip3PackageName"]}" ] || [ "${addedPip3Packages["$pip3PackageName"]}" ] || [ "${externallyAddedPip3Packages["$pip3PackageName"]}" ]
+
+    # Python packages can have optional modules: PACKAGE[MODULE]; unfortunately,
+    # that cannot be queried from "pip3 list". Assume that such modules are
+    # selected in the same session as and in addition to the base package.
+    local pip3BasePackageName="${pip3PackageName%\[*\]}"
+    [ "${installedPip3Packages["$pip3BasePackageName"]}" ] || [ "${addedPip3Packages["$pip3PackageName"]}" ] || [ "${externallyAddedPip3Packages["$pip3PackageName"]}" ]
 }
 
 addPip3()
