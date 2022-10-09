@@ -46,6 +46,7 @@ hasUpdatecheck()
 }
 
 typeset -A updatecheckFileChecksums=()
+typeset -A updatecheckFileItem=()
 addUpdatecheck()
 {
     local updatecheckRecord="${1:?}"; shift
@@ -63,6 +64,7 @@ addUpdatecheck()
 
 	local currentChecksum; currentChecksum="$(updateCheckChecksum "$sourceFilespec")" || exit $?
 	updatecheckFileChecksums["$sourceFilespec"]="$currentChecksum"
+	updatecheckFileItem["$sourceFilespec"]="$item"
     done
 }
 
@@ -74,8 +76,8 @@ installUpdatecheck()
     local sourceFilespec; for sourceFilespec in "${!updatecheckFileChecksums[@]}"
     do
 	local record; printf -v record '%q%q%q' "${sourceFilespec//$'\t'/ }" $'\t' "${updatecheckFileChecksums["$sourceFilespec"]}"
-	submitInstallCommand \
-	    "${databaseUpdate}${isVerbose:+ --verbose} --key-value-database updatecheck --update $record"
+	addPostinstall \
+	    "${databaseUpdate}${isVerbose:+ --verbose} --key-value-database updatecheck --update $record"$'\n'"${updatecheckFileItem["$sourceFilespec"]}"
     done
 }
 
