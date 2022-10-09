@@ -24,7 +24,7 @@ getInstalledDebBuildDependencies()
 {
     [ "$isInstalledDebBuildDependenciesAvailable" ] && return
 
-    eval "$(database debBuildDependencies --get-as-dictionary installedDebBuildDependencies --omit-declaration)" || return 1
+    eval "$(keyDatabase debBuildDependencies --get-as-dictionary installedDebBuildDependencies --omit-declaration)" || return 1
 
     [ ${#installedDebBuildDependencies[@]} -gt 0 ] &&
 	case ",${DEBUG:-}," in *,setup-software:deb-build,*) echo >&2 "${PS4}setup-software (deb-build): Found installed ${!installedDebBuildDependencies[*]}";; esac
@@ -77,7 +77,7 @@ installDebBuild()
     local buildDep; for buildDep in "${!addedDebBuildDependencies[@]}"
     do
 	submitInstallCommand \
-	    "${SUDO}${SUDO:+ }apt-get${isBatch:+ --assume-yes} build-dep $buildDep && ${databaseUpdate}${isVerbose:+ --verbose} --database debBuildDependencies --add $buildDep" \
+	    "${SUDO}${SUDO:+ }apt-get${isBatch:+ --assume-yes} build-dep $buildDep && ${databaseUpdate}${isVerbose:+ --verbose} --key-database debBuildDependencies --add $buildDep" \
 	    "${decoration["build-dep:$buildDep"]}"
     done
 }

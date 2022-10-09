@@ -433,7 +433,7 @@ addAllAcceptedGroups()
     done
 }
 
-database()
+keyDatabase()
 {
     # Note: No --namespace "$setupName" here, because the information usually is
     # system scoped (e.g. for the build-dep type). If clients want this scoped
@@ -1111,7 +1111,7 @@ do
 			specialHandlingCommands+=('memoizeDecision --memoize-group "${setupName}${setupAppendix:+-}${setupAppendix}" --delete-all-decisions')
 			;;
 	--name)		shift; setupName="${1:?}"; shift;;
-	--database)	shift; database "$@"; exit $?;;
+	--key-database)	shift; keyDatabase "$@"; exit $?;;
 	--pre)		shift; item="$1"; shift
 			if [ "$1" != '--action' ]; then
 			    printf >&2 'ASSERT: No --action following after --pre %q.\n' "$item"; exit 3
