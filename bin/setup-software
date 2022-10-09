@@ -1013,13 +1013,14 @@ checkAndExit()
     [ $addedDefinitionCount -eq 0 ] && exit 0 || exit 1
 }
 
-getAbsoluteOrFilesFilespec()
+getAbsoluteOrBaseFilespec()
 {
+    local subDir="${1?}"; shift
     local sourceFile="${1:?}"; shift
 
     local dirspec; for dirspec in "${additionalBaseDirs[@]}" "$baseDir"
     do
-	local sourceFilespec="${dirspec}/files/${sourceFile}"
+	local sourceFilespec="${dirspec}/${subDir}${subDir:+/}${sourceFile}"
 	if [ -e "$sourceFilespec" ]; then
 	    printf %s "$sourceFilespec"
 	    return 0
@@ -1029,6 +1030,10 @@ getAbsoluteOrFilesFilespec()
     [ -e "$sourceFile" ] && \
 	printf %s "$sourceFile" || \
 	return 1
+}
+getAbsoluteOrFilesFilespec()
+{
+    getAbsoluteOrBaseFilespec files "$@"
 }
 
 readarray -t nativeTypeLibs < <(grep --files-with-matches 'nativeRegistry+=(' "${typeDir}"/*.sh)
