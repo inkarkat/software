@@ -4,6 +4,7 @@ configUsageUpdatecheck()
 {
     cat <<'HELPTEXT'
 updatecheck: items consist of one or more FILE(s), and another ITEM at the end.
+    FILE [...] ITEM
 ITEM will be forcibly installed if the stored checksum of one of the FILEs has
 changed since the last installation (or if the FILE has never been installed).
 FILE is either relative to the ./etc directory tree, or an absolute filespec.
@@ -39,10 +40,23 @@ hasUpdatecheck()
 	    exit 3
 	fi
 
-	local storedChecksum; storedChecksum="$(keyValueDatabase updatecheck --query "${sourceFilespec/$'\t'/ }" --columns '*')" || return 1
+	local storedChecksum; if ! storedChecksum="$(keyValueDatabase updatecheck --query "${sourceFilespec/$'\t'/ }" --columns '*')"; then
+	    [ "$isVerbose" ] && messagePrintf 'Offering because there is no recorded checksum for %s: %s\n' "$sourceFilespec" "$updatecheckRecord"
+	    return 1
+	fi
 	local currentChecksum; currentChecksum="$(updateCheckChecksum "$sourceFilespec")" || exit $?
-	[ "$currentChecksum" = "$storedChecksum" ] || return 1
+	if [ "$currentChecksum" != "$storedChecksum" ]; then
+	    [ "$isVerbose" ] && messagePrintf 'Offering because the checksum for %s has changed: %s\n' "$sourceFilespec" "$updatecheckRecord"
+	    return 1
+	fi
     done
+
+    if [ "$isVerbose" ]; then
+	filesPlural=s; [ ${#files[@]} -eq 1 ] && filesPlural=
+	messagePrintf 'Skipping because %d file%s are up-to-date: %s\n' "${#files[@]}" "$filesPlural" "$updatecheckRecord"
+    fi
+
+    return 0
 }
 
 typeset -A updatecheckFileChecksums=()
