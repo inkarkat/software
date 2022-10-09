@@ -66,11 +66,8 @@ parseInstall()
     fi
 
     local sourceFilespec; if ! sourceFilespec="$(getAbsoluteOrFilesFilespec "$1")"; then
-	if [ ! -e "$1" ]; then
-	    printf >&2 'ERROR: Invalid install item: "install:%s" due to missing SOURCE-FILE: "%s".\n' "$installItem" "$1"
-	    exit 3
-	fi
-	sourceFilespec="$1"
+	printf >&2 'ERROR: Invalid install item: "install:%s" due to missing SOURCE-FILE: "%s".\n' "$installItem" "$1"
+	exit 3
     fi
 
     local addCommand=addInstalledFile

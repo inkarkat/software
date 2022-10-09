@@ -146,4 +146,4 @@ installDummy()
 }
 
 typeRegistry+=([dummy:]=Dummy)
-typeInstallOrder+=([0]=Dummy)
+typeInstallOrder+=([2]=Dummy)
