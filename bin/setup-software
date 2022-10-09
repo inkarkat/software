@@ -440,6 +440,13 @@ keyDatabase()
     # to the setup, they can pass the arguments themselves.
     picoDB --base-type data --table "$@"
 }
+keyValueDatabase()
+{
+    # Note: No --namespace "$setupName" here, because the information usually is
+    # system scoped. If clients want this scoped to the setup, they can pass the
+    # arguments themselves.
+    miniDB --base-type data --table "$@"
+}
 
 onceMarker()
 {
@@ -1112,6 +1119,8 @@ do
 			;;
 	--name)		shift; setupName="${1:?}"; shift;;
 	--key-database)	shift; keyDatabase "$@"; exit $?;;
+	--key-value-database)
+			shift; keyValueDatabase "$@"; exit $?;;
 	--pre)		shift; item="$1"; shift
 			if [ "$1" != '--action' ]; then
 			    printf >&2 'ASSERT: No --action following after --pre %q.\n' "$item"; exit 3
