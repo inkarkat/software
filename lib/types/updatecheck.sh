@@ -91,7 +91,7 @@ installUpdatecheck()
     do
 	local record; printf -v record '%q%q%q' "${sourceFilespec//$'\t'/ }" $'\t' "${updatecheckFileChecksums["$sourceFilespec"]}"
 	addPostinstall \
-	    "${databaseUpdate}${isVerbose:+ --verbose} --key-value-database updatecheck --update $record"$'\n'"${updatecheckFileItem["$sourceFilespec"]}"
+	    "${databaseUpdate}${isVerbose:+ --verbose} --key-value-database updatecheck --schema FILE\ CHECKSUM --update $record"$'\n'"${updatecheckFileItem["$sourceFilespec"]}"
     done
 }
 
