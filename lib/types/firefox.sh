@@ -35,7 +35,7 @@ getInstalledFirefoxAddons()
     local profileName="${1:?}"; shift
     [ "${isInstalledFirefoxAddonsAvailable["$profileName"]}" ] && return
     local addonsConfigFilespec="${1:?}/addons.json"; shift
-    [ -e "$addonsConfigFilespec" ] || return 1
+    [ -e "$addonsConfigFilespec" ] || return 0	# Silently skip profile that doesn't have any add-ons installed yet.
     isDependencyAvailableOrUserAcceptsNative jq
 
     local exitStatus id; while IFS=$'\n' read -r id || { exitStatus="$id"; break; }	# Exit status from the process substitution (<(jq)) is lost; return the actual exit status via an incomplete (i.e. missing the newline) last line.
