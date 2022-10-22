@@ -19,16 +19,15 @@ HELPTEXT
 parseLink()
 {
     local linkItem="${1:?}"; shift
-    typeset -a addLinkedFileArgs=("$@")
+    typeset -a commonArgs=("$@")
     eval "set -- $linkItem"
 
     typeset -a linkArgs=()
     while [ $# -ne 0 ]
     do
 	case "$1" in
-	    -+([f]))	linkArgs+=("$1"); shift;;
-	    --@(force|sudo))
-			linkArgs+=("$1"); shift;;
+	    --sudo)	commonArgs+=("$1"); shift;;
+	    --force|-f)	linkArgs+=("$1"); shift;;
 
 	    --)		shift; break;;
 	    -*)		printf >&2 'ERROR: Invalid link item: "link:%s" due to invalid "%s".\n' "$linkItem" "$1"; exit 3;;
@@ -45,7 +44,9 @@ parseLink()
 	exit 3
     fi
 
-    printf '%q ' addSymlink "${addLinkedFileArgs[@]}" "${linkArgs[@]}" -- "$sourceFilespec"
+    printf '%q ' addDir "${commonArgs[@]}" --
+    printf '%q && ' "$(dirname -- "$2")"
+    printf '%q ' addSymlink "${commonArgs[@]}" "${linkArgs[@]}" -- "$sourceFilespec"
     printf %q "$2"
 }
 
@@ -66,7 +67,7 @@ hasLink()
 addLink()
 {
     local linkRecord="${1:?}"
-    local quotedLinkCommand; quotedLinkCommand="$(parseLink "$linkRecord")" || exit 3
+    local quotedLinkCommand; quotedLinkCommand="$(parseLink "$linkRecord" --accept-up-to-date)" || exit 3
     # Note: Do not support pre-/postinstall hooks here (yet), as there's no good
     # short "name" that we could use. The NEW-LINK's whole path may be a bit
     # long, and just the filename itself may be ambiguous.
