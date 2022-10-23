@@ -35,15 +35,14 @@ HELPTEXT
 parseLink()
 {
     local linkItem="${1:?}"; shift
-    typeset -a commonArgs=("$@")
+    typeset -a linkArgs=("$@")
     eval "set -- $linkItem"
 
-    typeset -a linkArgs=()
     while [ $# -ne 0 ]
     do
 	case "$1" in
-	    --sudo)	commonArgs+=("$1"); shift;;
-	    --force|-f)	linkArgs+=("$1"); shift;;
+	    --sudo|--force|-f)
+			linkArgs+=("$1"); shift;;
 
 	    --)		shift; break;;
 	    -*)		printf >&2 'ERROR: Invalid link item: "link:%s" due to invalid "%s".\n' "$linkItem" "$1"; exit 3;;
@@ -60,23 +59,19 @@ parseLink()
 	exit 3
     fi
 
-    printf '%q ' addDir "${commonArgs[@]}" --
-    printf '%q && ' "$(dirname -- "$2")"
-    printf '%q ' addSymlink "${commonArgs[@]}" "${linkArgs[@]}" -- "$sourceFilespec"
+    printf '%q ' addSymlink --parents "${linkArgs[@]}" -- "$sourceFilespec"
     printf %q "$2"
 }
 parseKopy()
 {
     local copyItem="${1:?}"; shift
-    typeset -a commonArgs=("$@")
+    typeset -a copyArgs=("$@")
     eval "set -- $copyItem"
 
-    typeset -a copyArgs=()
     while [ $# -ne 0 ]
     do
 	case "$1" in
-	    --sudo)	commonArgs+=("$1"); shift;;
-	    --force|-f|--no-target-directory)
+	    --sudo|--force|-f|--no-target-directory)
 			copyArgs+=("$1"); shift;;
 
 	    --)		shift; break;;
@@ -94,9 +89,7 @@ parseKopy()
 	exit 3
     fi
 
-    printf '%q ' addDir "${commonArgs[@]}" --
-    printf '%q && ' "$(dirname -- "$2")"
-    printf '%q ' addCopy "${commonArgs[@]}" "${copyArgs[@]}" -- "$sourceFilespec"
+    printf '%q ' addCopy --parents "${copyArgs[@]}" -- "$sourceFilespec"
     printf %q "$2"
 }
 
