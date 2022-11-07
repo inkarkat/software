@@ -25,6 +25,7 @@ getInstalledFlatpakRemotes()
 
     local exitStatus remoteName; while IFS=$'\n' read -r remoteName || { exitStatus="$remoteName"; break; }	# Exit status from the process substitution (<(flatpak)) is lost; return the actual exit status via an incomplete (i.e. missing the newline) last line.
     do
+	[ -n "$remoteName" ] || continue
 	installedFlatpakRemotes["$remoteName"]=t
 	case ",${DEBUG:-}," in *,setup-software:flatpak-remote,*) echo >&2 "${PS4}setup-software (flatpak-remote): Found installed ${remoteName}";; esac
     done < <(flatpak remote-list --columns=name 2>/dev/null; printf %d "$?")
