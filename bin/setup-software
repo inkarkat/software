@@ -1328,7 +1328,14 @@ do
 		[ ! "$isForce" ] && hasItem "$lastRealItem"
 		case $? in
 		    0)	rest="${name#*:}"
-			id="${name%"$rest"}"; id="${id%:}"; id="${id:-$rest}"
+			id="${name%"$rest"}"
+			if [ -n "$id" ] && [ -n "${typeRegistry["$id"]}" ]; then
+			    # Don't take an existing type prefix as the optional ID.
+			    id="$name"; rest="$name"
+			else
+			    id="${id%:}"
+			fi
+			id="${id:-$rest}"
 			escapedId="${id//	/ }"
 			onceMarker --query "$escapedId"
 			case $? in
