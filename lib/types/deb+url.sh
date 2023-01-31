@@ -27,6 +27,16 @@ if ! exists dpkg; then
 fi
 
 typeset -A addedDebUrlRecords=()
+hasAddedRecordWithTheSamePackageName()
+{
+    local testRecord="${1:?}"; shift
+    local testPackageName="${testRecord%%:*}"
+    local record; for record in "${addedDebUrlRecords[@]}"
+    do
+	[ "${record%%:*}" = "$testPackageName" ] && return 0
+    done
+    return 1
+}
 hasDebUrl()
 {
     if [[ ! "$1" =~ ^[^:]+:.+: ]]; then
@@ -34,7 +44,9 @@ hasDebUrl()
 	exit 3
     fi
 
-    hasApt "${1%%:*}" || [ "${addedDebUrlRecords["$1"]}" ]
+    hasApt "${1%%:*}" \
+	|| [ "${addedDebUrlRecords["$1"]}" ] \
+	|| hasAddedRecordWithTheSamePackageName "$1"
 }
 
 addDebUrl()
