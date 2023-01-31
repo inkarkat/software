@@ -48,6 +48,11 @@ addDebUrl()
     postinstallHook "$packageName"
 }
 
+isAvailableDebUrl()
+{
+    isQuiet=t hasDebUrl "$@"
+}
+
 installDebUrl()
 {
     [ ${#addedDebUrlRecords[@]} -gt 0 ] || return
