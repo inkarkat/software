@@ -3,18 +3,29 @@
 configUsageUpdatecheck()
 {
     cat <<'HELPTEXT'
-updatecheck: items consist of one or more FILE(s), and another ITEM at the end.
-    FILE [...] ITEM
-ITEM will be forcibly installed if the stored checksum of one of the FILEs has
-changed since the last installation (or if the FILE has never been installed).
-FILE is either relative to the ./etc directory tree, or an absolute filespec.
+updatecheck: items consist of one or more FILE(s) or DIR(s), and another ITEM at
+the end.
+    FILE|DIR [...] ITEM
+ITEM will be forcibly installed if the stored checksum of one of the FILEs /
+files inside DIRs has changed since the last installation (or if the FILE has
+never been installed). FILE|DIR are either relative to the ./etc directory tree,
+or an absolute filespec.
 HELPTEXT
 }
 
 updateCheckChecksum()
 {
     local filespec="${1:?}"; shift
-    local checksumOutput="$(md5sum "$filespec")"
+    local checksumOutput="$(
+	if [ -d "$filespec" ]; then
+	    # This creates checksums for each individual file, and then
+	    # checksums that output (of checksums and filespecs) into a single
+	    # value.
+	    reduceContents --exec md5sum '{-}' \; -- "$filespec"
+	else
+	    md5sum "$filespec"
+	fi
+    )"
     local checksum; read -r checksum rest <<<"$checksumOutput"
     if [ -z "$checksum" ]; then
 	printf >&2 'ERROR: Empty checksum from %s.\n' md5sum
@@ -28,7 +39,7 @@ hasUpdatecheck()
     local updatecheckRecord="${1:?}"; shift
     eval "set -- $updatecheckRecord"
     if [ $# -lt 2 ]; then
-	printf >&2 'ERROR: Invalid updatecheck item; need at least one FILE and one ITEM: "updatecheck:%s"\n' "$updatecheckRecord"
+	printf >&2 'ERROR: Invalid updatecheck item; need at least one FILE|DIR and one ITEM: "updatecheck:%s"\n' "$updatecheckRecord"
 	exit 3
     fi
 
@@ -36,7 +47,7 @@ hasUpdatecheck()
     local file; for file in "${files[@]}"
     do
 	local sourceFilespec; if ! sourceFilespec="$(getAbsoluteOrBaseFilespec '' "$file")"; then
-	    printf >&2 'ERROR: Invalid updatecheck item: "updatecheck:%s" due to missing FILE: "%s".\n' "$updatecheckRecord" "$file"
+	    printf >&2 'ERROR: Invalid updatecheck item: "updatecheck:%s" due to missing FILE|DIR: "%s".\n' "$updatecheckRecord" "$file"
 	    exit 3
 	fi
 
@@ -72,7 +83,7 @@ addUpdatecheck()
     local file; for file in "${files[@]}"
     do
 	local sourceFilespec; if ! sourceFilespec="$(getAbsoluteOrBaseFilespec '' "$file")"; then
-	    printf >&2 'ERROR: Invalid updatecheck item: "updatecheck:%s" due to missing FILE: "%s".\n' "$updatecheckRecord" "$file"
+	    printf >&2 'ERROR: Invalid updatecheck item: "updatecheck:%s" due to missing FILE|DIR: "%s".\n' "$updatecheckRecord" "$file"
 	    exit 3
 	fi
 
