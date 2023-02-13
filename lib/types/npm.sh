@@ -44,7 +44,7 @@ hasNpm()
 addNpm()
 {
     local npmPackageName="${1:?}"; shift
-    isAvailableOrUserAcceptsNative npm npm 'NPM Node.js package manager' || return $?
+    isAvailableOrUserAcceptsNative npm nodejs 'NPM Node.js package manager' || return $?
     preinstallHook "$npmPackageName"
     addedNpmPackages["$npmPackageName"]=t
     postinstallHook "$npmPackageName"
