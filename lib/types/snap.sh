@@ -6,8 +6,8 @@ configUsageSnap()
 snap: items refer to packages from the Snap store that work across many
 different Linux distributions, are segregated and update automatically.
 Configure classic mode installations (disabled security confinement) via a
-    config:CLASSIC=true
-configuration item following it.
+    config:CLASSIC=true snap:...
+configuration item preceding it.
 HELPTEXT
 }
 
