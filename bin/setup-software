@@ -1077,6 +1077,7 @@ isSilenceNoDefinitions=
 isVerbose=
 isForce=
 typeset -a recursiveArgs=()
+typeset -a setupSoftwareBehaviorArgs=()
 typeset -a additionalBaseDirs=()
 while [ $# -ne 0 ]
 do
@@ -1093,14 +1094,14 @@ do
 	--base-dir)	recursiveArgs+=("$1" "$2"); shift; baseDir="${1:?}"; shift;;
 	--add-base-dir)	recursiveArgs+=("$1" "$2"); shift; additionalBaseDirs=("${1:?}" "${additionalBaseDirs[@]}"); shift;;
 	--print-definitions|-P)
-			recursiveArgs+=("$1"); shift; isPrintDefinitions=t;;
-	--print|-p)	recursiveArgs+=("$1"); shift; isPrint=t;;
-	--execute|-e)	recursiveArgs+=("$1"); shift; isExecute=t;;
-	--quiet|-q)	recursiveArgs+=("$1"); shift; isQuiet=t; messagePrintf() { :; };;   # Optimization: Make messagePrintf() a no-op.
+			recursiveArgs+=("$1"); setupSoftwareBehaviorArgs+=("$1"); shift; isPrintDefinitions=t;;
+	--print|-p)	recursiveArgs+=("$1"); setupSoftwareBehaviorArgs+=("$1"); shift; isPrint=t;;
+	--execute|-e)	recursiveArgs+=("$1"); setupSoftwareBehaviorArgs+=("$1"); shift; isExecute=t;;
+	--quiet|-q)	recursiveArgs+=("$1"); setupSoftwareBehaviorArgs+=("$1"); shift; isQuiet=t; messagePrintf() { :; };;   # Optimization: Make messagePrintf() a no-op.
 	--silence-no-definitions)
 			shift; isSilenceNoDefinitions=t;;
-	--verbose|-v)	recursiveArgs+=("$1"); shift; isVerbose=t;;
-	--force|-f)	recursiveArgs+=("$1"); shift; isForce=t;;
+	--verbose|-v)	recursiveArgs+=("$1"); setupSoftwareBehaviorArgs+=("$1"); shift; isVerbose=t;;
+	--force|-f)	recursiveArgs+=("$1"); setupSoftwareBehaviorArgs+=("$1"); shift; isForce=t;;
 	--yes|-y)	shift; obtainSelection=true;;
 	--recall-only)	shift
 			if [ "$isQuiet" ]; then
@@ -1109,7 +1110,7 @@ do
 			    obtainSelection=recallDecision
 			fi
 			;;
-	--batch|-b)	recursiveArgs+=("$1"); shift; isBatch=t;;
+	--batch|-b)	recursiveArgs+=("$1"); setupSoftwareBehaviorArgs+=("$1"); shift; isBatch=t;;
 	--select|-s)	shift; selections+=("$1"); shift;;
 	--all|-a)	shift; isAddAll=t;;
 	--group-recall-only)
@@ -1200,6 +1201,8 @@ elif [ "$isExecute" ] && [ "$isPrint" ]; then
     printUsage "$0" >&2
     exit 2
 fi
+
+SETUPSOFTWARE_BEHAVIOR_ARGS=; if [ ${#setupSoftwareBehaviorArgs[@]} -gt 0 ]; then printf -v SETUPSOFTWARE_BEHAVIOR_ARGS ' %q ' "${setupSoftwareBehaviorArgs[@]}"; export export SETUPSOFTWARE_BEHAVIOR_ARGS="${SETUPSOFTWARE_BEHAVIOR_ARGS% }"; fi    # The array cannot be directly consumed, as checks are invoked through another process (invocationMessage); use the exported environment variable instead.
 typeset -a preinstallActionsDirspecs=()
 typeset -a postinstallActionsDirspecs=()
 typeset -a definitionDirspecs=()
