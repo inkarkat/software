@@ -1,0 +1,48 @@
+#!/bin/bash
+
+printShortUsage()
+{
+    # Note: short followed by long option; if the user knows the short one, she can
+    # skim the long one.
+    printf 'Usage: %q %s | tee install-script.sh && sh install-script.sh\n' "$(basename "$1")" "[--check|--dry-run] [-q|--quiet|--silence-no-definitions|-v|--verbose] [-f|--force] [-y|--yes|[-q|--quiet]] [-b|--batch] [-s|--select DEFINITION [-s ...]] [--base-dir BASE-DIR] [--name NAME] [-q|--quiet]"
+    echo
+    printf 'Usage: %q %s\n' "$(basename "$1")" '-P|--print-definitions|-p|--print|-e|--execute [...]'
+    echo
+    echo 'Update check (listing the definitions):'
+    echo
+    printf 'Usage: SUDO=exit98 %q %s\n' "$(basename "$1")" '--check --print-definitions --quiet'
+}
+printUsage()
+{
+    # This is the short help when launched with no or incorrect arguments.
+    # It is printed to stderr to avoid accidental processing.
+    printShortUsage "$1" >&2
+    printf >&2 '\nTry %q --help for more information.\n' "$(basename "$1")"
+}
+printLongUsage()
+{
+    local IFS=$'\n'
+    # This is the long "man page" when launched with the help argument.
+    # It is printed to stdout to allow paging with 'more'.
+    cat <<HELPDESCRIPTION
+Guided wizard to interactively choose / take (with -y|--yes) updates from those
+definitions and definition groups that are not yet installed but had been
+persistently accepted beforehand. and [print commands to] install those selected
+software items (from various sources).
+HELPDESCRIPTION
+    echo
+    printShortUsage "$1"
+    echo
+    echo 'See setup-software for what the options mean.'
+}
+
+case "$1" in
+    --help|-h|-\?)	shift; printLongUsage "$0"; exit 0;;
+esac
+# Wrappers may prepend --add-base-dir etc., so check for help flags further
+# along, too.
+if containsGlob '--help|-h|-\?' "$@"; then
+    printLongUsage "$0"; exit 0
+fi
+
+exec setup-software "$@" --group-recall-only --recall-only --all
