@@ -25,7 +25,7 @@ printShortUsage()
     echo
     printf 'Usage: %q %s | tee install-script.sh && sh install-script.sh\n' "$(basename "$1")" "[--check|--dry-run] [-q|--quiet|--silence-no-definitions|-v|--verbose] [-f|--force] [-y|--yes|[-q|--quiet] --recall-only] [-b|--batch] [-s|--select DEFINITION [-s ...]] [--base-dir BASE-DIR] [--name NAME]${commandLineOptionExtensions:+ }${commandLineOptionExtensions}${commandLineParameterExtensions:+ }${commandLineParameterExtensions} -a|--all|[-q|--quiet] --group-recall-only|GROUP-NAME|GROUP-FILESPEC [...]"
     echo
-    printf 'Usage: %q %s\n' "$(basename "$1")" '-p|--print|-e|--execute [...]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '-P|--print-definitions|-p|--print|-e|--execute [...]'
     echo
     echo 'Suggestions for automation in a script:'
     echo
@@ -71,6 +71,9 @@ HELPDESCRIPTION
 			installation action would be required; failure means
 			not), and also print related messages; just omit the
 			installation commands.
+    --print-definitions|-P
+			Just print the definitions that have pending
+			installations.
     --print|-p		Just print the installation commands to standard output;
 			by default, the command will balk when output is to the
 			terminal, as it is supposed to be captured and executed.
@@ -998,7 +1001,7 @@ printInstallCommands()
 	local installCommandline="$(joinBy '; ' "${toBeInstalledCommands[@]}")"
 	set -e
 	eval "$installCommandline" || exit $?	# Exit the script now because else installation failure would be treated as if there were no installation commands.
-    else
+    elif [ ! "$isPrintDefinitions" ] || [ "$isPrint" ]; then
 	printf '%s\n' "${toBeInstalledCommands[@]}"
     fi
 }
@@ -1067,6 +1070,7 @@ typeset -a specialHandlingCommands=()
 specialHandlingFinalCommand=
 isBatch=
 isPrint=
+isPrintDefinitions=
 isExecute=
 isQuiet=
 isSilenceNoDefinitions=
@@ -1088,6 +1092,8 @@ do
 	--dry-run)	shift; action=false;;
 	--base-dir)	recursiveArgs+=("$1" "$2"); shift; baseDir="${1:?}"; shift;;
 	--add-base-dir)	recursiveArgs+=("$1" "$2"); shift; additionalBaseDirs=("${1:?}" "${additionalBaseDirs[@]}"); shift;;
+	--print-definitions|-P)
+			recursiveArgs+=("$1"); shift; isPrintDefinitions=t;;
 	--print|-p)	recursiveArgs+=("$1"); shift; isPrint=t;;
 	--execute|-e)	recursiveArgs+=("$1"); shift; isExecute=t;;
 	--quiet|-q)	recursiveArgs+=("$1"); shift; isQuiet=t; messagePrintf() { :; };;   # Optimization: Make messagePrintf() a no-op.
@@ -1183,8 +1189,8 @@ if [ "$isQuiet" ]; then
 	exit 2
     fi >&2
 fi
-if [ -t 1 ] && [ ! "$isExecute" ] && [ ! "$isPrint" ]; then
-    echo >&2 'ERROR: Will not output installation commands to the terminal without -p|--print; either redirect output or directly execute via -e|--execute.'
+if [ -t 1 ] && [ ! "$isExecute" ] && [ ! "$isPrint" ] && [ ! "$isPrintDefinitions" ]; then
+    echo >&2 'ERROR: Will not output installation commands to the terminal without -p|--print; either redirect output or directly execute via -e|--execute, or just print defintitions with -P|--print-definitions.'
     echo >&2
     printUsage "$0" >&2
     exit 2
@@ -1451,6 +1457,8 @@ do
 	    # Add the configurations first, so that they are available to the
 	    # add*() function for the real item already.
 	    addItems "${missingItemConfigurations[@]}" "${missingItems[@]}"
+
+	    [ ! "$isPrintDefinitions" ] || printf '%s\n' "$subject"
 	fi
     fi
 done
