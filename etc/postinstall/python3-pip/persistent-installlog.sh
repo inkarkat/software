@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SUDO=sudo; [ $EUID -eq 0 ] && SUDO=''
+: ${SUDO:=sudo}; [ $EUID -eq 0 ] && SUDO=''
 
 # Create a persistent audit trail of Python package (un-)installs.
 # Fortunately, pip allows per-command configuration of the global --log
