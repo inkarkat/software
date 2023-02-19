@@ -12,7 +12,7 @@ baseDir="${projectDir}/etc"
 typeDir="${projectDir}/lib/types"
 readonly scriptName="$(basename -- "${BASH_SOURCE[0]}")"
 
-SUDO='sudo --set-home'; [ $EUID -eq 0 ] && SUDO=''  # Use root's home; especially pip3 writes to ~/.cache/pip and complains if the files belong to another user.
+: ${SUDO:=sudo --set-home}; [ $EUID -eq 0 ] && SUDO=''	# Use root's home; especially pip3 writes to ~/.cache/pip and complains if the files belong to another user.
 
 printShortUsage()
 {
