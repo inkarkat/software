@@ -1,0 +1,29 @@
+#!/bin/bash
+set -o pipefail
+
+printUsage()
+{
+    cat <<HELPTEXT
+Run a (non-interactive) update check for all available setup-*-software
+commands, and print any definitions that can be updated.
+HELPTEXT
+    echo
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[-?|-h|--help]'
+}
+case "$1" in
+    --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+esac
+if [ $# -ne 0 ]; then
+    printUsage "$0" >&2
+    exit 2
+fi
+
+status=
+exec 3<&0
+while IFS=$'\n' read -r updateSoftwareCommand
+do
+    SUDO=exit98 "$updateSoftwareCommand" --check --print-definitions --quiet <&3 \
+	| outputAndPrintf '%s has updates:\n' "$(basename -- "$updateSoftwareCommand")" \
+	    && : ${status:=0} || status=$?
+done < <(pathglob 'update-*-software')
+exit ${status:-99}
