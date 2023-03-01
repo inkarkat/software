@@ -15,7 +15,7 @@ CHECK can be one of the following (in decreasing precedence):
   to avoid that.)
 - an EXECUTABLE-NAME? (located through $PATH) or GLOB? (potentially prefixed
   with !), and succeeds if it's (with !: not) there / resolves to an existing
-  file or directory
+  file, directory, or symlink
 - the special expression "once"; then, no check is performed and the
   installation action (if chosen by the user) will happen only once
 - a TEST-EXPRESSION (whitespace must be escaped or the entire expression

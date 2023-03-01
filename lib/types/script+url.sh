@@ -17,7 +17,7 @@ CHECK can be one of the following (in decreasing precedence):
   to avoid that.)
 - an EXECUTABLE-NAME? (located through $PATH) or GLOB? (potentially prefixed
   with !), and succeeds if it's (with !: not) there / resolves to an existing
-  file or directory
+  file, directory, or symlink
 - the special expression "false"; then, no check is performed and whether the
   installation action will happen depends solely on the (potentially recalled or
   derived from the whole definition) user's answer

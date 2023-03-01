@@ -16,7 +16,7 @@ printSyntaxRequire()
   try your best to avoid that.)
 - an EXECUTABLE-NAME? (located through $PATH) or GLOB? (potentially prefixed
   with !), which fulfills the requirement if it's (with !: not) there / resolves
-  to an existing file or directory.
+  to an existing file, directory, or symlink
 - a REQUIREMENT-EXPRESSION (whitespace must be escaped or the entire expression
   quoted!) that is eval'd and should fail if the requirements are not fulfilled.
   (Prepend $SUDO if the expression needs to be invoked as root; but try your

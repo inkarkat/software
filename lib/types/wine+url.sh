@@ -7,8 +7,8 @@ wine+url: items consist of a
     EXECUTABLE-NAME?[:MAX-AGE[SUFFIX]]:[[SUBDIR/]NAME/]PACKAGE-GLOB:[URL [...]]
 triplet / quadruplet.
 If EXECUTABLE-NAME? (located in Wine's drive C: unless it's an absolute path)
-exists / resolves to an existing file or directory, the item is deemed already
-installed.
+exists / resolves to an existing file, directory, or symlink, the item is deemed
+already installed.
 Else if ~/install/(SUBDIR|*)/(NAME|*)/PACKAGE-GLOB already exists [and if it is
 younger than MAX-AGE[SUFFIX]], it will be used; else, the *.exe / *.msi from
 URL(s) (first that succeeds) will be downloaded (and put into ~/install/* if it
