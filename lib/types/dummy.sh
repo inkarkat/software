@@ -46,7 +46,7 @@ hasDummy()
 	    if type -t "$availabilityFunctionName" >/dev/null; then
 		if "$availabilityFunctionName" "$itemName"; then
 		    addedDummyPackages["$dummyName"]=t
-		    return 1	# Already installed.
+		    return 0	# Already installed.
 		else
 		    # Check on add whether the item has been added; by reporting
 		    # this dummy as missing, our addDummy() will later be
