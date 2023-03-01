@@ -66,7 +66,8 @@ HELPDESCRIPTION
 			for TYPE.
     --check		Just check whether any installation would happen;
 			succeed if nothing is chosen / all is up-to-date, fail
-			if some installation action would be required.
+			if some installation action would be required. Can be
+			combined with --print-definitions, but not with --print.
     --dry-run		Like --check, but behave like usual (success means some
 			installation action would be required; failure means
 			not), and also print related messages; just omit the
