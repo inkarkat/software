@@ -6,6 +6,11 @@ printUsage()
     cat <<HELPTEXT
 Run a (non-interactive) update check for all available setup-*-software
 commands, and print any definitions that can be updated.
+
+EXIT STATUS:
+    0	Updates found.
+    1	No updates found.
+    99	No software updaters found.
 HELPTEXT
     echo
     printf 'Usage: %q %s\n' "$(basename "$1")" '[-?|-h|--help]'
