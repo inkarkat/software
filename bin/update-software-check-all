@@ -24,6 +24,6 @@ while IFS=$'\n' read -r updateSoftwareCommand
 do
     SUDO=exit98 "$updateSoftwareCommand" --check --print-definitions --quiet <&3 \
 	| outputAndPrintf '%s has updates:\n' "$(basename -- "$updateSoftwareCommand")" \
-	    && : ${status:=0} || status=$?
+	    && status=0 || : ${status:=$?}
 done < <(pathglob 'update-*-software')
 exit ${status:-99}
