@@ -1,0 +1,34 @@
+#!/bin/bash
+
+: ${UPDATESOFTWAREDONE_STAMP:=/var/lib/update-notifier/setup-software-updates-available}
+
+printUsage()
+{
+    cat <<HELPTEXT
+Remove the entries [for UPDATER-COMMAND(s)] from the MOTD update-available record.
+HELPTEXT
+    echo
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[UPDATER-COMMAND ...] [-?|-h|--help]'
+}
+case "$1" in
+    --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+esac
+
+if [ -z "$*" ]; then
+    : > "$UPDATESOFTWAREDONE_STAMP"
+else
+    for updater
+    do
+	[ -n "$updater" ] || continue
+	literalUpdater="$(printf %s "$updater" | sed -e 's/[][\$*.^/]/\\&/g')"
+	sed -i \
+	    -e "/^${literalUpdater} has updates:\$/{"'
+		    :loop
+		    $d
+		    N
+		    /\n- [^\n]*$/b loop
+		    s/^.*\n//
+		}' \
+	    "$UPDATESOFTWAREDONE_STAMP"
+    done
+fi

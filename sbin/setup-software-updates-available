@@ -8,4 +8,7 @@ readonly stamp="/var/lib/update-notifier/setup-software-updates-available"
 plumbing='>'; [ "$1" = --tee ] && plumbing='| tee'
 
 eval '"${scriptDir}/../../../../lib/runAsUser" update-software-check-all' "$plumbing" '"$stamp"'
+
+chown "$("${scriptDir}/../../../../lib/runAsUser" whoami)" -- "$stamp"	# Allow modification by my own user (who's also executing the update commands) without having to use sudo.
+
 exit 0	# Succeed also when no updates were found, in particular to make cron happy.

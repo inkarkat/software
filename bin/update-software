@@ -45,4 +45,14 @@ if containsGlob '--help|-h|-\?' "$@"; then
     printLongUsage "$0"; exit 0
 fi
 
-exec setup-software "$@" --group-recall-only --recall-only --all
+setup-software "$@" --group-recall-only --recall-only --all || exit $?
+
+if ! contains '--check' "$@" && contains '--dry-run' "$@"; then
+    # The done trigger needs to be directly executed if the commands have been,
+    # too.
+    typeset -a printer=(printf '%s\n'); containsGlob '--execute|-e' && printer=()
+
+    updaterName="$(commandName --no-interpreter --undefined '' "$(pcmdline $PPID)")"
+
+    "${printer[@]}" update-software-done "$updaterName"
+fi
