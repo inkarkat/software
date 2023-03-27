@@ -50,7 +50,22 @@ else
 	exit 3
     fi
 
+    tagGlob=''
+    if [ -n "$branch" ] && isglob "$branch"; then
+	tagGlob="$branch"
+	branch=''
+    fi
+
     git clone --origin upstream --recursive ${branch:+--branch "$branch"} "$gitUrl" . || exit $?
+
+    if [ -n "$tagGlob" ]; then
+	latestTag="$(git taglist --list "$tagGlob" | tail -n 1)"
+	if [ -n "$latestTag" ]; then
+	    git checkout "$latestTag" || exit 3
+	else
+	    printf >&2 "Warning: No tag matching '%s' found; staying on the default branch %s.\\n" "$tagGlob" "$(git brname)"
+	fi
+    fi
 fi
 
 eval "$buildCommand"

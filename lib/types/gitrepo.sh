@@ -6,11 +6,11 @@ configUsageGitrepo()
 {
     cat <<'HELPTEXT'
 gitrepo: items consist of a
-    NAME[:MAX-AGE[SUFFIX]]:GIT-URL[:BRANCH]:BUILD-COMMAND
+    NAME[:MAX-AGE[SUFFIX]]:GIT-URL[:(BRANCH|TAG|TAG-GLOB)]:BUILD-COMMAND
 triplet / quadruplet / quintuplet.
 If no Git working copy exists yet at ${GITREPO_BASEDIR}/NAME (NAME can also be
 an absolute path), the Git repository at GIT-URL is cloned there [and BRANCH (or
-a tag) checked out].
+a TAG, or the highest version matching TAG-GLOB) checked out].
 If the last pull date is older than MAX-AGE[SUFFIX], the remote will be checked
 for changes on the branch / a newer tag, and if such exist, these will be
 checked out and BUILD-COMMAND executed.
