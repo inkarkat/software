@@ -20,7 +20,7 @@ HELPTEXT
 parseGitrepo()
 {
     local gitrepoRecord="${1:?}"; shift
-    if [[ ! "$gitrepoRecord" =~ ^[^[:space:]]+:[^[:space:]]+:.+ ]]; then
+    if [[ ! "$gitrepoRecord" =~ ^[^:[:space:]]+:[^:[:space:]]+:.+ ]]; then
 	printf >&2 'ERROR: Invalid gitrepo item: "gitrepo:%s"\n' "$gitrepoRecord"
 	return 3
     fi
