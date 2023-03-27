@@ -61,7 +61,7 @@ hasGitrepo()
     git-iscontrolled "$location" || return 1
     [ -n "${maxAge?}" ] || return 0
     git-inside fetchdate --remote upstream --older "$maxAge" -- "$location" || return 0
-    git-inside uptodate --quiet upstream
+    git-inside uptodate --quiet upstream -- "$location"
 }
 
 addGitrepo()
