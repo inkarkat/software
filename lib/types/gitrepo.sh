@@ -6,15 +6,17 @@ configUsageGitrepo()
 {
     cat <<'HELPTEXT'
 gitrepo: items consist of a
-    NAME[:MAX-AGE[SUFFIX]]:GIT-URL[:(BRANCH|TAG|TAG-GLOB)]:RESULT-FILE:BUILD-COMMAND
+    NAME[:MAX-AGE[SUFFIX]]:GIT-URL[:(BRANCH|TAG|TAG-GLOB)]:RESULT-FILE:(BUILD-EXPRESSION|BUILD-FILE)
 quadruplet / quintuplet / sextuplet.
 If no Git working copy exists yet at ${GITREPO_BASEDIR}/NAME (NAME can also be
 an absolute path), the Git repository at GIT-URL is cloned there [and BRANCH (or
 a TAG, or the highest version matching TAG-GLOB) checked out].
 If the last pull date is older than MAX-AGE[SUFFIX], the remote will be checked
 for changes on the branch / a newer tag, and if such exist, these will be
-checked out. BUILD-COMMAND is executed unless there have been no updates and
-RESULT-FILE (absolute or relative to the working copy root) already exists.
+checked out. BUILD-EXPRESSION or BUILD-FILE (either relative to the ./etc/files
+directory tree, or an absolute filespec)is executed unless there have been no
+updates and RESULT-FILE (absolute or relative to the working copy root) already
+exists.
 HELPTEXT
 }
 
@@ -45,7 +47,11 @@ parseGitrepo()
     local gitUrl="${BASH_REMATCH[1]}"
     local branch="${BASH_REMATCH[4]}"
     local resultFile="${BASH_REMATCH[5]}"
+
     local buildCommand="${BASH_REMATCH[6]}"
+    local buildFilespec; buildFilespec="$(getAbsoluteOrFilesFilespec "$buildCommand")" \
+	&& buildCommand="$buildFilespec"
+
     printf 'local %s=%q\n' location "$location" maxAge "$maxAge" gitUrl "$gitUrl" branch "$branch" resultFile "$resultFile" buildCommand "$buildCommand"
 }
 
