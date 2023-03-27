@@ -74,4 +74,5 @@ else
 fi
 
 : ${SUDO:=sudo}; [ $EUID -eq 0 ] && SUDO=''
+export SUDO
 eval "$buildCommand"
