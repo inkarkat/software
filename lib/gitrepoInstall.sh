@@ -55,15 +55,23 @@ else
 	exit 3
     fi
 
-    tagGlob=''
-    if [ -n "$branch" ] && isglob "$branch"; then
-	tagGlob="$branch"
-	branch=''
+    commit=''; tagGlob=''
+    if [ -n "$branch" ]; then
+	if [[ "$branch" =~ ^[[:xdigit:]]{6,}$ ]]; then
+	    # git clone (2.40.0) cannot directly checkout a commit hash: "fatal: Remote branch edbbb7a not found in upstream upstream"
+	    commit="$branch"
+	    branch=''
+	elif isglob "$branch"; then
+	    tagGlob="$branch"
+	    branch=''
+	fi
     fi
 
     git clone --origin upstream --recursive ${branch:+--branch "$branch"} "$gitUrl" . || exit $?
 
-    if [ -n "$tagGlob" ]; then
+    if [ -n "$commit" ]; then
+	git checkout "$commit" || exit 3
+    elif [ -n "$tagGlob" ]; then
 	latestTag="$(git taglist --list "$tagGlob" | tail -n 1)"
 	if [ -n "$latestTag" ]; then
 	    git checkout "$latestTag" || exit 3
