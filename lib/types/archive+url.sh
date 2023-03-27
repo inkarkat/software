@@ -101,7 +101,7 @@ installArchiveUrl()
     local archiveDownloadInstallerCommand="${1:?}"; shift
     local archiveUrlPackagesDictName="${1:?}"; shift
     eval "[ \${#${archiveUrlPackagesDictName}[@]} -gt 0 ]" || return
-    eval "typeset -a addedArchiveUrlRecords=\"\${!${archiveUrlPackagesDictName}[@]}\""
+    eval "typeset -a addedArchiveUrlRecords=(\"\${!${archiveUrlPackagesDictName}[@]}\")"
     local archiveUrlRecord; for archiveUrlRecord in "${addedArchiveUrlRecords[@]}"
     do
 	typeset -a additionalArchiveArgs=()

@@ -96,7 +96,7 @@ installSpecialInstall()
     local specialInstallerCommand="${1:?}"; shift
     local specialInstallEntriesDictName="${1:?}"; shift
     eval "[ \${#${specialInstallEntriesDictName}[@]} -gt 0 ]" || return
-    eval "typeset -a addedSpecialInstallRecords=\"\${!${specialInstallEntriesDictName}[@]}\""
+    eval "typeset -a addedSpecialInstallRecords=(\"\${!${specialInstallEntriesDictName}[@]}\")"
     local specialInstallRecord; for specialInstallRecord in "${addedSpecialInstallRecords[@]}"
     do
 	eval "set -- $specialInstallRecord"

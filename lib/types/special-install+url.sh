@@ -145,7 +145,7 @@ installSpecialInstallUrl()
     local specialDownloadInstallerCommand="${1:?}"; shift
     local specialInstallUrlPackagesDictName="${1:?}"; shift
     eval "[ \${#${specialInstallUrlPackagesDictName}[@]} -gt 0 ]" || return
-    eval "typeset -a addedSpecialInstallUrlRecords=\"\${!${specialInstallUrlPackagesDictName}[@]}\""
+    eval "typeset -a addedSpecialInstallUrlRecords=(\"\${!${specialInstallUrlPackagesDictName}[@]}\")"
     local specialInstallUrlRecord; for specialInstallUrlRecord in "${addedSpecialInstallUrlRecords[@]}"
     do
 
