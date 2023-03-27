@@ -51,7 +51,7 @@ typeset -A addedGitrepoLocations=()
 typeset -a addedGitrepoRecords=()
 hasGitrepo()
 {
-    eval "$(parseGitrepo "${1:?}")" || exit 3
+    local parse; parse="$(parseGitrepo "${1:?}")" || exit 3; eval "$parse"
 
     [ "${addedGitrepoLocations["${location:?}"]}" ] && return 0
 
@@ -67,7 +67,7 @@ hasGitrepo()
 addGitrepo()
 {
     local gitrepoRecord="${1:?}"; shift
-    eval "$(parseGitrepo "$gitrepoRecord")" || exit 3
+    local parse; parse="$(parseGitrepo "$gitrepoRecord")" || exit 3; eval "$parse"
     local name="$(basename -- "${location:?}")"
 
     isAvailableOrUserAcceptsNative git || return $?
@@ -87,7 +87,7 @@ installGitrepo()
 {
     local gitrepoRecord; for gitrepoRecord in "${addedGitrepoRecords[@]}"
     do
-	eval "$(parseGitrepo "$gitrepoRecord")" || exit 3
+	local parse; parse="$(parseGitrepo "$gitrepoRecord")" || exit 3; eval "$parse"
 	local quotedGitrepoInstallCommand; printf -v quotedGitrepoInstallCommand '%q ' \
 	    "${projectDir}/lib/gitrepoInstall.sh" \
 	    "${location:?}" "${gitUrl:?}" "${branch?}" "${buildCommand:?}"
