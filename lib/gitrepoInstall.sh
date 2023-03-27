@@ -7,7 +7,7 @@ Clone GIT-REPO or fetch upstream at LOCATION, check out any changes [on BRANCH],
 and execute BUILD-COMMAND.
 HELPTEXT
     echo
-    printf 'Usage: %q %s\n' "$(basename "$1")" 'LOCATION GIT-URL BRANCH BUILD-COMMAND [-?|-h|--help]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" 'LOCATION GIT-URL BRANCH RESULT-FILE BUILD-COMMAND [-?|-h|--help]'
 }
 case "$1" in
     --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
@@ -16,6 +16,7 @@ esac
 location="${1:?}"; shift
 gitUrl="${1:?}"; shift
 branch="${1?}"; shift
+resultFile="${1:?}"; shift
 buildCommand="${1:?}"; shift
 if [ $# -ne 0 ]; then
     printUsage "$0" >&2
@@ -41,8 +42,12 @@ if git-iscontrolled .; then
 
     updatedRev="$(git rev-parse HEAD)"
     if [ "$updatedRev" = "$originalRev" ]; then
-	echo >&2 'No updates.'
-	exit 99
+	if [ -e "$resultFile" ]; then
+	    printf >&2 'No updates, and %s already exists.' "$resultFile"
+	    exit 99
+	else
+	    printf 'No updates, but %s needs to be built.' "$resultFile"
+	fi
     fi
 else
     if ! emptydir .; then
@@ -68,4 +73,5 @@ else
     fi
 fi
 
+: ${SUDO:=sudo}; [ $EUID -eq 0 ] && SUDO=''
 eval "$buildCommand"
