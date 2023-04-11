@@ -154,5 +154,5 @@ installZipUrl()
 
 typeRegistry+=([tar+url:]=TarUrl)
 typeRegistry+=([zip+url:]=ZipUrl)
-typeInstallOrder+=([400]=TarUrl)
-typeInstallOrder+=([401]=ZipUrl)
+typeInstallOrder+=([410]=TarUrl)
+typeInstallOrder+=([411]=ZipUrl)
