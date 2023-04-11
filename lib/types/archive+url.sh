@@ -120,7 +120,7 @@ installArchiveUrl()
 	    fi
 	    [ $stripPathComponentsCount -eq 0 ] || additionalArchiveArgs+=("--strip-components=$stripPathComponentsCount")
 	fi
-	quotedAdditionalArchiveArgs=; [ ${#additionalArchiveArgs[@]} -eq 0 ] || printf -v quotedAdditionalArchiveArgs ' %q' "${additionalArchiveArgs[@]}"
+	local quotedAdditionalArchiveArgs=; [ ${#additionalArchiveArgs[@]} -eq 0 ] || printf -v quotedAdditionalArchiveArgs ' %q' "${additionalArchiveArgs[@]}"
 	local maxAge=
 	local applicationNamePackageGlobUrl="${archiveUrlRecord#*:}"
 	if [[ "$applicationNamePackageGlobUrl" =~ ^[0-9]+([smhdwyg]|mo): ]]; then
