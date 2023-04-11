@@ -78,7 +78,6 @@ addArchiveUrl()
 {
     local archiveUrlPackagesDictName="${1:?}"; shift
     local archiveUrlRecord="${1:?}"; shift
-    local destinationFilespec="${archiveUrlRecord%%:*}"
     local destinationFilespec="$(resolveDestinationFilespec "${archiveUrlRecord%%:*}")"
     local packageName="$(basename -- "$destinationFilespec")"
 
