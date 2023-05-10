@@ -1,0 +1,4 @@
+#!/bin/bash
+
+VERSIONREQUIREMENT_BASE_VERSION="${BASH_VERSINFO[0]}.${BASH_VERSINFO[1]}.${BASH_VERSINFO[2]}.${BASH_VERSINFO[3]}" \
+    exec versionRequirement "$@"
