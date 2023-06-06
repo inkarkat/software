@@ -36,22 +36,26 @@ HELPDESCRIPTION
     echo 'See setup-software for what the options mean.'
 }
 
-case "$1" in
-    --help|-h|-\?)	shift; printLongUsage "$0"; exit 0;;
-esac
-# Wrappers may prepend --add-base-dir etc., so check for help flags further
-# along, too.
-if containsGlob '--help|-h|-\?' "$@"; then
-    printLongUsage "$0"; exit 0
-fi
+isCheckOrDryRun=
+printer=(printf '%s\n')
+typeset -a setupSoftwareArgs=()
+while [ $# -ne 0 ]
+do
+    case "$1" in
+	--help|-h|-\?)	shift; printLongUsage "$0"; exit 0;;
+	--check|--dry-run)
+			setupSoftwareArgs+=("$1"); shift; isCheckOrDryRun=t;;
+	--execute|-e)	# The done trigger needs to be directly executed if the
+			# commands have been, too.
+			setupSoftwareArgs+=("$1"); shift; printer=()
+			;;
+	--)		setupSoftwareArgs+=("$1"); shift; break;;
+	*)		setupSoftwareArgs+=("$1"); shift;;
+    esac
+done
+setup-software --group-recall-only --recall-only --all "${setupSoftwareArgs[@]}" "$@" || exit $?
 
-setup-software "$@" --group-recall-only --recall-only --all || exit $?
-
-if ! contains '--check' "$@" && ! contains '--dry-run' "$@"; then
-    # The done trigger needs to be directly executed if the commands have been,
-    # too.
-    typeset -a printer=(printf '%s\n'); containsGlob '--execute|-e' && printer=()
-
+if [ ! "$isCheckOrDryRun" ]; then
     updaterName="$(commandName --no-interpreter --undefined '' "$(pcmdline $PPID)")"
 
     "${printer[@]}" update-software-done "$updaterName"
