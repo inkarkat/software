@@ -1,5 +1,10 @@
 #!/bin/bash
 
+readonly scriptDir="$([ "${BASH_SOURCE[0]}" ] && absoluteScriptFile="$(readlink -nf -- "${BASH_SOURCE[0]}")" && dirname -- "$absoluteScriptFile" || exit 3)"
+[ -d "$scriptDir" ] || { echo >&2 "ERROR: Cannot determine script directory!"; exit 3; }
+readonly projectDir="$(dirname -- "$scriptDir")"
+baseDir="${projectDir}/etc"
+
 printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
@@ -38,6 +43,8 @@ HELPDESCRIPTION
 
 isCheckOrDryRun=
 printer=(printf '%s\n')
+typeset -a additionalBaseDirs=()
+setupName=
 typeset -a setupSoftwareArgs=()
 while [ $# -ne 0 ]
 do
@@ -49,14 +56,24 @@ do
 			# commands have been, too.
 			setupSoftwareArgs+=("$1"); shift; printer=()
 			;;
+	--base-dir)	setupSoftwareArgs+=("$1" "$2"); shift; baseDir="${1:?}"; shift;;
+	--add-base-dir)	setupSoftwareArgs+=("$1" "$2"); shift; additionalBaseDirs=("${1:?}" "${additionalBaseDirs[@]}"); shift;;
+	--name)		shift; setupName="${1:?}"; shift;;
 	--)		setupSoftwareArgs+=("$1"); shift; break;;
 	*)		setupSoftwareArgs+=("$1"); shift;;
     esac
 done
 setup-software --group-recall-only --recall-only --all "${setupSoftwareArgs[@]}" "$@" || exit $?
 
+createSetupName()
+{
+    setupName="$(basename -- "$(dirname -- "$(simplifyPath "${1:?}")")")"
+    setupName="setup-${setupName#setup-}"
+}
+
 if [ ! "$isCheckOrDryRun" ]; then
-    updaterName="$(commandName --no-interpreter --undefined '' "$(pcmdline $PPID)")"
+    [ -n "$setupName" ] || createSetupName "${additionalBaseDirs[@]}" "$baseDir"
+    updaterName="update-${setupName#setup-}"
 
     "${printer[@]}" update-software-done "$updaterName"
 fi
