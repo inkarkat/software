@@ -48,6 +48,7 @@ printer=(echo)
 typeset -a additionalBaseDirs=()
 setupName=
 typeset -a setupSoftwareArgs=()
+typeset -a quietArg=()
 while [ $# -ne 0 ]
 do
     case "$1" in
@@ -60,12 +61,14 @@ do
 			;;
 	--base-dir)	setupSoftwareArgs+=("$1" "$2"); shift; baseDir="${1:?}"; shift;;
 	--add-base-dir)	setupSoftwareArgs+=("$1" "$2"); shift; additionalBaseDirs=("${1:?}" "${additionalBaseDirs[@]}"); shift;;
+	--quiet)	quietArg+=("$1"); shift;;
 	--name)		shift; setupName="${1:?}"; shift;;
 	--)		setupSoftwareArgs+=("$1"); shift; break;;
 	*)		setupSoftwareArgs+=("$1"); shift;;
     esac
 done
-setup-software --group-recall-only --recall-only --all "${setupSoftwareArgs[@]}" "$@" || exit $?
+# Note: --quiet needs to be passed before --[group-]recall-only.
+setup-software "${quietArg[@]}" --group-recall-only --recall-only --all "${setupSoftwareArgs[@]}" "$@" || exit $?
 
 createSetupName()
 {
