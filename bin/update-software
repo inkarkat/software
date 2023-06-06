@@ -42,7 +42,7 @@ HELPDESCRIPTION
 }
 
 isCheckOrDryRun=
-printer=(printf '%s\n')
+printer=(echo)
 typeset -a additionalBaseDirs=()
 setupName=
 typeset -a setupSoftwareArgs=()
