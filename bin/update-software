@@ -47,7 +47,7 @@ fi
 
 setup-software "$@" --group-recall-only --recall-only --all || exit $?
 
-if ! contains '--check' "$@" && contains '--dry-run' "$@"; then
+if ! contains '--check' "$@" && ! contains '--dry-run' "$@"; then
     # The done trigger needs to be directly executed if the commands have been,
     # too.
     typeset -a printer=(printf '%s\n'); containsGlob '--execute|-e' && printer=()
