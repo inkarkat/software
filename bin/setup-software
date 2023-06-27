@@ -146,6 +146,27 @@ HELPTEXT
 }
 
 
+getTypePrefixesInTypeOrder()
+{
+    typeset -a typeOrdering=("${!typeInstallOrder[@]}")
+    readarray -t typeOrdering < <(printf '%s\n' "${typeOrdering[@]}" | sort -n)
+
+    typeset -a typeOrdering=("${!typeInstallOrder[@]}")
+    readarray -t typeOrdering < <(printf '%s\n' "${typeOrdering[@]}" | sort -n)
+
+    typeset -A mirroredTypeRegistry=()
+    for prefix in "${!typeRegistry[@]}"
+    do
+	mirroredTypeRegistry["${typeRegistry["$prefix"]}"]="$prefix"
+    done
+
+    typeset -a prefixes=()
+    local order; for order in "${typeOrdering[@]}"
+    do
+	printf '%s\n' "${mirroredTypeRegistry["${typeInstallOrder["$order"]}"]}"
+    done
+}
+
 highlightPrefix()
 {
     local sedPrefixHighlighting; [ ${#pager[@]} -gt 0 ] && sedPrefixHighlighting='1s/^\([^:]\+:\)/[01m&[0m/'
@@ -218,20 +239,8 @@ definition (e.g. simply a line containing "dummy:"). If it is completely empty,
 the whole subdirectory will be filtered unconditionally.
 HELPTEXT
 	echo
-	typeset -a typeOrdering=("${!typeInstallOrder[@]}")
-	readarray -t typeOrdering < <(printf '%s\n' "${typeOrdering[@]}" | sort -n)
-
-	typeset -A mirroredTypeRegistry=()
-	for prefix in "${!typeRegistry[@]}"
-	do
-	    mirroredTypeRegistry["${typeRegistry["$prefix"]}"]="$prefix"
-	done
-
 	typeset -a prefixes=()
-	local order; for order in "${typeOrdering[@]}"
-	do
-	    prefixes+=("${mirroredTypeRegistry["${typeInstallOrder["$order"]}"]}")
-	done
+	readarray -t prefixes < <(getTypePrefixesInTypeOrder)
 	typeset -a definitionFilterPrefixes=("${!definitionFilterTypeRegistry[@]}")
 	typeset -a definitionGroupFilterPrefixes=("${!definitionGroupFilterTypeRegistry[@]}")
 
