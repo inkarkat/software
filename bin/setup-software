@@ -1105,7 +1105,11 @@ do
 	--dry-run)	shift; action=false;;
 	--base-dir)	recursiveArgs+=("$1" "$2"); shift; baseDir="${1:?}"; shift;;
 	--add-base-dir)	recursiveArgs+=("$1" "$2"); shift; additionalBaseDirs=("${1:?}" "${additionalBaseDirs[@]}"); shift;;
-	--print-types)	shift; getTypePrefixesInTypeOrder; exit 0;;
+	--print-types)	shift
+			typeset -a pager=("${PAGER:-less}" --RAW-CONTROL-CHARS); [ -t 1 ] || pager=()
+			eval 'getTypePrefixesInTypeOrder "$@"' "${pager:+|}" '"${pager[@]}"'
+			exit 0
+			;;
 	--print-definitions|-P)
 			recursiveArgs+=("$1"); setupSoftwareBehaviorArgs+=("$1"); shift; isPrintDefinitions=t;;
 	--print|-p)	recursiveArgs+=("$1"); setupSoftwareBehaviorArgs+=("$1"); shift; isPrint=t;;
