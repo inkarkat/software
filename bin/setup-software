@@ -25,7 +25,7 @@ printShortUsage()
     echo
     printf 'Usage: %q %s | tee install-script.sh && sh install-script.sh\n' "$(basename "$1")" "[--check|--dry-run] [-q|--quiet|--silence-no-definitions|-v|--verbose] [-f|--force] [-y|--yes|[-q|--quiet] --recall-only] [-b|--batch] [-s|--select DEFINITION [-s ...]] [--base-dir BASE-DIR] [--name NAME]${commandLineOptionExtensions:+ }${commandLineOptionExtensions}${commandLineParameterExtensions:+ }${commandLineParameterExtensions} -a|--all|[-q|--quiet] --group-recall-only|GROUP-NAME|GROUP-FILESPEC [...]"
     echo
-    printf 'Usage: %q %s\n' "$(basename "$1")" '-P|--print-definitions|-p|--print|-e|--execute [...]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '--print-types|-P|--print-definitions|-p|--print|-e|--execute [...]'
     echo
     echo 'Suggestions for automation in a script:'
     echo
@@ -72,6 +72,8 @@ HELPDESCRIPTION
 			installation action would be required; failure means
 			not), and also print related messages; just omit the
 			installation commands.
+    --print-types	Just print the available types (in the order they will
+			be executed).
     --print-definitions|-P
 			Just print the definitions that have pending
 			installations.
@@ -1103,6 +1105,7 @@ do
 	--dry-run)	shift; action=false;;
 	--base-dir)	recursiveArgs+=("$1" "$2"); shift; baseDir="${1:?}"; shift;;
 	--add-base-dir)	recursiveArgs+=("$1" "$2"); shift; additionalBaseDirs=("${1:?}" "${additionalBaseDirs[@]}"); shift;;
+	--print-types)	shift; getTypePrefixesInTypeOrder; exit 0;;
 	--print-definitions|-P)
 			recursiveArgs+=("$1"); setupSoftwareBehaviorArgs+=("$1"); shift; isPrintDefinitions=t;;
 	--print|-p)	recursiveArgs+=("$1"); setupSoftwareBehaviorArgs+=("$1"); shift; isPrint=t;;
