@@ -1044,7 +1044,7 @@ getAbsoluteOrBaseFilespec()
 	done
     fi
 
-    [ -e "$sourceFile" ] && \
+    [[ -e "$sourceFile" || "$sourceFile" =~ ^/dev/fd/ ]] && \
 	printf %s "$sourceFile" || \
 	return 1
 }

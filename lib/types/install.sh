@@ -74,8 +74,17 @@ parseInstall()
     [ ".$(fileExtension --single -- "$sourceFilespec")" = "$SETUPSOFTWARE_INSTALL_TEMPLATE_EXTENSION" ] && \
 	addCommand=addInstalledTemplate
 
-    printf '%q ' "$addCommand" "${addInstalledFileArgs[@]}" "${installArgs[@]}" -- "$sourceFilespec"
-    printf %q "$2"
+    if [[ "$sourceFilespec" =~ ^/dev/fd/ ]]; then
+	# SOURCE-FILE is a command substitution; use the original (unevaluated)
+	# installItem to actually (re-)execute the command substitution during
+	# installation. The following TARGET-FILE is an absolute file and can be
+	# taken over as-is, fortunately.
+	printf '%q ' "$addCommand" "${addInstalledFileArgs[@]}"
+	printf %s "$installItem"
+    else
+	printf '%q ' "$addCommand" "${addInstalledFileArgs[@]}" "${installArgs[@]}" -- "$sourceFilespec"
+	printf %q "$2"
+    fi
 }
 
 typeset -A addedInstallActions=()
