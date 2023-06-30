@@ -1033,16 +1033,18 @@ getAbsoluteOrBaseFilespec()
     local subDir="${1?}"; shift
     local sourceFile="${1:?}"; shift
 
-    local dirspec; for dirspec in "${additionalBaseDirs[@]}" "$baseDir"
-    do
-	local sourceFilespec="${dirspec}/${subDir}${subDir:+/}${sourceFile}"
-	if [ -e "$sourceFilespec" ]; then
-	    printf %s "$sourceFilespec"
-	    return 0
-	fi
-    done
+    if [[ ! "$sourceFile" =~ ^/ ]]; then
+	local dirspec; for dirspec in "${additionalBaseDirs[@]}" "$baseDir"
+	do
+	    local sourceFilespec="${dirspec}/${subDir}${subDir:+/}${sourceFile}"
+	    if [ -e "$sourceFilespec" ]; then
+		printf %s "$sourceFilespec"
+		return 0
+	    fi
+	done
+    fi
 
-    [ -e "$sourceFile" ] && \
+    [[ -e "$sourceFile" || "$sourceFile" =~ ^/dev/fd/ ]] && \
 	printf %s "$sourceFile" || \
 	return 1
 }
