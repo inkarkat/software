@@ -7,7 +7,7 @@ configUsageSpecialInstall()
 
     cat <<HELPTEXT
 ${prefix}: items consist of createDesktopEntry arguments
-    -e|--exec COMMAND [-n|--name NAME] [-i|--icon ICON] [-c|--comment COMMENT] [-t|--category CATEGORY [-t ...]] DESKTOP-ENTRY
+    -e|--exec COMMAND|-c|--command COMMANDLINE [-n|--name NAME] [-i|--icon ICON] [-C|--comment COMMENT] [-t|--category CATEGORY [-t ...]] DESKTOP-ENTRY
 or just
     SOURCE-FILE
 SOURCE-FILE is either relative to the ./etc/files directory tree, or an absolute
