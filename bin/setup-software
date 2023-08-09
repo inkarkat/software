@@ -420,17 +420,18 @@ addAllAcceptedGroups()
     typeset -a groups=()
     readarray -t groups < <(for dirspec in "${definitionDirspecs[@]}"
 	do
-	    cd "$dirspec" && find . -not -path '*/\.*' -print
-	done | sort | sed -e 's#^\./##'
+	    cd "$dirspec" && find . -not -path '*/\.*' -printf '%P\n'
+	done | sort
     )
     typeset -a filteredGroups=()
     local group; for group in "${groups[@]}"
     do
+	: ${group:=.}
 	contains "$group" "${filteredGroups[@]}" && continue
 
 	local groupSubject="${group##+([0-9])}"	# Leading digits are used for ordering; drop them for querying the user and recalling as they are irrelevant to them and may be subject to change.
 	local setupAppendix=''	# This may be modified by definition group filters (through isDefinitionGroupCompletelyFiltered()); reset it on every iteration here.
-	if isDefinitionGroupDir "${group}"; then
+	if isDefinitionGroupDir "$group"; then
 	    groupDirectoryGroupCount=$(countGlob "${group}/*" "${groups[@]}")
 	    ! isDefinitionGroupCompletelyFiltered "${group}/${GROUPDIR_FILTER_FILENAME}" && \
 		if [ $groupDirectoryGroupCount -gt 1 ]; then
