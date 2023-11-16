@@ -578,12 +578,12 @@ HELPTEXT
 typeset -A configuration=()
 addConfig()
 {
-    local name="${1:?}"; shift
-    local item="${name#*$'\n'}"
-    # Convert the "config:VALUE\nITEM" to configuration[ITEM]=VALUE.
+    local valueAndItem="${1:?}"; shift
+    local item="${valueAndItem#*$'\n'}"
+    # Convert the "VALUE\nITEM" to configuration[ITEM]=VALUE.
     # This can be queried by add${typeFunction}() and install${typeFunction}(),
     # and usually affects the rendering of the install command.
-    local newValue="${name%%$'\n'*}"
+    local newValue="${valueAndItem%%$'\n'*}"
     local existingValue="${configuration["$item"]}"
     configuration["$item"]="${existingValue}${existingValue:+$'\n'}${newValue}"
 }
@@ -591,12 +591,12 @@ addConfig()
 typeset -A decoration=()
 addDecorate()
 {
-    local name="${1:?}"; shift
-    local item="${name#*$'\n'}"
-    # Convert the "decorate:VALUE\nITEM" to decoration[ITEM]=VALUE.
+    local valueAndItem="${1:?}"; shift
+    local item="${valueAndItem#*$'\n'}"
+    # Convert the "VALUE\nITEM" to decoration[ITEM]=VALUE.
     # This can be queried by install${typeFunction}() and considered when
     # rendering the install command.
-    local newValue="${name%%$'\n'*}"
+    local newValue="${valueAndItem%%$'\n'*}"
     local existingValue="${decoration["$item"]}"
     if [ -n "$existingValue" -a "$existingValue" != "$newValue" ]; then
 	printf >&2 'ERROR: Differing decoration "%s" and "%s" for %s\n' "$existingValue" "$newValue" "$item"
@@ -632,16 +632,16 @@ addPreinstallArgs()
 }
 addPreinstall()
 {
-    local name="${1:?}"; shift
-    if [ "${addedItems["${name#*$'\n'}"]}" ]; then
-	# Convert the "preinstall:ACTION\nITEM" to --pre "$ITEM" --action
+    local valueAndItem="${1:?}"; shift
+    if [ "${addedItems["${valueAndItem#*$'\n'}"]}" ]; then
+	# Convert the "ACTION\nITEM" to --pre "$ITEM" --action
 	# "$ACTION" and do a recursive invocation now, in order to print the
 	# preinstallation commands before anything else. This cannot be done
 	# within this script's scope, as preinstall items that reference another
 	# ITEM will populate all the addedITEM* arrays, and everything will be
 	# intermingled and later printed type by type in the static order, but
 	# the purpose of preinstall is to execute stuff before anything else.
-	addPreinstallArgs "${name#*$'\n'}" "${name%%$'\n'*}"
+	addPreinstallArgs "${valueAndItem#*$'\n'}" "${valueAndItem%%$'\n'*}"
     fi
 }
 preinstallHook()
@@ -661,12 +661,12 @@ preinstallHook()
 typeset -a addedPostinstallArgs=()
 addPostinstall()
 {
-    local name="${1:?}"; shift
+    local valueAndItem="${1:?}"; shift
     local recursiveCallArg="$1"; shift
 
-    # Convert the "postinstall:ACTION\nITEM" to
+    # Convert the "ACTION\nITEM" to
     # --post "$ITEM" --action "$ACTION".
-    addedPostinstallArgs+=("${recursiveCallArg:---post}" "${name#*$'\n'}" --action "${name%%$'\n'*}" "$@")
+    addedPostinstallArgs+=("${recursiveCallArg:---post}" "${valueAndItem#*$'\n'}" --action "${valueAndItem%%$'\n'*}" "$@")
 }
 typeset -a addedPostinstallContextArgs=()
 addPostinstallContextCommand()
