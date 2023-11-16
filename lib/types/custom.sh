@@ -42,6 +42,9 @@ ACTION is one of the following:
   distribution's package manager, use the special "native:" prefix here
 - an INSTALL-EXPRESSION (whitespace must be escaped or the entire expression
   quoted!) that is eval'd (prepend $SUDO if it needs to be invoked as root)
+Environment variables for the check and custom action can be passed via
+    config:VAR=NAME
+configuration item(s) preceding it.
 HELPTEXT
 }
 
@@ -76,6 +79,7 @@ getQuotedCustomOnceMarkerCommand()
 
 typeset -A addedCustomActions=()
 typeset -a addedCustomActionList=()
+typeset -A addedCustomConfigs=()
 hasCustom()
 {
     local customRecord="${1:?}"; shift
@@ -92,16 +96,17 @@ hasCustom()
 
     [ "${addedCustomActions["$customAction"]}" ] && return 0	# This custom action has already been selected for installation.
 
+    local config="${hasConfiguration["custom:$customRecord"]}"; config="${config//$'\n'/ }"
     local customFilespec customCheckCommand
     local customDecoration="${decoration["custom:${customRecord}"]}"
     if [ "$customCheck" = 'once' ]; then
-	eval "$(getQuotedCustomOnceMarkerCommand --query "$customAction")"
+	eval "${config}${config:+ }$(getQuotedCustomOnceMarkerCommand --query "$customAction")"
     elif customFilespec="$(getCustomFilespec -x "${customCheckWithoutSudo}")"; then
 	customCheckCommand="${sudoPrefix:+${SUDO}${SUDO:+ }}\"\$customFilespec\""
-	invokeCheck "$(decorateCommand "$customCheckCommand" "$customDecoration")"
+	invokeCheck "$(decorateCommand "${config}${config:+ }${customCheckCommand}" "$customDecoration")"
     elif [[ "$customCheckWithoutSudo" =~ ^\& ]] && customFilespec="$(getCustomFilespec -x "${customActionWithoutSudoAndArgs}${customCheckWithoutSudo#\&}")"; then
 	customCheckCommand="${sudoPrefix:+${SUDO}${SUDO:+ }}\"\$customFilespec\""
-	invokeCheck "$(decorateCommand "$customCheckCommand" "$customDecoration")"
+	invokeCheck "$(decorateCommand "${config}${config:+ }${customCheckCommand}" "$customDecoration")"
     elif [[ "$customCheck" =~ ^\!.*\?$ ]]; then
 	customCheck="${customCheck#\!}"
 	! customPathOrGlobCheck "${customCheck%\?}"
@@ -121,7 +126,7 @@ hasCustom()
 	fi
 
 	customCheckCommand="${sudoPrefix:+${SUDO}${SUDO:+ }}$customCheckWithoutSudo"
-	invokeCheck "$(decorateCommand "$customCheckCommand" "$customDecoration")"
+	invokeCheck "$(decorateCommand "${config}${config:+ }${customCheckCommand}" "$customDecoration")"
     fi
 }
 
@@ -136,6 +141,8 @@ addCustom()
     local customCheck="${customRecord%":$customAction"}"
     addedCustomActions["$customAction"]="$customRecord"
     addedCustomActionList+=("$customAction")
+    addedCustomConfigs["$customAction"]="${configuration["custom:$customRecord"]}"
+
     if [ "$customCheck" = 'once' ]; then
 	onceCustomActions["$customAction"]=t
     fi
@@ -171,6 +178,7 @@ installCustom()
 
     local customAction; for customAction in "${addedCustomActionList[@]}"
     do
+	local config="${addedCustomConfigs["$customAction"]}"; config="${config//$'\n'/ }"
 	local customActionWithoutSudo="${customAction#\$SUDO }"
 	local customActionWithoutSudoAndArgs="${customActionWithoutSudo%% *}"
 	local sudoPrefix="${customAction%"$customActionWithoutSudo"}"
@@ -188,10 +196,10 @@ installCustom()
 	    customActionWithoutSudo="${customFilespec}${customArgs}"
 	elif customFilespec="$(getCustomFilespec -e "${customAction}")"; then
 	    local quotedCustomNotification; printf -v quotedCustomNotification %s "$customFilespec"
-	    submitInstallCommand "addLoginNotification --file $quotedCustomNotification --immediate --no-blocking-gui${quotedCustomOnceMarkerCommand:+ && }${quotedCustomOnceMarkerCommand}" "$customDecoration"
+	    submitInstallCommand "${config}${config:+ }addLoginNotification --file $quotedCustomNotification --immediate --no-blocking-gui${quotedCustomOnceMarkerCommand:+ && }${quotedCustomOnceMarkerCommand}" "$customDecoration"
 	    continue
 	fi
-	submitInstallCommand "${sudoPrefix:+${SUDO}${SUDO:+ }}${customActionWithoutSudo}${quotedCustomOnceMarkerCommand:+ && }${quotedCustomOnceMarkerCommand}" "$customDecoration"
+	submitInstallCommand "${sudoPrefix:+${SUDO}${config:+ --preserve-env}${SUDO:+ }}${config}${config:+ }${customActionWithoutSudo}${quotedCustomOnceMarkerCommand:+ && }${quotedCustomOnceMarkerCommand}" "$customDecoration"
     done
 }
 

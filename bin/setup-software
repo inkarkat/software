@@ -488,7 +488,7 @@ configUsageConfig()
     cat <<'HELPTEXT'
 config: meta items supply special (type-specific) configuration to the non-meta
 non-pre/postinstall item following it in the current definition if that item is
-missing, but has now been selected. The configuration is available to both
+missing, but has now been selected. The configuration is available to has*(),
 add*() and install() functions. If there are multiple configurations for an
 item, they are concatenated, separated by a newline. The format itself is
 undefined, but needs to be a single line, and often is in the form
@@ -575,6 +575,19 @@ ID or ACTION itself is used for that uniqueness check.
 HELPTEXT
 }
 
+typeset -A hasConfiguration=()
+hasConfig()
+{
+    local valueAndItem="${1:?}"; shift
+    local item="${valueAndItem#*$'\n'}"
+    # Convert the "VALUE\nITEM" to hasConfiguration[ITEM]=VALUE.
+    # This can be queried by the has${typeFunction}() function to affect the
+    # check command already. This is a separate dict to avoid interference with
+    # added items.
+    local newValue="${valueAndItem%%$'\n'*}"
+    local existingValue="${hasConfiguration["$item"]}"
+    hasConfiguration["$item"]="${existingValue}${existingValue:+$'\n'}${newValue}"
+}
 typeset -A configuration=()
 addConfig()
 {
@@ -1422,6 +1435,13 @@ do
 	    fi
 
 	    lastRealItem="$item"
+
+	    hasConfiguration=()   # Clear the potential configurations for each item, to avoid that configs from a previous item affect following ones.
+	    for c in "${lastConfigurations[@]}"
+	    do
+		hasConfig "${c#*:}"$'\n'"$item"
+	    done
+
 	    [ ! "$isForce" ] && hasItem "$item"
 	    case $? in
 		0)  lastMissingItem=;;
