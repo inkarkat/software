@@ -11,7 +11,7 @@ isn't installed yet uses ADDON-URL to launch the right Firefox instance for
 (manual) installation of the add-on.
 The browser to be launched (per PROFILE-NAME) can be configured via a
     config:FIREFOX=/opt/firefox/firefox
-configuration item following it.
+configuration item preceding it.
 HELPTEXT
 }
 
