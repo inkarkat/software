@@ -1,14 +1,14 @@
 #!/bin/bash
 
+: ${UPDATESOFTWAREDONE_STAMP:=/var/lib/update-notifier/setup-software-updates-available}
+
 readonly scriptDir="$([ "${BASH_SOURCE[0]}" ] && absoluteScriptFile="$(readlink -nf -- "${BASH_SOURCE[0]}")" && dirname -- "$absoluteScriptFile" || exit 3)"
 [ -d "$scriptDir" ] || { echo >&2 "ERROR: Cannot determine script directory!"; exit 3; }
 
-readonly stamp="/var/lib/update-notifier/setup-software-updates-available"
-
 plumbing='>'; [ "$1" = --tee ] && plumbing='| tee'
 
-eval '"${scriptDir}/../../../../lib/runAsUser" update-software-check-all' "$plumbing" '"$stamp"'
+eval '"${scriptDir}/../../../../lib/runAsUser" update-software-check-all' "$plumbing" '"$UPDATESOFTWAREDONE_STAMP"'
 
-chown "$("${scriptDir}/../../../../lib/runAsUser" whoami)" -- "$stamp"	# Allow modification by my own user (who's also executing the update commands) without having to use sudo.
+chown "$("${scriptDir}/../../../../lib/runAsUser" whoami)" -- "$UPDATESOFTWAREDONE_STAMP"	# Allow modification by my own user (who's also executing the update commands) without having to use sudo.
 
 exit 0	# Succeed also when no updates were found, in particular to make cron happy.
