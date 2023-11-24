@@ -21,7 +21,7 @@ else
     do
 	[ -n "$updater" ] || continue
 	literalUpdater="$(printf %s "$updater" | sed -e 's/[][\$*.^/]/\\&/g')"
-	sed -i \
+	sedInplaceWithoutDirPermissions \
 	    -e "/^${literalUpdater} has updates:\$/{"'
 		    :loop
 		    $d
