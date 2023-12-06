@@ -444,6 +444,9 @@ addAllAcceptedGroups()
 
 	isDefinitionGroupCompletelyFiltered "$group" && continue
 
+	$printGroups -- "$(getDefinitionGroupFilespec "$group")" \
+	    | withHeader --no-newline -- "$groupSubject"
+
 	$obtainGroups --memoize-group "${setupName}${setupAppendix:+-}${setupAppendix}-groups" --timespan "$SETUPSOFTWARE_GROUP_VALID_TIMESPAN" --subject "$groupSubject" --verb 'is not' --state 'chosen' --action 'consider it' && \
 	    acceptedGroups+=("$group")
     done
@@ -1093,6 +1096,7 @@ setupAppendix=
 obtainSelection=memoizeAndCacheDecision
 isAddAll=
 obtainGroups=memoizeDecision
+printGroups=printSpecialComments
 typeset -a selections=()
 typeset -a specialHandlingCommands=()
 specialHandlingFinalCommand=
@@ -1153,6 +1157,7 @@ do
 			else
 			    obtainGroups=recallDecision
 			fi
+			printGroups=:
 			;;
 	--clear-group-recall)
 			shift
