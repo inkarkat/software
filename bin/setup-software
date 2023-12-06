@@ -424,6 +424,7 @@ addAllAcceptedGroups()
 	done | sort
     )
     typeset -a filteredGroups=()
+    typeset -a withHeaderFirstArg=(--first)
     local group; for group in "${groups[@]}"
     do
 	: ${group:=.}
@@ -437,6 +438,7 @@ addAllAcceptedGroups()
 		if [ $groupDirectoryGroupCount -gt 1 ]; then
 		    # Ignore a group directory that has only one group in it; the query for the group itself will suffice.
 		    $obtainGroups --memoize-group "${setupName}${setupAppendix:+-}${setupAppendix}-groups" --timespan "$SETUPSOFTWARE_GROUP_VALID_TIMESPAN" --subject "$groupSubject" --verb "directory (with $groupDirectoryGroupCount groups) is not" --state 'chosen' --action 'consider it'
+		    withHeaderFirstArg=()
 		fi || \
 		readarray -O ${#filteredGroups[@]} -t filteredGroups < <(filterGlob "${group}/*" "${groups[@]}")
 	    continue
@@ -445,10 +447,11 @@ addAllAcceptedGroups()
 	isDefinitionGroupCompletelyFiltered "$group" && continue
 
 	$printGroups -- "$(getDefinitionGroupFilespec "$group")" \
-	    | withHeader --no-newline -- "$groupSubject"
+	    | withHeader "${withHeaderFirstArg[@]}" --no-newline -- "$groupSubject"
 
 	$obtainGroups --memoize-group "${setupName}${setupAppendix:+-}${setupAppendix}-groups" --timespan "$SETUPSOFTWARE_GROUP_VALID_TIMESPAN" --subject "$groupSubject" --verb 'is not' --state 'chosen' --action 'consider it' && \
 	    acceptedGroups+=("$group")
+	withHeaderFirstArg=()
     done
 }
 
