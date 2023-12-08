@@ -438,9 +438,10 @@ addAllAcceptedGroups()
 	    ! isDefinitionGroupCompletelyFiltered "${group}/${GROUPDIR_FILTER_FILENAME}" && \
 		if [ $groupDirectoryGroupCount -gt 1 ]; then
 		    local groupDirDescriptionFilespec="$(getDefinitionGroupFilespec "${group}/${GROUPDIR_DESCRIPTION_FILENAME}")"
-		    if [ -r "$groupDirDescriptionFilespec" ]; then
+		    if [ "$isPrintGroups" ] && [ -r "$groupDirDescriptionFilespec" ]; then
 			cat -- "$groupDirDescriptionFilespec" \
-			    | withHeader "${withHeaderFirstArg[@]}" --no-newline -- "$groupSubject"
+			    | withHeader "${withHeaderFirstArg[@]}" --no-newline -- "$groupSubject" \
+				>&2
 		    fi
 
 		    # Ignore a group directory that has only one group in it; the query for the group itself will suffice.
@@ -453,8 +454,10 @@ addAllAcceptedGroups()
 
 	isDefinitionGroupCompletelyFiltered "$group" && continue
 
-	$printGroups -- "$(getDefinitionGroupFilespec "$group")" \
-	    | withHeader "${withHeaderFirstArg[@]}" --no-newline -- "$groupSubject"
+	[ ! "$isPrintGroups" ] ||
+	    printSpecialComments -- "$(getDefinitionGroupFilespec "$group")" \
+		| withHeader "${withHeaderFirstArg[@]}" --no-newline -- "$groupSubject" \
+		    >&2
 
 	$obtainGroups --memoize-group "${setupName}${setupAppendix:+-}${setupAppendix}-groups" --timespan "$SETUPSOFTWARE_GROUP_VALID_TIMESPAN" --subject "$groupSubject" --verb 'is not' --state 'chosen' --action 'consider it' && \
 	    acceptedGroups+=("$group")
@@ -1106,7 +1109,7 @@ setupAppendix=
 obtainSelection=memoizeAndCacheDecision
 isAddAll=
 obtainGroups=memoizeDecision
-printGroups=printSpecialComments
+isPrintGroups=t
 typeset -a selections=()
 typeset -a specialHandlingCommands=()
 specialHandlingFinalCommand=
@@ -1167,7 +1170,7 @@ do
 			else
 			    obtainGroups=recallDecision
 			fi
-			printGroups=:
+			isPrintGroups=
 			;;
 	--clear-group-recall)
 			shift
