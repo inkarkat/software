@@ -465,6 +465,245 @@ addAllAcceptedGroups()
     done
 }
 
+parseDefinitionGroups()
+{
+    local definitionGroup definitionGroupFilespec
+    for definitionGroup
+    do
+	if [ "${definitionGroup:0:1}" != '.' ] && definitionGroupFilespec="$(getDefinitionGroupFilespec "$definitionGroup")"; then
+	    :
+	elif [ -f "${definitionGroup}" ]; then
+	    definitionGroupFilespec="$definitionGroup"
+	else
+	    printf >&2 'ERROR: Definition "%s" does not exist.\n' "$definitionGroup"
+	    exit 2
+	fi
+
+	parseDefinitionGroup "$definitionGroupFilespec"
+    done
+    if [ ${#definitions[@]} -eq 0 ]; then
+	[ "$isSilenceNoDefinitions" ] || messagePrintf '%s\n' 'No definitions have been found.'
+	return 99
+    fi
+
+
+
+    local definition items comment subject
+    for definition in "${definitions[@]}"
+    do
+	items="${definition%%[	 ]#*}"
+	comment="${definition#"$items"}"
+	comment="${comment#[	 ]#}"
+	comment="${comment##[	 ]}"
+	eval "set -- $items"
+	if [ -n "$comment" ]; then
+	    subject="$(printf %s "$comment" | evalFile)"
+	else
+	    subject="$(getSubjectFromItems "$@")"
+	fi
+
+	setupAppendix=''	# This may be modified by definition filters (through isDefinitionAcceptedBy${definitionFilterFunction}()); reset it for every definition here.
+	local item name prefix definitionFilterFunction
+	for item
+	do
+	    name="${item#*:}"
+	    prefix="${item%"$name"}"
+	    [ -n "$prefix" ] || continue
+	    definitionFilterFunction="${definitionFilterTypeRegistry["$prefix"]}"
+	    if [ -n "$definitionFilterFunction" ]; then
+		"isDefinitionAcceptedBy${definitionFilterFunction}" "$name" "$definition" || \
+		    continue 2
+	    fi
+	done
+
+	let handledDefinitionCount+=1
+	typeset -a missingItems=()
+	typeset -a missingItemConfigurations=()
+	local lastRealItem=
+	typeset -a lastConfigurations=()
+	local lastDecoration=
+	local lastMissingItem=
+	let realItemCnt=0
+	let missingRealItemCnt=0
+	local noMissingItemMessage="Already installed: $subject"
+	for item
+	do
+	    name="${item#*:}"
+	    prefix="${item%"$name"}"
+	    if contains "$prefix" "${!definitionFilterTypeRegistry[@]}"; then
+		continue    # Ignore; definition filters have already been handled.
+	    elif contains "$prefix" "${!definitionGroupFilterTypeRegistry[@]}"; then
+		printf >&2 'ERROR: Definition group filter types (like %s) must only appear the beginning of a definition group: %s.\n' "$prefix" "$item"
+		exit 3
+	    elif contains "$prefix" preinstall: postinstall:; then
+		if [ -z "$lastRealItem" ]; then
+		    printf >&2 'ERROR: No previous item before %s.\n' "$item"
+		    exit 3
+		elif [ "$lastRealItem" = "$lastMissingItem" ]; then
+		    # The preinstall action will run when the previous item will
+		    # be installed. The postinstall action will run when the
+		    # installation of the previous item was successful. To be
+		    # able to check that, we need that item as well, so append
+		    # it on a new line.
+		    missingItems+=("$item"$'\n'"$lastMissingItem")
+		fi
+	    elif [ "$prefix" = config: ]; then
+		# The configuration still needs the following real item to be
+		# complete; all we can do right now is storing the configuration
+		# itself.
+		lastConfigurations+=("$item")
+		continue
+	    elif [ "$prefix" = decorate: ]; then
+		lastDecoration="$item"
+		continue
+	    elif [ "$prefix" = postinstall-or-once: ]; then
+		if [ -z "$lastRealItem" ]; then
+		    printf >&2 'ERROR: No previous item before %s.\n' "$item"
+		    exit 3
+		else
+		    [ ! "$isForce" ] && hasItem "$lastRealItem"
+		    case $? in
+			0)	rest="${name#*:}"
+			    id="${name%"$rest"}"
+			    if [ -n "$id" ] && [ -n "${typeRegistry["$id"]}" ]; then
+				# Don't take an existing type prefix as the optional ID.
+				id="$name"; rest="$name"
+			    else
+				id="${id%:}"
+			    fi
+			    id="${id:-$rest}"
+			    escapedId="${id//	/ }"
+			    onceMarker --query "$escapedId"
+			    case $? in
+				0)	;;  # The item already is installed, and the check has been run already.
+				1|4)
+				    # The item already is installed, but the check did not run yet.
+				    addPostinstall "$rest"$'\n'"$lastRealItem" --post-or-once --id "$escapedId"
+				    noMissingItemMessage="Only postinstall required for $subject"
+				    ;;
+				*)	exit 3;;
+			    esac
+			    ;;
+			98)	;;
+			99)	;;
+			*)	if [ -n "$lastMissingItem" ]; then
+				# The postinstall action will run when the installation of the
+				# previous item was successful. To be able to check that, we
+				# need that item as well, so append it on a new line.
+				missingItems+=("postinstall:${name}"$'\n'"$lastMissingItem")
+			    fi
+			    ;;
+		    esac
+		fi
+	    elif [ "$prefix" = dummy: ]; then
+		# Don't do decorations on dummy items.
+
+		# Treat dummy items as real items, so that we can do pre- and
+		# postinstall actions on them.
+		lastRealItem="$item"
+		[ ! "$isForce" ] && hasItem "$item"
+		case $? in
+		    0)  lastMissingItem=;;
+		    98) # Just skip this item.
+			noMissingItemMessage="Just skipped items in $subject"
+			continue
+			;;
+		    99) # If one item's state cannot not be determined, the entire definition should be skipped, as we cannot ensure the correct installation.
+			noMissingItemMessage="Skipped: $subject"
+			let handledDefinitionCount-=1
+			break
+			;;
+		    *)  # Add missing dummy items to missingItemConfigurations instead of missingItems, so that a definition with just missing dummy items does not query the user, but if there are other missing items, the dummy one will be included, too.
+			#missingItems+=("$item")
+			missingItemConfigurations+=("$item")
+			lastMissingItem="$item"
+			let missingRealItemCnt+=1
+
+			# Don't do configurations on dummy items.
+			;;
+		esac
+	    else
+		if [ -n "$lastDecoration" ]; then
+		    addDecorate "${lastDecoration#decorate:}"$'\n'"$item"
+		    lastDecoration=''
+		fi
+
+		lastRealItem="$item"
+
+		hasConfiguration=()   # Clear the potential configurations for each item, to avoid that configs from a previous item affect following ones.
+		local c
+		for c in "${lastConfigurations[@]}"
+		do
+		    hasConfig "${c#*:}"$'\n'"$item"
+		done
+
+		[ ! "$isForce" ] && hasItem "$item"
+		case $? in
+		    0)  lastMissingItem=;;
+		    98) # Just skip this item.
+			noMissingItemMessage="Just skipped items in $subject"
+			continue
+			;;
+		    99) # If one item's state cannot not be determined, the entire definition should be skipped, as we cannot ensure the correct installation.
+			noMissingItemMessage="Skipped: $subject"
+			let handledDefinitionCount-=1
+			break
+			;;
+		    *)  missingItems+=("$item")
+			lastMissingItem="$item"
+			let missingRealItemCnt+=1
+
+			# With the real item, we can finally assemble the complete
+			# configurations for it. Collect them in a separate array
+			# because
+			# a) we don't want them counted (like decorations, these are
+			#    just meta-information)
+			# b) these need to be added first, so that the add*()
+			#    function can already access the configuration
+			for c in "${lastConfigurations[@]}"
+			do
+			    missingItemConfigurations+=("$c"$'\n'"$item")
+			done
+			lastConfigurations=()
+			;;
+		esac
+		let realItemCnt+=1
+	    fi
+	done
+
+	if [ ${#missingItems[@]} -eq 0 ]; then
+	    [ "$isVerbose" ] && messagePrintf '%s\n' "$noMissingItemMessage"
+	else
+	    let missingDefinitionCount+=1
+	    local what=
+	    local itemVerb=are; [ -n "$comment" -o $realItemCnt -eq 1 ] && itemVerb=is
+	    local itemAuxVerb=
+	    if [ $realItemCnt -gt $missingRealItemCnt ]; then
+		missingItemsPlural=s; [ $missingRealItemCnt -eq 1 ] && missingItemsPlural=
+		what="$missingRealItemCnt item${missingItemsPlural} missing: ${missingItems[*]}"
+	    elif [ $realItemCnt -gt 1 ]; then
+		what="all $missingRealItemCnt items are missing"
+	    fi
+
+	    if [ $missingRealItemCnt -eq 1 ] && [[ "${missingItems[0]}" =~ 'custom:once:' ]]; then
+		itemVerb='may or may'
+		itemAuxVerb=be
+	    fi
+
+	    if askTo --subject "$subject" --verb "$itemVerb not yet${itemAuxVerb:+ }$itemAuxVerb" --state "installed${what:+ (}${what}${what:+)}" --action 'install it'; then
+		let addedDefinitionCount+=1
+		# Add the configurations first, so that they are available to the
+		# add*() function for the real item already.
+		addItems "${missingItemConfigurations[@]}" "${missingItems[@]}"
+
+		[ ! "$isPrintDefinitions" ] || printf '%s\n' "$subject"
+	    fi
+	fi
+    done
+    return 0
+}
+
+
 keyDatabase()
 {
     # Note: No --namespace "$setupName" here, because the information usually is
@@ -1291,240 +1530,11 @@ fi
 
 IFS=' '
 typeset -a definitions=()
-for definitionGroup in "${acceptedGroups[@]}" "${passedGroups[@]}"
-do
-    if [ "${definitionGroup:0:1}" != '.' ] && definitionGroupFilespec="$(getDefinitionGroupFilespec "$definitionGroup")"; then
-	:
-    elif [ -f "${definitionGroup}" ]; then
-	definitionGroupFilespec="$definitionGroup"
-    else
-	printf >&2 'ERROR: Definition "%s" does not exist.\n' "$definitionGroup"
-	exit 2
-    fi
-
-    parseDefinitionGroup "$definitionGroupFilespec"
-done
-if [ ${#definitions[@]} -eq 0 ]; then
-    [ "$isSilenceNoDefinitions" ] || messagePrintf '%s\n' 'No definitions have been found.'
-    exit 99
-fi
-
-
-
 let handledDefinitionCount=0
 let missingDefinitionCount=0
 let addedDefinitionCount=0
-for definition in "${definitions[@]}"
-do
-    items="${definition%%[	 ]#*}"
-    comment="${definition#"$items"}"
-    comment="${comment#[	 ]#}"
-    comment="${comment##[	 ]}"
-    eval "set -- $items"
-    if [ -n "$comment" ]; then
-	subject="$(printf %s "$comment" | evalFile)"
-    else
-	subject="$(getSubjectFromItems "$@")"
-    fi
-
-    setupAppendix=''	# This may be modified by definition filters (through isDefinitionAcceptedBy${definitionFilterFunction}()); reset it for every definition here.
-    for item
-    do
-	name="${item#*:}"
-	prefix="${item%"$name"}"
-	[ -n "$prefix" ] || continue
-	definitionFilterFunction="${definitionFilterTypeRegistry["$prefix"]}"
-	if [ -n "$definitionFilterFunction" ]; then
-	    "isDefinitionAcceptedBy${definitionFilterFunction}" "$name" "$definition" || \
-		continue 2
-	fi
-    done
-
-    let handledDefinitionCount+=1
-    typeset -a missingItems=()
-    typeset -a missingItemConfigurations=()
-    lastRealItem=
-    typeset -a lastConfigurations=()
-    lastDecoration=
-    lastMissingItem=
-    let realItemCnt=0
-    let missingRealItemCnt=0
-    noMissingItemMessage="Already installed: $subject"
-    for item
-    do
-	name="${item#*:}"
-	prefix="${item%"$name"}"
-	if contains "$prefix" "${!definitionFilterTypeRegistry[@]}"; then
-	    continue    # Ignore; definition filters have already been handled.
-	elif contains "$prefix" "${!definitionGroupFilterTypeRegistry[@]}"; then
-	    printf >&2 'ERROR: Definition group filter types (like %s) must only appear the beginning of a definition group: %s.\n' "$prefix" "$item"
-	    exit 3
-	elif contains "$prefix" preinstall: postinstall:; then
-	    if [ -z "$lastRealItem" ]; then
-		printf >&2 'ERROR: No previous item before %s.\n' "$item"
-		exit 3
-	    elif [ "$lastRealItem" = "$lastMissingItem" ]; then
-		# The preinstall action will run when the previous item will
-		# be installed. The postinstall action will run when the
-		# installation of the previous item was successful. To be
-		# able to check that, we need that item as well, so append
-		# it on a new line.
-		missingItems+=("$item"$'\n'"$lastMissingItem")
-	    fi
-	elif [ "$prefix" = config: ]; then
-	    # The configuration still needs the following real item to be
-	    # complete; all we can do right now is storing the configuration
-	    # itself.
-	    lastConfigurations+=("$item")
-	    continue
-	elif [ "$prefix" = decorate: ]; then
-	    lastDecoration="$item"
-	    continue
-	elif [ "$prefix" = postinstall-or-once: ]; then
-	    if [ -z "$lastRealItem" ]; then
-		printf >&2 'ERROR: No previous item before %s.\n' "$item"
-		exit 3
-	    else
-		[ ! "$isForce" ] && hasItem "$lastRealItem"
-		case $? in
-		    0)	rest="${name#*:}"
-			id="${name%"$rest"}"
-			if [ -n "$id" ] && [ -n "${typeRegistry["$id"]}" ]; then
-			    # Don't take an existing type prefix as the optional ID.
-			    id="$name"; rest="$name"
-			else
-			    id="${id%:}"
-			fi
-			id="${id:-$rest}"
-			escapedId="${id//	/ }"
-			onceMarker --query "$escapedId"
-			case $? in
-			    0)	;;  # The item already is installed, and the check has been run already.
-			    1|4)
-				# The item already is installed, but the check did not run yet.
-				addPostinstall "$rest"$'\n'"$lastRealItem" --post-or-once --id "$escapedId"
-				noMissingItemMessage="Only postinstall required for $subject"
-				;;
-			    *)	exit 3;;
-			esac
-			;;
-		    98)	;;
-		    99)	;;
-		    *)	if [ -n "$lastMissingItem" ]; then
-			    # The postinstall action will run when the installation of the
-			    # previous item was successful. To be able to check that, we
-			    # need that item as well, so append it on a new line.
-			    missingItems+=("postinstall:${name}"$'\n'"$lastMissingItem")
-			fi
-			;;
-		esac
-	    fi
-	elif [ "$prefix" = dummy: ]; then
-	    # Don't do decorations on dummy items.
-
-	    # Treat dummy items as real items, so that we can do pre- and
-	    # postinstall actions on them.
-	    lastRealItem="$item"
-	    [ ! "$isForce" ] && hasItem "$item"
-	    case $? in
-		0)  lastMissingItem=;;
-		98) # Just skip this item.
-		    noMissingItemMessage="Just skipped items in $subject"
-		    continue
-		    ;;
-		99) # If one item's state cannot not be determined, the entire definition should be skipped, as we cannot ensure the correct installation.
-		    noMissingItemMessage="Skipped: $subject"
-		    let handledDefinitionCount-=1
-		    break
-		    ;;
-		*)  # Add missing dummy items to missingItemConfigurations instead of missingItems, so that a definition with just missing dummy items does not query the user, but if there are other missing items, the dummy one will be included, too.
-		    #missingItems+=("$item")
-		    missingItemConfigurations+=("$item")
-		    lastMissingItem="$item"
-		    let missingRealItemCnt+=1
-
-		    # Don't do configurations on dummy items.
-		    ;;
-	    esac
-	else
-	    if [ -n "$lastDecoration" ]; then
-		addDecorate "${lastDecoration#decorate:}"$'\n'"$item"
-		lastDecoration=''
-	    fi
-
-	    lastRealItem="$item"
-
-	    hasConfiguration=()   # Clear the potential configurations for each item, to avoid that configs from a previous item affect following ones.
-	    for c in "${lastConfigurations[@]}"
-	    do
-		hasConfig "${c#*:}"$'\n'"$item"
-	    done
-
-	    [ ! "$isForce" ] && hasItem "$item"
-	    case $? in
-		0)  lastMissingItem=;;
-		98) # Just skip this item.
-		    noMissingItemMessage="Just skipped items in $subject"
-		    continue
-		    ;;
-		99) # If one item's state cannot not be determined, the entire definition should be skipped, as we cannot ensure the correct installation.
-		    noMissingItemMessage="Skipped: $subject"
-		    let handledDefinitionCount-=1
-		    break
-		    ;;
-		*)  missingItems+=("$item")
-		    lastMissingItem="$item"
-		    let missingRealItemCnt+=1
-
-		    # With the real item, we can finally assemble the complete
-		    # configurations for it. Collect them in a separate array
-		    # because
-		    # a) we don't want them counted (like decorations, these are
-		    #    just meta-information)
-		    # b) these need to be added first, so that the add*()
-		    #    function can already access the configuration
-		    for c in "${lastConfigurations[@]}"
-		    do
-			missingItemConfigurations+=("$c"$'\n'"$item")
-		    done
-		    lastConfigurations=()
-		    ;;
-	    esac
-	    let realItemCnt+=1
-	fi
-    done
-
-    if [ ${#missingItems[@]} -eq 0 ]; then
-	[ "$isVerbose" ] && messagePrintf '%s\n' "$noMissingItemMessage"
-    else
-	let missingDefinitionCount+=1
-	what=
-	itemVerb=are; [ -n "$comment" -o $realItemCnt -eq 1 ] && itemVerb=is
-	itemAuxVerb=
-	if [ $realItemCnt -gt $missingRealItemCnt ]; then
-	    missingItemsPlural=s; [ $missingRealItemCnt -eq 1 ] && missingItemsPlural=
-	    what="$missingRealItemCnt item${missingItemsPlural} missing: ${missingItems[*]}"
-	elif [ $realItemCnt -gt 1 ]; then
-	    what="all $missingRealItemCnt items are missing"
-	fi
-
-	if [ $missingRealItemCnt -eq 1 ] && [[ "${missingItems[0]}" =~ 'custom:once:' ]]; then
-	    itemVerb='may or may'
-	    itemAuxVerb=be
-	fi
-
-	if askTo --subject "$subject" --verb "$itemVerb not yet${itemAuxVerb:+ }$itemAuxVerb" --state "installed${what:+ (}${what}${what:+)}" --action 'install it'; then
-	    let addedDefinitionCount+=1
-	    # Add the configurations first, so that they are available to the
-	    # add*() function for the real item already.
-	    addItems "${missingItemConfigurations[@]}" "${missingItems[@]}"
-
-	    [ ! "$isPrintDefinitions" ] || printf '%s\n' "$subject"
-	fi
-    fi
-done
-
-
+setupAppendix=
+parseDefinitionGroups "${acceptedGroups[@]}" "${passedGroups[@]}" || exit $?
 
 $action && exit $installExitStatus
 
