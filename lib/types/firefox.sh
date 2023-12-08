@@ -62,7 +62,14 @@ hasFirefoxAddon()
 	*f*)    set +f; _disabledNoGlob=t;;
     esac
 	if [ -z "$profileName" ]; then
-	    typeset -a existingProfileDirspecs=("$FIREFOX_PROFILES_DIRSPEC"/*.default?(-release))
+	    # Read the default profile from the configuration file.
+	    local fullProfileName="$(sed -n -e 's/^Default=\(.\+\..\+\)$/\1/p' "${FIREFOX_PROFILES_DIRSPEC}/profiles.ini")"
+	    if [ -n "$fullProfileName" ]; then
+		typeset -a existingProfileDirspecs=("${FIREFOX_PROFILES_DIRSPEC}/${fullProfileName}")
+	    else
+		# Fall back to globbing the profile directory names.
+		typeset -a existingProfileDirspecs=("$FIREFOX_PROFILES_DIRSPEC"/*.default?(-release))
+	    fi
 	else
 	    typeset -a existingProfileDirspecs=("$FIREFOX_PROFILES_DIRSPEC"/*."$profileName")
 	fi
