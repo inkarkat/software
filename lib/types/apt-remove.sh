@@ -15,19 +15,33 @@ via apt. Behaves like a normal installation if the package hasn't been
 installed.
 HELPTEXT
 }
+configUsageAptUpgrade()
+{
+    cat <<'HELPTEXT'
+apt-upgrade: items refer to Debian packages to be attempted to be upgraded
+(i.e. install a version now selected by the package management (if such exists,
+e.g. after configuring a different repository) over an existing installation)
+via apt.
+HELPTEXT
+}
 
 typeRegistry+=([apt-remove:]=AptRemove)
 typeRegistry+=([apt-reinstall:]=AptReinstall)
+typeRegistry+=([apt-upgrade:]=AptUpgrade)
 typeInstallOrder+=([9]=AptRemove)
 typeInstallOrder+=([10]=AptReinstall)
+typeInstallOrder+=([199]=AptUpgrade)
 
 if ! exists apt; then
     hasAptRemove() { return 98; }
     hasAptReinstall() { return 98; }
+    hasAptUpgrade() { return 98; }
     installAptRemove() { :; }
     installAptReinstall() { :; }
+    installAptUpgrade() { :; }
     isAvailableAptRemove() { return 98; }
     isAvailableAptReinstall() { return 98; }
+    isAvailableAptUpgrade() { return 98; }
     return
 fi
 
@@ -41,7 +55,8 @@ hasAptRemove()
 	return 99
     fi
 
-    [ ! "${installedAptPackages["$packageName"]}" ] || [ "${removedAptPackages["$packageName"]}" ] || [ "${externallyRemovedAptPackages["$packageName"]}" ]
+    [ ! "${installedAptPackages["$packageName"]}" ] \
+	|| [ "${removedAptPackages["$packageName"]}" ] || [ "${externallyRemovedAptPackages["$packageName"]}" ]
 }
 hasAptReinstall()
 {
@@ -52,6 +67,17 @@ hasAptReinstall()
     fi
 
     [ "${removedAptPackages["$packageName"]}" ] || [ "${externallyRemovedAptPackages["$packageName"]}" ]
+}
+hasAptUpgrade()
+{
+    local packageName="${1:?}"; shift
+    if ! getInstalledAptPackages; then
+	messagePrintf >&2 'ERROR: Failed to obtain installed native package list; skipping %s.\n' "$packageName"
+	return 99
+    fi
+
+    [ ! "${installedAptPackages["$packageName"]}" ] \
+	|| [ "${removedAptPackages["$packageName"]}" ] || [ "${externallyRemovedAptPackages["$packageName"]}" ]
 }
 
 addAptRemove()
@@ -66,6 +92,11 @@ addAptReinstall()
     removedAptPackages["$packageName"]=t
     addedAptPackages["$packageName"]=t
 }
+addAptUpgrade()
+{
+    local packageName="${1:?}"; shift
+    addedAptPackages["$packageName"]=t
+}
 
 isAvailableAptRemove()
 {
@@ -74,6 +105,10 @@ isAvailableAptRemove()
 isAvailableAptReinstall()
 {
     isQuiet=t hasAptReinstall "$@"
+}
+isAvailableAptUpgrade()
+{
+    isQuiet=t hasAptUpgrade "$@"
 }
 
 installAptRemove()
@@ -85,5 +120,10 @@ installAptRemove()
 installAptReinstall()
 {
     # Noop; the actual actions are done by installAptRemove() and installApt().
+    :
+}
+installAptUpgrade()
+{
+    # Noop; the actual actions are done by installApt().
     :
 }
