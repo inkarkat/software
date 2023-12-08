@@ -1037,6 +1037,22 @@ isAvailableOrUserAcceptsNative()
 	return 1
     fi
 }
+isAvailableOrUserAcceptsGroup()
+{
+    local packageManagerExecutable="${1:?}"; shift
+    local packageManagerGroup="${1:?}"; shift
+    local packageManagerSubject="${1:-$packageManagerExecutable}"; shift
+
+    if exists "$packageManagerExecutable"; then
+	return
+    fi
+
+    if askToInstall "$packageManagerSubject"; then
+	parseDefinitionGroups "$packageManagerGroup"
+    else
+	return 1
+    fi
+}
 typeset -A dependency=()
 isDependencyAvailableOrUserAcceptsNative()
 {
