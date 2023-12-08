@@ -465,8 +465,10 @@ addAllAcceptedGroups()
     done
 }
 
+let definitionCnt=0
 parseDefinitionGroups()
 {
+    typeset -a definitions=()
     local definitionGroup definitionGroupFilespec
     for definitionGroup
     do
@@ -487,10 +489,10 @@ parseDefinitionGroups()
     fi
 
 
-
     local definition items comment subject
     for definition in "${definitions[@]}"
     do
+	let definitionCnt+=1
 	items="${definition%%[	 ]#*}"
 	comment="${definition#"$items"}"
 	comment="${comment#[	 ]#}"
@@ -1529,7 +1531,6 @@ elif [ ! "$isAddAll" ] && [ ${#passedGroups[@]} -eq 0 ]; then
 fi
 
 IFS=' '
-typeset -a definitions=()
 let handledDefinitionCount=0
 let missingDefinitionCount=0
 let addedDefinitionCount=0
@@ -1551,8 +1552,8 @@ if [ $handledDefinitionCount -gt 0 ]; then
 	definitionsVerb=are; definitionsPlural=s; [ $handledDefinitionCount -eq 1 ] && { definitionsVerb=is; definitionsPlural= ; }
 	messagePrintf '%d definition%s %s already installed.\n' "$handledDefinitionCount" "$definitionsPlural" "$definitionsVerb"
     fi
-elif [ ${#definitions[@]} -gt 0 ]; then
-    skippedDefinitionsVerb=have; skippedDefinitionsPlural=s; [ ${#definitions[@]} -eq 1 ] && { skippedDefinitionsVerb=has; skippedDefinitionsPlural= ; }
-    messagePrintf '%d definition%s %s been skipped.\n' "${#definitions[@]}" "$skippedDefinitionsPlural" "$skippedDefinitionsVerb"
+elif [ $definitionCnt -gt 0 ]; then
+    skippedDefinitionsVerb=have; skippedDefinitionsPlural=s; [ $definitionCnt -eq 1 ] && { skippedDefinitionsVerb=has; skippedDefinitionsPlural= ; }
+    messagePrintf '%d definition%s %s been skipped.\n' $definitionCnt "$skippedDefinitionsPlural" "$skippedDefinitionsVerb"
 fi
 exit $status
