@@ -49,6 +49,10 @@ Environment variables for the check and custom action can be passed via
 configuration item(s) preceding it.
 HELPTEXT
 }
+configUsageCustomPre()
+{
+    configUsageCustomAtOrder 'pre' $'is executed before any other installation action (native or otherwise),\nbut still after any configuration type' "$@"
+}
 configUsageCustom()
 {
     configUsageCustomAtOrder '' 'is executed at the very end of the installation' "$@"
@@ -83,6 +87,9 @@ getQuotedCustomOnceMarkerCommand()
     printf '%q ' executionMarker --base-type data --namespace "$setupName" --group custom-once "$@"
 }
 
+typeset -A addedCustomPreActions=()
+typeset -a addedCustomPreActionList=()
+typeset -A addedCustomPreConfigs=()
 typeset -A addedCustomActions=()
 typeset -a addedCustomActionList=()
 typeset -A addedCustomConfigs=()
@@ -136,11 +143,17 @@ hasCustomAtOrder()
 	invokeCheck "$(decorateCommand "${config}${config:+ }${customCheckCommand}" "$customDecoration")"
     fi
 }
+hasCustomPre()
+{
+    hasCustomAtOrder 'pre' "$@"
+}
 hasCustom()
 {
     hasCustomAtOrder '' "$@"
 }
 
+typeset -A itemCustomPreActions=()
+typeset -A onceCustomPreActions=()
 typeset -A itemCustomActions=()
 typeset -A onceCustomActions=()
 addCustomAtOrder()
@@ -181,6 +194,10 @@ addCustomAtOrder()
 	    fi
 	fi
     fi
+}
+addCustomPre()
+{
+    addCustomAtOrder 'pre' "$@"
 }
 addCustom()
 {
@@ -223,10 +240,16 @@ installCustomAtOrder()
 	submitInstallCommand "${sudoPrefix:+${SUDO}${config:+ --preserve-env}${SUDO:+ }}${config}${config:+ }${customActionWithoutSudo}${quotedCustomOnceMarkerCommand:+ && }${quotedCustomOnceMarkerCommand}" "$customDecoration"
     done
 }
+installCustomPre()
+{
+    installCustomAtOrder 'pre' "$@"
+}
 installCustom()
 {
     installCustomAtOrder '' "$@"
 }
 
+typeRegistry+=([custompre:]=CustomPre)
 typeRegistry+=([custom:]=Custom)
+typeInstallOrder+=([99]=CustomPre)
 typeInstallOrder+=([1000]=Custom)
