@@ -666,10 +666,10 @@ parseDefinitionGroups()
 			do
 			    missingItemConfigurations+=("$c"$'\n'"$item")
 			done
-			lastConfigurations=()
 			;;
 		esac
 		let realItemCnt+=1
+		lastConfigurations=()
 	    fi
 	done
 
