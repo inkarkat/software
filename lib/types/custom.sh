@@ -108,7 +108,8 @@ hasCustomAtOrder()
 	exit 3
     fi
 
-    eval "[ \"\${addedCustom${order^}Actions[\"\$customAction\"]}\" ]" && return 0	# This custom action has already been selected for installation.
+    local -n actions=addedCustom${order^}Actions
+    [ "${actions["$customAction"]}" ] && return 0	# This custom action has already been selected for installation.
 
     local config="${hasConfiguration["custom${order}:${customRecord}"]}"; config="${config//$'\n'/ }"
     local customFilespec customCheckCommand
@@ -164,12 +165,17 @@ addCustomAtOrder()
     local customRecord="${1:?}"; shift
     local customAction="${customRecord#*:}"
     local customCheck="${customRecord%":$customAction"}"
-    eval "addedCustom${order^}Actions[\"\$customAction\"]=\"\$customRecord\""
-    eval "addedCustom${order^}ActionList+=(\"\$customAction\")"
-    eval "addedCustom${order^}Configs[\"\$customAction\"]=\"\${configuration[\"custom${order}:\${customRecord}\"]}\""
+
+    local -n actions=addedCustom${order^}Actions
+    local -n actionList=addedCustom${order^}ActionList
+    local -n configs=addedCustom${order^}Configs
+    actions["$customAction"]="$customRecord"
+    actionList+=("$customAction")
+    configs["$customAction"]="${configuration["custom${order}:${customRecord}"]}"
 
     if [ "$customCheck" = 'once' ]; then
-	eval "onceCustom${order^}Actions[\"\$customAction\"]=t"
+	local -n onceActions=onceCustom${order^}Actions
+	onceActions["$customAction"]=t
     fi
 
     local customActionWithoutSudo="${customAction#\$SUDO }"
@@ -183,7 +189,8 @@ addCustomAtOrder()
 	if [ -n "$prefix" ]; then
 	    local typeFunction="${typeRegistry["${prefix}"]}"
 	    if [ -n "$typeFunction" ]; then
-		eval "itemCustom${order^}Actions[\"\$customAction\"]=t"
+		local -n itemActions=itemCustom${order^}Actions
+		itemActions["$customAction"]=t
 		"add${typeFunction}" "$name"
 
 		if [ "$customCheck" = 'once' ]; then
@@ -207,12 +214,14 @@ addCustom()
 installCustomAtOrder()
 {
     local order="${1?}"; shift
-    eval "[ \${#addedCustom${order^}Actions[@]} -eq \${#addedCustom${order^}ActionList[@]} ]" || { echo >&2 'ASSERT: Custom actions dict and list sizes disagree.'; exit 3; }
-    eval "[ \${#addedCustom${order^}ActionList[@]} -gt 0 ]" || return
-
     local -n actionList=addedCustom${order^}ActionList
     local -n configs=addedCustom${order^}Configs
     local -n actions=addedCustom${order^}Actions
+    local -n onceActions=onceCustom${order^}Actions
+    local -n itemActions=itemCustom${order^}Actions
+    [ ${#actions[@]} -eq ${#actionList[@]} ] || { echo >&2 'ASSERT: Custom actions dict and list sizes disagree.'; exit 3; }
+    [ ${#actionList[@]} -gt 0 ] || return
+
     local customAction; for customAction in "${actionList[@]}"
     do
 	local config="${configs["$customAction"]}"; config="${config//$'\n'/ }"
@@ -222,9 +231,9 @@ installCustomAtOrder()
 	local customFilespec
 	local customRecord="${actions["$customAction"]}"
 	local customDecoration="${decoration["custom${order}:${customRecord}"]}"
-	local quotedCustomOnceMarkerCommand=; eval "[ \"\${onceCustom${order^}Actions[\"\$customAction\"]}\" ]" && quotedCustomOnceMarkerCommand="$(getQuotedCustomOnceMarkerCommand --update "$customAction")"
+	local quotedCustomOnceMarkerCommand=; [ "${onceActions["$customAction"]}" ] && quotedCustomOnceMarkerCommand="$(getQuotedCustomOnceMarkerCommand --update "$customAction")"
 
-	eval "local hasItemCustomAction=\${itemCustom${order^}Actions[\"\$customAction\"]}"
+	local hasItemCustomAction=${itemActions["$customAction"]}
 	if [ "$hasItemCustomAction" ]; then
 	    # The corresponding action item has already been added to the item's
 	    # type; do nothing here.
