@@ -57,7 +57,8 @@ hasArchive()
     local archivePackagesDictName="${1:?}"; shift
     local archiveRecord="${1:?}"
     local destinationFilespec="$(resolveDestinationFilespec "$prefix" "$archiveRecord")"
-    [ -e "$destinationFilespec" ] || eval "[ \"\${${archivePackagesDictName}[\"\$archiveRecord\"]}\" ]"
+    local -n archivePackages=$archivePackagesDictName
+    [ -e "$destinationFilespec" ] || [ "${archivePackages["$archiveRecord"]}" ]
 }
 hasTar()
 {
@@ -77,7 +78,8 @@ addArchive()
     local packageName="$(basename -- "$destinationFilespec")"
 
     preinstallHook "$packageName"
-    eval "${archivePackagesDictName}[\"\$archiveRecord\"]=t"
+    local -n archivePackages=$archivePackagesDictName
+    archivePackages["$archiveRecord"]=t
     postinstallHook "$packageName"
 }
 addTar()
@@ -95,10 +97,10 @@ installArchive()
     local unarchiveCommand="${1:?}"; shift
     local unarchiveDestinationDirArgName="${1:?}"; shift
     local archivePackagesDictName="${1:?}"; shift
-    eval "[ \${#${archivePackagesDictName}[@]} -gt 0 ]" || return
-    eval "typeset -a addedArchiveRecords=(\"\${!${archivePackagesDictName}[@]}\")"
+    local -n archivePackages=$archivePackagesDictName
+    [ ${#archivePackages[@]} -gt 0 ] || return
 
-    local archiveRecord; for archiveRecord in "${addedArchiveRecords[@]}"
+    local archiveRecord; for archiveRecord in "${!archivePackages[@]}"
     do
 	eval "set -- ${archiveRecord:?}" || exit 3
 	if [ $# -lt 2 ]; then
