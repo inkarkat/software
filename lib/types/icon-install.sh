@@ -35,7 +35,8 @@ hasSpecialIcon()
 	    printf >&2 'ERROR: Invalid %s item: "%s:%s" due to missing SOURCE-FILE: "%s".\n' "$prefix" "$prefix" "$*" "$icon"
 	    exit 3
 	fi
-	eval "[ \"\${${iconFilespecsDictName}[\"\$iconFilespec\"]}\" ]" && continue
+	local -n iconFilespecs=$iconFilespecsDictName
+	[ "${iconFilespecs["$iconFilespec"]}" ] && continue
 	local quotedIconFilespec; printf -v quotedIconFilespec '%q' "$iconFilespec"
 	local checkCommand="$specialIconInstallerCommand --check $quotedIconFilespec"
 	local decoratedCheckCommand="$(decorateCommand "$checkCommand" "${decoration["${prefix}:$iconFilespec"]}")"
@@ -65,7 +66,8 @@ addSpecialIcon()
 	    exit 3
 	fi
 	preinstallHook "$iconFilespec"
-	eval "${iconFilespecsDictName}[\"\$iconFilespec\"]=t"
+	local -n iconFilespecs=$iconFilespecsDictName
+	iconFilespecs["$iconFilespec"]=t
 	postinstallHook "$iconFilespec"
     done
 }
@@ -83,10 +85,10 @@ installSpecialIcon()
     local prefix="${1:?}"; shift
     local specialIconInstallerCommand="${1:?}"; shift
     local iconFilespecsDictName="${1:?}"; shift
-    eval "[ \${#${iconFilespecsDictName}[@]} -gt 0 ]" || return
-    eval "typeset -a iconFilespecs=(\"\${!${iconFilespecsDictName}[@]}\")"
+    local -n iconFilespecs=$iconFilespecsDictName
+    [ ${#iconFilespecs[@]} -gt 0 ] || return
 
-    printf -v quotedIconFilespecs ' %q' "${iconFilespecs[@]}"
+    printf -v quotedIconFilespecs ' %q' "${!iconFilespecs[@]}"
     submitInstallCommand \
 	"${specialIconInstallerCommand}${quotedIconFilespecs}" \
 	"${decoration["${prefix}:$specialInstallRecord"]}"

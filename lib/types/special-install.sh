@@ -38,7 +38,8 @@ hasSpecialInstall()
     local specialInstallEntriesDictName="${1:?}"; shift
     local specialInstallRecord="${1:?}"; shift
 
-    eval "[ \"\${${specialInstallEntriesDictName}[\"\$specialInstallRecord\"]}\" ]" && return 0
+    local -n specialInstallEntries=$specialInstallEntriesDictName
+    [ "${specialInstallEntries["$specialInstallRecord"]}" ] && return 0
 
     # Always delegate the check to the addTo... commands with --check option
     # (which only test the target's existence and do not need a valid source
@@ -73,7 +74,8 @@ addSpecialInstall()
     local specialName="${!#}"
 
     preinstallHook "$specialName"
-    eval "${specialInstallEntriesDictName}[\"\$specialInstallRecord\"]=t"
+    local -n specialInstallEntries=$specialInstallEntriesDictName
+    specialInstallEntries["$specialInstallRecord"]=t
     postinstallHook "$specialName"
 }
 addStartmenu()
@@ -95,9 +97,9 @@ installSpecialInstall()
     local specialCreatorCommand="${1:?}"; shift
     local specialInstallerCommand="${1:?}"; shift
     local specialInstallEntriesDictName="${1:?}"; shift
-    eval "[ \${#${specialInstallEntriesDictName}[@]} -gt 0 ]" || return
-    eval "typeset -a addedSpecialInstallRecords=(\"\${!${specialInstallEntriesDictName}[@]}\")"
-    local specialInstallRecord; for specialInstallRecord in "${addedSpecialInstallRecords[@]}"
+    local -n specialInstallEntries=$specialInstallEntriesDictName
+    [ ${#specialInstallEntries[@]} -gt 0 ] || return
+    local specialInstallRecord; for specialInstallRecord in "${!specialInstallEntries}[@]}"
     do
 	eval "set -- $specialInstallRecord"
 	local specialSourceFilespec specialCommand="$specialCreatorCommand"

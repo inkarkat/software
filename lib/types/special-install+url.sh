@@ -78,7 +78,8 @@ hasSpecialInstallUrl()
 	exit 3
     fi
 
-    eval "[ \"\${${specialInstallUrlPackagesDictName}[\"\$specialInstallUrlRecord\"]}\" ]" && return 0
+    local -n specialInstallUrlPackages=$specialInstallUrlPackagesDictName
+    [ "${specialInstallUrlPackages["$specialInstallUrlRecord"]}" ] && return 0
 
     # As there's no (fixed) destination filespec to test, we need to run the
     # special download-installer command with the --check option. This will
@@ -116,7 +117,8 @@ addSpecialInstallUrl()
     # Note: Do not support pre-/postinstall hooks here (yet), as there's no good
     # short "name" that we could use (and likely no need for such simple things
     # as icons and desktop entries).
-    eval "${specialInstallUrlPackagesDictName}[\"\$specialInstallUrlRecord\"]=t"
+    local -n specialInstallUrlPackages=$specialInstallUrlPackagesDictName
+    specialInstallUrlPackages["$specialInstallUrlRecord"]=t
 }
 addIconUrl()
 {
@@ -144,9 +146,9 @@ installSpecialInstallUrl()
     local prefix="${1:?}"; shift
     local specialDownloadInstallerCommand="${1:?}"; shift
     local specialInstallUrlPackagesDictName="${1:?}"; shift
-    eval "[ \${#${specialInstallUrlPackagesDictName}[@]} -gt 0 ]" || return
-    eval "typeset -a addedSpecialInstallUrlRecords=(\"\${!${specialInstallUrlPackagesDictName}[@]}\")"
-    local specialInstallUrlRecord; for specialInstallUrlRecord in "${addedSpecialInstallUrlRecords[@]}"
+    local -n specialInstallUrlPackages=$specialInstallUrlPackagesDictName
+    [ ${#specialInstallUrlPackages[@]} -gt 0 ] || return
+    local specialInstallUrlRecord; for specialInstallUrlRecord in "${!specialInstallUrlPackages[@]}"
     do
 
 	submitInstallCommand \
