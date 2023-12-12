@@ -36,7 +36,8 @@ hasGitconfig()
     local gitconfigEntriesDictName="${1:?}"; shift
     local gitconfigRecord="${1:?}"; shift
 
-    eval "[ \"\${${gitconfigEntriesDictName}[\"\$gitconfigRecord\"]}\" ]" && return 0
+    local -n gitconfigEntries=$gitconfigEntriesDictName
+    [ "${gitconfigEntries["$gitconfigRecord"]}" ] && return 0
 
     local name="${gitconfigRecord%%:*}"
     local value="${gitconfigRecord#*:}"
@@ -58,7 +59,8 @@ addGitconfig()
 {
     local gitconfigEntriesDictName="${1:?}"; shift
     local gitconfigRecord="${1:?}"; shift
-    eval "${gitconfigEntriesDictName}[\"\$gitconfigRecord\"]=t"
+    local -n gitconfigEntries=$gitconfigEntriesDictName
+    gitconfigEntries["$gitconfigRecord"]=t
 }
 addSystemGitconfig()
 {
@@ -75,9 +77,9 @@ installGitconfig()
     local gitconfigCommand="${1:?}"; shift
     local gitconfigEntriesDictName="${1:?}"; shift
 
-    eval "[ \${#${gitconfigEntriesDictName}[@]} -gt 0 ]" || return
-    eval "typeset -a addedGitconfigRecords=(\"\${!${gitconfigEntriesDictName}[@]}\")"
-    local gitconfigRecord; for gitconfigRecord in "${addedGitconfigRecords[@]}"
+    local -n gitconfigEntries=$gitconfigEntriesDictName
+    [ ${#gitconfigEntries[@]} -gt 0 ] || return
+    local gitconfigRecord; for gitconfigRecord in "${!gitconfigEntries[@]}"
     do
 	local name="${gitconfigRecord%%:*}"
 	local value="${gitconfigRecord#*:}"

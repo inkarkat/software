@@ -85,13 +85,11 @@ addDummy()
     local prefix="${dummyPackageName%"$name"}"
     local typeFunction=; [ -n "$prefix" ] && typeFunction="${typeRegistry["$prefix"]}"
     if [ -n "$typeFunction" ]; then
-	local externallyAddedDict="externallyAdded${typeFunction}Packages"
-	if [ -n "${externallyAddedDict+t}" ]; then
-	    eval "$externallyAddedDict[\"\$name\"]=t"
-	else
-	    printf >&2 'ERROR: Type %s cannot be used as a dummy item; it has no dictionary for externally added packages.\n' "$prefix"
-	    exit 3
-	fi
+	eval "case \" \${!externallyAdded${typeFunction}Packages*} \" in
+	    *\" externallyAdded${typeFunction}Packages \"*) externallyAdded${typeFunction}Packages[\"\$name\"]=t;;
+	    *) printf >&2 'ERROR: Type %s cannot be used as a dummy item; it has no dictionary for externally added packages.\\n' \"\$prefix\"
+		exit 3;;
+	esac"
     elif [ -n "$prefix" ] && \
 	local dummyName="${prefix%:}" && \
 	local item="${checkDummyPackages["$dummyName"]}" && \
