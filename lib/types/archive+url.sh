@@ -43,7 +43,7 @@ HELPTEXT
 
 typeset -A addedTarUrlPackages=()
 typeset -A addedZipUrlPackages=()
-resolveDestinationFilespec()
+resolveArchiveUrlDestinationFilespec()
 {
     local destinationFilespec="${1:?}"; shift
     if [[ "$destinationFilespec" =~ ^(.*)/(\.+)(/.*)?$ ]]; then
@@ -62,7 +62,7 @@ hasArchiveUrl()
 {
     local archiveUrlPackagesDictName="${1:?}"; shift
     local archiveUrlRecord="${1:?}"; shift
-    local destinationFilespec="$(resolveDestinationFilespec "${archiveUrlRecord%%:*}")"
+    local destinationFilespec="$(resolveArchiveUrlDestinationFilespec "${archiveUrlRecord%%:*}")"
     [ -e "$destinationFilespec" ] || eval "[ \"\${${archiveUrlPackagesDictName}[\"\$archiveUrlRecord\"]}\" ]"
 }
 hasTarUrl()
@@ -78,8 +78,7 @@ addArchiveUrl()
 {
     local archiveUrlPackagesDictName="${1:?}"; shift
     local archiveUrlRecord="${1:?}"; shift
-    local destinationFilespec="${archiveUrlRecord%%:*}"
-    local destinationFilespec="$(resolveDestinationFilespec "${archiveUrlRecord%%:*}")"
+    local destinationFilespec="$(resolveArchiveUrlDestinationFilespec "${archiveUrlRecord%%:*}")"
     local packageName="$(basename -- "$destinationFilespec")"
 
     preinstallHook "$packageName"
@@ -121,7 +120,7 @@ installArchiveUrl()
 	    fi
 	    [ $stripPathComponentsCount -eq 0 ] || additionalArchiveArgs+=("--strip-components=$stripPathComponentsCount")
 	fi
-	quotedAdditionalArchiveArgs=; [ ${#additionalArchiveArgs[@]} -eq 0 ] || printf -v quotedAdditionalArchiveArgs ' %q' "${additionalArchiveArgs[@]}"
+	local quotedAdditionalArchiveArgs=; [ ${#additionalArchiveArgs[@]} -eq 0 ] || printf -v quotedAdditionalArchiveArgs ' %q' "${additionalArchiveArgs[@]}"
 	local maxAge=
 	local applicationNamePackageGlobUrl="${archiveUrlRecord#*:}"
 	if [[ "$applicationNamePackageGlobUrl" =~ ^[0-9]+([smhdwyg]|mo): ]]; then
@@ -155,5 +154,5 @@ installZipUrl()
 
 typeRegistry+=([tar+url:]=TarUrl)
 typeRegistry+=([zip+url:]=ZipUrl)
-typeInstallOrder+=([400]=TarUrl)
-typeInstallOrder+=([401]=ZipUrl)
+typeInstallOrder+=([410]=TarUrl)
+typeInstallOrder+=([411]=ZipUrl)
