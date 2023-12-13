@@ -497,7 +497,15 @@ parseDefinitionGroups()
 	comment="${definition#"$items"}"
 	comment="${comment#[	 ]#}"
 	comment="${comment##[	 ]}"
-	eval "set -- $items"
+
+	# Revert to the normal shell globbing behavior when parsing the items from a
+	# definition; we want stuff like $(lastFiles foo/*) to work properly and keep
+	# globs in deb+url:discord:1mo:collaboration/Discord/discord-*.deb:'https://discordapp.com/api/download?platform=linux&format=deb'
+	# as well.
+	set +o noglob; shopt -qu nullglob
+	    eval "set -- $items"
+	set -o noglob; shopt -qs nullglob
+
 	if [ -n "$comment" ]; then
 	    subject="$(printf %s "$comment" | evalFile)"
 	else
