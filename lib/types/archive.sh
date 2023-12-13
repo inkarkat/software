@@ -89,13 +89,12 @@ addArchive()
     local prefix="${1:?}"; shift
     local archivePackagesDictName="${1:?}"; shift
     local archiveRecord="${1:?}"; shift
-    local destinationFilespec; destinationFilespec="$(resolveArchiveDestinationFilespec "$prefix" "$archiveRecord")" || exit $?
-    local packageName="$(basename -- "$destinationFilespec")"
+    local sourceFilespec; sourceFilespec="$(resolveArchiveSourceFilespec "$prefix" "$archiveRecord")" || exit $?
 
-    preinstallHook "$packageName"
+    preinstallHook "$sourceFilespec"
     local -n archivePackages=$archivePackagesDictName
     archivePackages["$archiveRecord"]=t
-    postinstallHook "$packageName"
+    postinstallHook "$sourceFilespec"
 }
 addTar()
 {
