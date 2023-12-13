@@ -192,6 +192,9 @@ printConfigUsageForTypes()
 	elif [ -n "$definitionGroupFilterFunction" ]; then
 	    printf "$padding"
 	    "configUsage${definitionGroupFilterFunction}" | highlightPrefix
+	elif [ "$prefix" = var ]; then
+	    printf "$padding"
+	    configUsageVar | highlightPrefix
 	elif [ "$prefix" = config ]; then
 	    printf "$padding"
 	    configUsageConfig | highlightPrefix
@@ -249,6 +252,8 @@ HELPTEXT
 
 	printConfigUsageForTypes "${prefixes[@]%:}" "${definitionFilterPrefixes[@]%:}" "${definitionGroupFilterPrefixes[@]%:}"    # Show config help for all types (in the order in which the types are also installed).
 
+	echo
+	configUsageVar | highlightPrefix
 	echo
 	configUsageConfig | highlightPrefix
 	echo
@@ -465,6 +470,15 @@ addAllAcceptedGroups()
     done
 }
 
+typeset -A variables=()
+cleanVariables()
+{
+    local variableName; for variableName in "${!variables[@]}"
+    do
+	eval "${variables["$variableName"]}"
+    done
+}
+
 let definitionCnt=0
 parseDefinitionGroups()
 {
@@ -493,6 +507,8 @@ parseDefinitionGroups()
     for definition in "${definitions[@]}"
     do
 	let definitionCnt+=1
+	cleanVariables
+
 	items="${definition%%[	 ]#*}"
 	comment="${definition#"$items"}"
 	comment="${comment#[	 ]#}"
@@ -506,26 +522,57 @@ parseDefinitionGroups()
 	    eval "set -- $items"
 	set -o noglob; shopt -qs nullglob
 
-	if [ -n "$comment" ]; then
-	    subject="$(printf %s "$comment" | evalFile)"
-	else
-	    subject="$(getSubjectFromItems "$@")"
-	fi
-
 	setupAppendix=''	# This may be modified by definition filters (through isDefinitionAcceptedBy${definitionFilterFunction}()); reset it for every definition here.
 	local item name prefix definitionFilterFunction
 	for item
 	do
 	    name="${item#*:}"
 	    prefix="${item%"$name"}"
-	    [ -n "$prefix" ] || continue
-	    definitionFilterFunction="${definitionFilterTypeRegistry["$prefix"]}"
-	    if [ -n "$definitionFilterFunction" ]; then
-		"isDefinitionAcceptedBy${definitionFilterFunction}" "$name" "$definition" || \
-		    continue 2
+	    if [ -z "$prefix" ]; then
+		:
+	    elif [ "$prefix" = var: ]; then
+		if [[ ! "$name" =~ ^([a-zA-Z_][a-zA-Z0-9_]*)=(.*)$ ]]; then
+		    printf >&2 'ERROR: Invalid variable definition: %s.\n' "$item"
+		    exit 3
+		fi
+		local variableName=${BASH_REMATCH[1]}
+		local variableValue=${BASH_REMATCH[2]}
+		local -n variable=$variableName
+		if ! contains "$variableName" "${!variables[@]}"; then
+		    if eval "[ -n \"\${${variableName}+t}\" ]"; then
+			printf -v quotedVariable '%q' "$variable"
+			variables["$variableName"]="$variableName=$quotedVariable"
+		    else
+			variables["$variableName"]="unset $variableName"
+		    fi
+		fi
+		export variable="$variableValue"
+	    else
+		definitionFilterFunction="${definitionFilterTypeRegistry["$prefix"]}"
+		if [ -n "$definitionFilterFunction" ]; then
+		    "isDefinitionAcceptedBy${definitionFilterFunction}" "$name" "$definition" || \
+			continue 2
+		fi
 	    fi
 	done
+	if [ ${#variables[@]} -gt 0 ]; then
+	    # Need to re-parse the items so that the variables are expanded.
+	    set +o noglob; shopt -qu nullglob
+		eval "set -- $items"
+	    set -o noglob; shopt -qs nullglob
 
+	    # Remove the leading variable definitions.
+	    while [ $# -gt 0 ] && [[ "$1" =~ ^var: ]]
+	    do
+		shift
+	    done
+	fi
+
+	if [ -n "$comment" ]; then
+	    subject="$(printf %s "$comment" | evalFile)"
+	else
+	    subject="$(getSubjectFromItems "$@")"
+	fi
 	let handledDefinitionCount+=1
 	typeset -a missingItems=()
 	typeset -a missingItemConfigurations=()
@@ -557,6 +604,9 @@ parseDefinitionGroups()
 		    # it on a new line.
 		    missingItems+=("$item"$'\n'"$lastMissingItem")
 		fi
+	    elif [ "$prefix" = var: ]; then
+		printf >&2 'ERROR: Variables must only appear at the beginning of a definition: %s is not at the beginning of %s\n' "$item" "$definition"
+		exit 3
 	    elif [ "$prefix" = config: ]; then
 		# The configuration still needs the following real item to be
 		# complete; all we can do right now is storing the configuration
@@ -710,6 +760,7 @@ parseDefinitionGroups()
 	    fi
 	fi
     done
+    cleanVariables
     return 0
 }
 
@@ -746,6 +797,18 @@ configUsageNative()
     cat <<HELPTEXT
 Items without a prefix refer to packages installed via the distribution's
 package manager (${nativePackageManager,}).
+HELPTEXT
+}
+configUsageVar()
+{
+    cat <<'HELPTEXT'
+var: meta items define shell variables that can be referenced in the remainder
+of the current definition (just like regular environment variables), e.g. to
+avoid duplication in the definition. The format is
+    VARIABLE=VALUE
+They must appear before any other item and cannot themselves refer to previously
+defined variables. They go out of scope after the current definition; any
+existing environment variable value is restored.
 HELPTEXT
 }
 configUsageConfig()
