@@ -1502,7 +1502,7 @@ elif [ "$isExecute" ] && [ "$isPrint" ]; then
     exit 2
 fi
 
-SETUPSOFTWARE_BEHAVIOR_ARGS=; if [ ${#setupSoftwareBehaviorArgs[@]} -gt 0 ]; then printf -v SETUPSOFTWARE_BEHAVIOR_ARGS ' %q ' "${setupSoftwareBehaviorArgs[@]}"; export export SETUPSOFTWARE_BEHAVIOR_ARGS="${SETUPSOFTWARE_BEHAVIOR_ARGS% }"; fi    # The array cannot be directly consumed, as checks are invoked through another process (invocationMessage); use the exported environment variable instead.
+SETUPSOFTWARE_BEHAVIOR_ARGS=; if [ ${#setupSoftwareBehaviorArgs[@]} -gt 0 ]; then printf -v SETUPSOFTWARE_BEHAVIOR_ARGS ' %q ' "${setupSoftwareBehaviorArgs[@]}"; export SETUPSOFTWARE_BEHAVIOR_ARGS="${SETUPSOFTWARE_BEHAVIOR_ARGS% }"; fi    # The array cannot be directly consumed, as checks are invoked through another process (invocationMessage); use the exported environment variable instead.
 typeset -a preinstallActionsDirspecs=()
 typeset -a postinstallActionsDirspecs=()
 typeset -a definitionDirspecs=()
