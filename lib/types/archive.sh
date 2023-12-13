@@ -28,14 +28,29 @@ configUsageZip()
 
 typeset -A addedTarPackages=()
 typeset -A addedZipPackages=()
+resolveArchiveSourceFilespec()
+{
+    local prefix="${1:?}"; shift
+    local archiveItem="${1:?}"; shift
+    eval "set -- $archiveItem" || return 3
+    if [ $# -lt 2 ]; then
+	printf >&2 'ERROR: Invalid %s item: "%s:%s"; missing argument.\n' "$prefix" "$prefix" "$archiveItem"
+	return 3
+    fi
+    local sourceFilespec; if ! sourceFilespec="$(getAbsoluteOrFilesFilespec "${*:(-2):1}")"; then
+	printf >&2 'ERROR: Invalid %s item: "%s:%s" due to missing SOURCE-ARCHIVE: "%s".\n' "$prefix" "$prefix" "$archiveRecord" "${*:(-2):1}"
+	return 3
+    fi
+    printf %s "$sourceFilespec"
+}
 resolveArchiveDestinationFilespec()
 {
     local prefix="${1:?}"; shift
     local archiveItem="${1:?}"; shift
-    eval "set -- $archiveItem" || exit 3
+    eval "set -- $archiveItem" || return 3
     if [ $# -lt 2 ]; then
 	printf >&2 'ERROR: Invalid %s item: "%s:%s"; missing argument.\n' "$prefix" "$prefix" "$archiveItem"
-	exit 3
+	return 3
     fi
 
     local destinationFilespec="${!#}"
@@ -56,7 +71,7 @@ hasArchive()
     local prefix="${1:?}"; shift
     local archivePackagesDictName="${1:?}"; shift
     local archiveRecord="${1:?}"
-    local destinationFilespec="$(resolveArchiveDestinationFilespec "$prefix" "$archiveRecord")"
+    local destinationFilespec; destinationFilespec="$(resolveArchiveDestinationFilespec "$prefix" "$archiveRecord")" || exit $?
     local -n archivePackages=$archivePackagesDictName
     [ -e "$destinationFilespec" ] || [ "${archivePackages["$archiveRecord"]}" ]
 }
@@ -74,7 +89,7 @@ addArchive()
     local prefix="${1:?}"; shift
     local archivePackagesDictName="${1:?}"; shift
     local archiveRecord="${1:?}"; shift
-    local destinationFilespec="$(resolveArchiveDestinationFilespec "$prefix" "$archiveRecord")"
+    local destinationFilespec; destinationFilespec="$(resolveArchiveDestinationFilespec "$prefix" "$archiveRecord")" || exit $?
     local packageName="$(basename -- "$destinationFilespec")"
 
     preinstallHook "$packageName"
@@ -103,15 +118,7 @@ installArchive()
     local archiveRecord; for archiveRecord in "${!archivePackages[@]}"
     do
 	eval "set -- ${archiveRecord:?}" || exit 3
-	if [ $# -lt 2 ]; then
-	    printf >&2 'ERROR: Invalid %s item: "%s:%s"; missing argument.\n' "$prefix" "$prefix" "$archiveRecord"
-	    exit 3
-	fi
-
-	local sourceFilespec; if ! sourceFilespec="$(getAbsoluteOrFilesFilespec "${*:(-2):1}")"; then
-	    printf >&2 'ERROR: Invalid %s item: "%s:%s" due to missing SOURCE-ARCHIVE: "%s".\n' "$prefix" "$prefix" "$archiveRecord" "${*:(-2):1}"
-	    exit 3
-	fi
+	local sourceFilespec; sourceFilespec="$(resolveArchiveSourceFilespec "$prefix" "$archiveRecord")" || exit $?
 	local quotedSourceFilespec; printf -v quotedSourceFilespec %q "$sourceFilespec"
 	local destinationFilespec="${!#}"
 
