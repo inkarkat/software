@@ -1490,14 +1490,6 @@ do
 	*)		break;;
     esac
 done
-if [ "$isQuiet" ]; then
-    if [ "$isVerbose" ]; then
-	echo 'ERROR: Cannot combine -q|--quiet with -v|--verbose.'
-	echo
-	printUsage "$0"
-	exit 2
-    fi >&2
-fi
 if [ -t 1 ] && [ ! "$isExecute" ] && [ ! "$isPrint" ] && [ ! "$isPrintDefinitions" ]; then
     echo >&2 'ERROR: Will not output installation commands to the terminal without -p|--print; either redirect output or directly execute via -e|--execute, or just print defintitions with -P|--print-definitions.'
     echo >&2
