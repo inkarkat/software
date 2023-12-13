@@ -546,7 +546,7 @@ parseDefinitionGroups()
 			variables["$variableName"]="unset $variableName"
 		    fi
 		fi
-		variable="$variableValue"
+		export variable="$variableValue"
 	    else
 		definitionFilterFunction="${definitionFilterTypeRegistry["$prefix"]}"
 		if [ -n "$definitionFilterFunction" ]; then
