@@ -28,7 +28,7 @@ configUsageZip()
 
 typeset -A addedTarPackages=()
 typeset -A addedZipPackages=()
-resolveDestinationFilespec()
+resolveArchiveDestinationFilespec()
 {
     local prefix="${1:?}"; shift
     local archiveItem="${1:?}"; shift
@@ -56,7 +56,7 @@ hasArchive()
     local prefix="${1:?}"; shift
     local archivePackagesDictName="${1:?}"; shift
     local archiveRecord="${1:?}"
-    local destinationFilespec="$(resolveDestinationFilespec "$prefix" "$archiveRecord")"
+    local destinationFilespec="$(resolveArchiveDestinationFilespec "$prefix" "$archiveRecord")"
     local -n archivePackages=$archivePackagesDictName
     [ -e "$destinationFilespec" ] || [ "${archivePackages["$archiveRecord"]}" ]
 }
@@ -74,7 +74,7 @@ addArchive()
     local prefix="${1:?}"; shift
     local archivePackagesDictName="${1:?}"; shift
     local archiveRecord="${1:?}"; shift
-    local destinationFilespec="$(resolveDestinationFilespec "$prefix" "$archiveRecord")"
+    local destinationFilespec="$(resolveArchiveDestinationFilespec "$prefix" "$archiveRecord")"
     local packageName="$(basename -- "$destinationFilespec")"
 
     preinstallHook "$packageName"

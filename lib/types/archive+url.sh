@@ -43,7 +43,7 @@ HELPTEXT
 
 typeset -A addedTarUrlPackages=()
 typeset -A addedZipUrlPackages=()
-resolveDestinationFilespec()
+resolveArchiveUrlDestinationFilespec()
 {
     local destinationFilespec="${1:?}"; shift
     if [[ "$destinationFilespec" =~ ^(.*)/(\.+)(/.*)?$ ]]; then
@@ -62,7 +62,7 @@ hasArchiveUrl()
 {
     local archiveUrlPackagesDictName="${1:?}"; shift
     local archiveUrlRecord="${1:?}"; shift
-    local destinationFilespec="$(resolveDestinationFilespec "${archiveUrlRecord%%:*}")"
+    local destinationFilespec="$(resolveArchiveUrlDestinationFilespec "${archiveUrlRecord%%:*}")"
     [ -e "$destinationFilespec" ] || eval "[ \"\${${archiveUrlPackagesDictName}[\"\$archiveUrlRecord\"]}\" ]"
 }
 hasTarUrl()
@@ -78,7 +78,7 @@ addArchiveUrl()
 {
     local archiveUrlPackagesDictName="${1:?}"; shift
     local archiveUrlRecord="${1:?}"; shift
-    local destinationFilespec="$(resolveDestinationFilespec "${archiveUrlRecord%%:*}")"
+    local destinationFilespec="$(resolveArchiveUrlDestinationFilespec "${archiveUrlRecord%%:*}")"
     local packageName="$(basename -- "$destinationFilespec")"
 
     preinstallHook "$packageName"
