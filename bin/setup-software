@@ -497,7 +497,15 @@ parseDefinitionGroups()
 	comment="${definition#"$items"}"
 	comment="${comment#[	 ]#}"
 	comment="${comment##[	 ]}"
-	eval "set -- $items"
+
+	# Revert to the normal shell globbing behavior when parsing the items from a
+	# definition; we want stuff like $(lastFiles foo/*) to work properly and keep
+	# globs in deb+url:discord:1mo:collaboration/Discord/discord-*.deb:'https://discordapp.com/api/download?platform=linux&format=deb'
+	# as well.
+	set +o noglob; shopt -qu nullglob
+	    eval "set -- $items"
+	set -o noglob; shopt -qs nullglob
+
 	if [ -n "$comment" ]; then
 	    subject="$(printf %s "$comment" | evalFile)"
 	else
@@ -1490,14 +1498,6 @@ do
 	*)		break;;
     esac
 done
-if [ "$isQuiet" ]; then
-    if [ "$isVerbose" ]; then
-	echo 'ERROR: Cannot combine -q|--quiet with -v|--verbose.'
-	echo
-	printUsage "$0"
-	exit 2
-    fi >&2
-fi
 if [ -t 1 ] && [ ! "$isExecute" ] && [ ! "$isPrint" ] && [ ! "$isPrintDefinitions" ]; then
     echo >&2 'ERROR: Will not output installation commands to the terminal without -p|--print; either redirect output or directly execute via -e|--execute, or just print defintitions with -P|--print-definitions.'
     echo >&2
@@ -1510,7 +1510,7 @@ elif [ "$isExecute" ] && [ "$isPrint" ]; then
     exit 2
 fi
 
-SETUPSOFTWARE_BEHAVIOR_ARGS=; if [ ${#setupSoftwareBehaviorArgs[@]} -gt 0 ]; then printf -v SETUPSOFTWARE_BEHAVIOR_ARGS ' %q ' "${setupSoftwareBehaviorArgs[@]}"; export export SETUPSOFTWARE_BEHAVIOR_ARGS="${SETUPSOFTWARE_BEHAVIOR_ARGS% }"; fi    # The array cannot be directly consumed, as checks are invoked through another process (invocationMessage); use the exported environment variable instead.
+SETUPSOFTWARE_BEHAVIOR_ARGS=; if [ ${#setupSoftwareBehaviorArgs[@]} -gt 0 ]; then printf -v SETUPSOFTWARE_BEHAVIOR_ARGS ' %q ' "${setupSoftwareBehaviorArgs[@]}"; export SETUPSOFTWARE_BEHAVIOR_ARGS="${SETUPSOFTWARE_BEHAVIOR_ARGS% }"; fi    # The array cannot be directly consumed, as checks are invoked through another process (invocationMessage); use the exported environment variable instead.
 typeset -a preinstallActionsDirspecs=()
 typeset -a postinstallActionsDirspecs=()
 typeset -a definitionDirspecs=()
