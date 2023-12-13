@@ -506,12 +506,6 @@ parseDefinitionGroups()
 	    eval "set -- $items"
 	set -o noglob; shopt -qs nullglob
 
-	if [ -n "$comment" ]; then
-	    subject="$(printf %s "$comment" | evalFile)"
-	else
-	    subject="$(getSubjectFromItems "$@")"
-	fi
-
 	setupAppendix=''	# This may be modified by definition filters (through isDefinitionAcceptedBy${definitionFilterFunction}()); reset it for every definition here.
 	local item name prefix definitionFilterFunction
 	for item
@@ -526,6 +520,11 @@ parseDefinitionGroups()
 	    fi
 	done
 
+	if [ -n "$comment" ]; then
+	    subject="$(printf %s "$comment" | evalFile)"
+	else
+	    subject="$(getSubjectFromItems "$@")"
+	fi
 	let handledDefinitionCount+=1
 	typeset -a missingItems=()
 	typeset -a missingItemConfigurations=()
