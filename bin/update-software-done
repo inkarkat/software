@@ -16,7 +16,7 @@ esac
 
 if [ -z "$*" ]; then
     : > "$UPDATESOFTWAREDONE_STAMP"
-else
+elif [ -w "$UPDATESOFTWAREDONE_STAMP" ]; then
     for updater
     do
 	[ -n "$updater" ] || continue
@@ -29,6 +29,6 @@ else
 		    /\n- [^\n]*$/b loop
 		    s/^.*\n//
 		}' \
-	    "$UPDATESOFTWAREDONE_STAMP"
+	    -- "$UPDATESOFTWAREDONE_STAMP"
     done
 fi
