@@ -41,7 +41,7 @@ hasGitconfig()
 
     local name="${gitconfigRecord%%:*}"
     local value="${gitconfigRecord#*:}"
-    local quotedGitconfigGetCommand="$(getQuotedGitconfigCommand "$gitconfigCommand --get" "$name" "$value")"
+    local quotedGitconfigGetCommand="$(getQuotedGitconfigCommand "$gitconfigCommand --get" "$name")"
 
     local decoratedCheckCommand="$(decorateCommand "$quotedGitconfigGetCommand" "${decoration["${prefix}:$gitconfigRecord"]}")"
     [ "$(eval "$decoratedCheckCommand" 2>/dev/null)" = "$value" ]
