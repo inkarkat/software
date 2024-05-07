@@ -26,7 +26,7 @@ getInstalledPip3Packages()
 			    case ",${DEBUG:-}," in *,setup-software:pip3,*) echo >&2 "${PS4}setup-software (pip3): Found installed ${packageName}";; esac
 			    ;;
 	esac
-    done < <(pip3 list 2>/dev/null; printf %d "$?")
+    done < <(PIP_REQUIRE_VIRTUALENV=false pip3 list 2>/dev/null; printf %d "$?")
     [ $exitStatus -eq 0 ] && isInstalledPip3PackagesAvailable=t
 }
 
