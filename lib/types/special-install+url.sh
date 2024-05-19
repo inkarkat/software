@@ -170,7 +170,7 @@ installStartmenuUrl()
 }
 installUserStartmenuUrl()
 {
-    installSpecialInstallUrl userstartmenu+url desktop-entry-download-installer addedStartmenuUrlPackages "$@"
+    installSpecialInstallUrl userstartmenu+url desktop-entry-download-installer addedUserStartmenuUrlPackages "$@"
 }
 installAutostartUrl()
 {
