@@ -99,7 +99,7 @@ installSpecialInstall()
     local specialInstallEntriesDictName="${1:?}"; shift
     local -n specialInstallEntries=$specialInstallEntriesDictName
     [ ${#specialInstallEntries[@]} -gt 0 ] || return
-    local specialInstallRecord; for specialInstallRecord in "${!specialInstallEntries}[@]}"
+    local specialInstallRecord; for specialInstallRecord in "${!specialInstallEntries[@]}"
     do
 	eval "set -- $specialInstallRecord"
 	local specialSourceFilespec specialCommand="$specialCreatorCommand"
