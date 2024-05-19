@@ -11,6 +11,7 @@ If ${INSTALL_REPO}/(SUBDIR|*)/(NAME|*)/PACKAGE-GLOB already exists
 archive from URL(s) (first that succeeds) will be downloaded (and put into
 ${INSTALL_REPO}/* if it exists).
 If no URL is given and the package does not exist, the installation will fail.
+For a dummy target, it's enough to specify PACKAGE:*:
 HELPTEXT
 }
 
@@ -36,6 +37,11 @@ addPip3Url()
     addedPip3UrlRecords["$pip3UrlRecord"]=t
     externallyAddedPip3Packages["$pip3PackageName"]=t
     postinstallHook "$pip3PackageName"
+}
+
+isAvailablePip3Url()
+{
+    isQuiet=t hasPip3Url "$@"
 }
 
 installPip3Url()
