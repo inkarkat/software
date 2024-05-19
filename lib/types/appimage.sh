@@ -90,6 +90,12 @@ addAppImageUrl()
 
     addedAppImageUrlActionList+=("$fileDownloadInstallerCommand")
 }
+
+isAvailableAppImageUrl()
+{
+    isQuiet=t hasAppImageUrl "$@"
+}
+
 installAppImageUrl()
 {
     [ ${#addedAppImageUrlActions[@]} -eq ${#addedAppImageUrlActionList[@]} ] || { echo >&2 'ASSERT: AppImageUrl actions dict and list sizes disagree.'; exit 3; }
