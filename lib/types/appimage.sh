@@ -11,6 +11,7 @@ If ${INSTALL_REPO}/(SUBDIR|*)/(NAME|*)/FILE-GLOB already exists
 (first that succeeds) will be downloaded (and put into
 ${INSTALL_REPO}/* if it exists) and copied over to DEST-FILENAME (in
 /usr/local/bin, defaulting to the FILE-GLOB without an *.AppImage extension).
+For a dummy target, it's enough to specify *: DEST-FILENAME
 HELPTEXT
 }
 

@@ -14,6 +14,7 @@ ${INSTALL_REPO}/* if it exists).
 You can use %DEB_ARCH% to refer to the machine architecture in PACKAGE-GLOB and
 URL.
 If no URL is given and the package does not exist, the installation will fail.
+For a dummy target, it's enough to specify PACKAGE:*
 HELPTEXT
 }
 

@@ -14,6 +14,7 @@ younger than MAX-AGE[SUFFIX]], it will be used; else, the *.exe / *.msi from
 URL(s) (first that succeeds) will be downloaded (and put into ~/install/* if it
 exists). If no URL is given and the package does not exist, the installation
 will fail.
+For a dummy target, it's enough to specify *?:[SUBDIR/]NAME/*:
 HELPTEXT
 }
 
