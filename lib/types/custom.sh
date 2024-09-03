@@ -10,6 +10,8 @@ the former does not succeed.
 CHECK can be one of the following (in decreasing precedence):
 - an EXECUTABLE-COMMAND in the ./etc/custom directory tree that is called and
   should succeed if the application already exists, and fail if it is missing;
+  fail with 98 if this item and with 99 if the entire definition should be
+  skipped.
   if EXECUTABLE-COMMAND starts with a &, this is replaced by the following
   ACTION (without a \$SUDO prefix), allowing you to save repeated typing:
 	custom${order}:&-check:foo-installer
