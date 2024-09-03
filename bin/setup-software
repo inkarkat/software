@@ -440,8 +440,8 @@ addAllAcceptedGroups()
 	local setupAppendix=''	# This may be modified by definition group filters (through isDefinitionGroupCompletelyFiltered()); reset it on every iteration here.
 	if isDefinitionGroupDir "$group"; then
 	    groupDirectoryGroupCount=$(countGlob "${group}/*" "${groups[@]}")
-	    ! isDefinitionGroupCompletelyFiltered "${group}/${GROUPDIR_FILTER_FILENAME}" && \
-		if [ $groupDirectoryGroupCount -gt 1 ]; then
+	    ! isDefinitionGroupCompletelyFiltered "${group}/${GROUPDIR_FILTER_FILENAME}" \
+		&& if [ $groupDirectoryGroupCount -gt 1 ]; then
 		    local groupDirDescriptionFilespec="$(getDefinitionGroupFilespec "${group}/${GROUPDIR_DESCRIPTION_FILENAME}")"
 		    if [ "$isPrintGroups" ] && [ -r "$groupDirDescriptionFilespec" ]; then
 			cat -- "$groupDirDescriptionFilespec" \
@@ -450,10 +450,10 @@ addAllAcceptedGroups()
 		    fi
 
 		    # Ignore a group directory that has only one group in it; the query for the group itself will suffice.
-		    $obtainGroups --memoize-group "${setupName}${setupAppendix:+-}${setupAppendix}-groups" --timespan "$SETUPSOFTWARE_GROUP_VALID_TIMESPAN" --subject "$groupSubject" --verb "directory (with $groupDirectoryGroupCount groups) is not" --state 'chosen' --action 'consider it'
 		    withHeaderFirstArg=()
-		fi || \
-		readarray -O ${#filteredGroups[@]} -t filteredGroups < <(filterGlob "${group}/*" "${groups[@]}")
+		    $obtainGroups --memoize-group "${setupName}${setupAppendix:+-}${setupAppendix}-groups" --timespan "$SETUPSOFTWARE_GROUP_VALID_TIMESPAN" --subject "$groupSubject" --verb "directory (with $groupDirectoryGroupCount groups) is not" --state 'chosen' --action 'consider it'
+		fi \
+		|| readarray -O ${#filteredGroups[@]} -t filteredGroups < <(filterGlob "${group}/*" "${groups[@]}")
 	    continue
 	fi
 
@@ -464,9 +464,9 @@ addAllAcceptedGroups()
 		| withHeader "${withHeaderFirstArg[@]}" --no-newline -- "$groupSubject" \
 		    >&2
 
-	$obtainGroups --memoize-group "${setupName}${setupAppendix:+-}${setupAppendix}-groups" --timespan "$SETUPSOFTWARE_GROUP_VALID_TIMESPAN" --subject "$groupSubject" --verb 'is not' --state 'chosen' --action 'consider it' && \
-	    acceptedGroups+=("$group")
 	withHeaderFirstArg=()
+	$obtainGroups --memoize-group "${setupName}${setupAppendix:+-}${setupAppendix}-groups" --timespan "$SETUPSOFTWARE_GROUP_VALID_TIMESPAN" --subject "$groupSubject" --verb 'is not' --state 'chosen' --action 'consider it' \
+	    && acceptedGroups+=("$group")
     done
 }
 
