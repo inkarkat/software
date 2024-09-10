@@ -1,0 +1,11 @@
+# pipx has been natively packaged since Ubuntu 20.04, but we need at least
+# version 1.5 for the --global installation option (cp.
+# https://github.com/pypa/pipx/issues/754)
+# That's only the case for Ubuntu 24.10; prior to that, we need to install it
+# via pip.
+require:'Ubuntu -24.04' \
+    pip3:pipx \
+    # pipx Python 3 package manager
+require:'Ubuntu 24.10+' \
+    pipx \
+    # pipx Python 3 package manager
