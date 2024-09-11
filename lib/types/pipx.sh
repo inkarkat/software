@@ -24,10 +24,11 @@ parsePipxPackageName()
 parsePipxPackageModules()
 {
     local packageSpec="${1:?}"; shift
-    [[ "$packageSpec" =~ ^[^]]+\[(.+\])$ ]] && printf %s "${BASH_REMATCH[1]}"
+    [[ "$packageSpec" =~ ^[^]]+\[(.+)\]$ ]] && printf %s "${BASH_REMATCH[1]}"
 }
 
-typeset -A installedPipxPackages=()
+typeset -A installedPipxPackageSpecToName=()
+typeset -A installedPipxPackageModules=()   # key: package name, value: modules
 isInstalledPipxPackagesAvailable=
 getInstalledPipxPackages()
 {
@@ -38,21 +39,21 @@ getInstalledPipxPackages()
 	return
     fi
 
-    local exitStatus packageSpec remainder; while IFS=$'\t' read -r packageSpec remainder || { exitStatus="$packageSpec"; break; }	# Exit status from the process substitution (<(pipx-list-packages)) is lost; return the actual exit status via an incomplete (i.e. missing the newline) last line.
+    local exitStatus packageName packageSpec remainder; while IFS=$'\t' read -r packageName packageSpec remainder || { exitStatus="$packageName"; break; }	# Exit status from the process substitution (<(pipx-list-packages)) is lost; return the actual exit status via an incomplete (i.e. missing the newline) last line.
     do
+	installedPipxPackageSpecToName["$packageSpec"]="$packageName"
 	# Python CLI apps can have optional modules selected during installation:
 	# PACKAGE[MODULE1,...]. There can only be one app configuration due to the
 	# global app name.
-	local packageName="$(parsePipxPackageName "$packageSpec")"
 	local packageModules="$(parsePipxPackageModules "$packageSpec")"
-	installedPipxPackages["$packageName"]="$packageModules"
-	case ",${DEBUG:-}," in *,setup-software:pipx,*) echo >&2 "${PS4}setup-software (pipx): Found installed ${packageName}${packageModules:+ with dependencies }${packageModules}";; esac
-    done < <(pipx-list-packages --package-spec --global 2>/dev/null; printf %d "$?")
+	installedPipxPackageModules["$packageName"]="$packageModules"
+	case ",${DEBUG:-}," in *,setup-software:pipx,*) echo >&2 "${PS4}setup-software (pipx): Found installed ${packageName} (${packageSpec})${packageModules:+ with dependencies }${packageModules}";; esac
+    done < <(pipx-list-packages --both-package-name-and-spec --global 2>/dev/null; printf %d "$?")
     [ $exitStatus -eq 0 ] && isInstalledPipxPackagesAvailable=t
 }
 
-typeset -A addedPipxPackages=()
-typeset -A externallyAddedPipxPackages=()
+typeset -A addedPipxPackages=() # key: package name, value: modules
+typeset -A externallyAddedPipxPackages=()	# key: package name, value: modules
 hasPipx()
 {
     local packageSpec="${1:?}"; shift
@@ -61,28 +62,32 @@ hasPipx()
 	return 99
     fi
 
-    local packageName="$(parsePipxPackageName "$packageSpec")"
+    local packageName="${installedPipxPackageSpecToName["$packageSpec"]:-$(parsePipxPackageName "$packageSpec")}"   # For already installed apps, we can obtain the package name from the spec; for new apps, we need to parse it from the spec.
     local packageModules="$(parsePipxPackageModules "$packageSpec")"
     if [ -z "$packageModules" ]; then
 	# Without required modules, just the existence of the package is enough.
-	[ -n "${installedPipxPackages["$packageName"]+t}" ] || [ -n "${addedPipxPackages["$packageName"]+t}" ] || [ -n "${externallyAddedPipxPackages["$packageName"]+t}" ]
+	[ -n "${installedPipxPackageModules["$packageName"]+t}" ] || [ -n "${addedPipxPackages["$packageName"]+t}" ] || [ -n "${externallyAddedPipxPackages["$packageName"]+t}" ]
     else
 	# Need to ensure that all required modules already are [about to be] installed.
 	test -z "$(comm -23 \
 	    <(mergeLists --field-separator , --output-separator $'\n' --sort --omit-empty -- "$packageModules") \
-	    <(mergeLists --field-separator , --output-separator $'\n' --sort --omit-empty -- "${installedPipxPackages["$packageName"]}" "${addedPipxPackages["$packageName"]}" "${externallyAddedPipxPackages["$packageName"]}"))"
+	    <(mergeLists --field-separator , --output-separator $'\n' --sort --omit-empty -- "${installedPipxPackageModules["$packageName"]}" "${addedPipxPackages["$packageName"]}" "${externallyAddedPipxPackages["$packageName"]}"))"
     fi
 }
 
+typeset -A installedPipxPackageNameToSpec=()
 addPipx()
 {
     local packageSpec="${1:?}"; shift
-    local packageName="$(parsePipxPackageName "$packageSpec")"
+    local packageName="${installedPipxPackageSpecToName["$packageSpec"]:-$(parsePipxPackageName "$packageSpec")}"   # For already installed apps, we can obtain the package name from the spec; for new apps, we need to parse it from the spec.
+    installedPipxPackageNameToSpec["$packageName"]="$packageSpec"   # For installing, we need the original package spec - it may be an absolute path or URL (but inject the combined dependency modules).
+
     local packageModules="$(parsePipxPackageModules "$packageSpec")"
+
     isAvailableOrUserAcceptsGroup pipx "${projectDir}/lib/definitions/pipx" 'pipx Python 3 package manager' || return $?
 
     # Need to combine installed with added modules.
-    local combinedPackageModules="$(mergeLists --field-separator , --sort --omit-empty -- "$packageModules" "${installedPipxPackages["$packageName"]}" "${addedPipxPackages["$packageName"]}" "${externallyAddedPipxPackages["$packageName"]}")"
+    local combinedPackageModules="$(mergeLists --field-separator , --sort --omit-empty -- "$packageModules" "${installedPipxPackageModules["$packageName"]}" "${addedPipxPackages["$packageName"]}" "${externallyAddedPipxPackages["$packageName"]}")"
     local combinedPackageSpec="${packageName}${combinedPackageModules:+[${combinedPackageModules}]}"
 
     preinstallHook "$combinedPackageSpec"
@@ -102,7 +107,8 @@ installPipx()
     for packageName in "${!addedPipxPackages[@]}"
     do
 	local packageModules="${addedPipxPackages["$packageName"]}"
-	local quotedPackageSpec; printf -v quotedPackageSpec %q "${packageName}${packageModules:+[${packageModules}]}"
+	local packageSpec="${installedPipxPackageNameToSpec["$packageName"]}"
+	local quotedPackageSpec; printf -v quotedPackageSpec %q "${packageSpec%%\[*\]}${packageModules:+[${packageModules}]}"
 	collectedQuotedPackageSpecs+="${collectedQuotedPackageSpecs:+ }${quotedPackageSpec}"
     done
 
