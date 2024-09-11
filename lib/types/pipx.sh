@@ -3,23 +3,28 @@
 configUsagePipx()
 {
     cat <<'HELPTEXT'
-pipx: items refer to Python CLI apps installed in isolated environments.
+pipx:PACKAGE-SPEC items refer to Python CLI apps installed in isolated
+environments.
+PACKAGE-SPEC is the package name (or an absolute filespec or URL), plus any
+optional [DEP1,...] dependency packages in square brackets appended.
 HELPTEXT
 }
 
 parsePipxPackageName()
 {
     local packageSpec="${1:?}"; shift
-    printf %s "${packageSpec%%\[*\]}"
+    local packageName="${packageSpec%%\[*\]}"
+    # XXX: Heuristics, not perfect!
+    packageName="${packageName##*/}"	# absolute filespecs: strip path
+    packageName="${packageName%%.*}"	# strip file extension
+    [[ "$packageName" =~ ^-[0-9]+\.[0-9].*$ ]] \
+	&& packageName="${packageName%"${BASH_REMATCH[0]}"}"	# strip version
+    printf %s "$packageName"
 }
 parsePipxPackageModules()
 {
     local packageSpec="${1:?}"; shift
-    local packageName="$(parsePipxPackageName "$packageSpec")"
-    local packageModules="${packageSpec#$packageName}"
-    packageModules="${packageModules#\[}"
-    packageModules="${packageModules%\]}"
-    printf %s "$packageModules"
+    [[ "$packageSpec" =~ ^[^]]+\[(.+\])$ ]] && printf %s "${BASH_REMATCH[1]}"
 }
 
 typeset -A installedPipxPackages=()
