@@ -66,7 +66,7 @@ installPip3()
 {
     [ ${#addedPip3Packages[@]} -gt 0 ] || return
     local IFS=' '
-    submitInstallCommand "${SUDO}${SUDO:+ }pip3${isBatch:+ --yes} install ${!addedPip3Packages[*]}"
+    submitInstallCommand "${SUDO}${SUDO:+ }pip3${isBatch:+ --yes} install --break-system-packages ${!addedPip3Packages[*]}"
 }
 
 typeRegistry+=([pip3:]=Pip3)
