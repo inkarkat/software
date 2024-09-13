@@ -754,7 +754,8 @@ parseDefinitionGroups()
 		let addedDefinitionCount+=1
 		# Add the configurations first, so that they are available to the
 		# add*() function for the real item already.
-		addItems "${missingItemConfigurations[@]}" "${missingItems[@]}"
+		addItems "${missingItemConfigurations[@]}" "${missingItems[@]}" \
+		    || messagePrintf 'ERROR: Failed to add missing items in %s.\n' "$subject"
 
 		[ ! "$isPrintDefinitions" ] || printf '%s\n' "$subject"
 	    fi
@@ -1174,7 +1175,7 @@ addItems()
 	else
 	    printf >&2 'ERROR: Invalid type: %s\n' "$prefix"
 	    exit 3
-	fi
+	fi || return $?
 	addedItems["$item"]=t	# Record all added items for the config, decorate type / preinstall check.
     done
 }
@@ -1200,7 +1201,10 @@ hasOrAddItems()
     done
 
     [ ${#missingItems[@]} -eq 0 ] && return 1
-    addItems "${missingItems[@]}"
+    if ! addItems "${missingItems[@]}"; then
+	messagePrintf 'ERROR: Failed to add missing items in %s.\n' "$(getSubjectFromItems "${missingItems[@]}")"
+	return 1
+    fi
 }
 
 
