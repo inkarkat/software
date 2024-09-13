@@ -4,7 +4,7 @@
 # That's only the case for Ubuntu 24.10; prior to that, we need to install it
 # via pip.
 require:'Ubuntu -24.04' \
-    pip3:pipx \
+    pip3:pipx python3-venv \
     # pipx Python 3 package manager
 require:'Ubuntu 24.10+' \
     pipx \
