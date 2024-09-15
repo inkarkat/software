@@ -1,5 +1,6 @@
 #!/bin/bash
 shopt -qs extglob nullglob
+case ",${TRACE:-}," in *,${BASH_SOURCE[0]##*/},*) [ -z "$BATS_TEST_NAME" ] || BASH_XTRACEFD=3; set -x;; esac
 
 : ${SETUPSOFTWARE_GROUP_VALID_TIMESPAN:=1d}
 : ${SETUPSOFTWARE_DEFINITION_VALID_TIMESPAN:=1d}

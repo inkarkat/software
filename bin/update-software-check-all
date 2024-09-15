@@ -1,5 +1,6 @@
 #!/bin/bash
 set -o pipefail
+case ",${TRACE:-}," in *,${BASH_SOURCE[0]##*/},*) [ -z "$BATS_TEST_NAME" ] || BASH_XTRACEFD=3; set -x;; esac
 
 printUsage()
 {
