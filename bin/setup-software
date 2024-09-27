@@ -25,7 +25,7 @@ printShortUsage()
     # skim the long one.
     printf 'Usage: %q %s\n' "$(basename "$1")" '--clear-group-recall|--clear-definition-recall | -?|-h|--help | -H|--config-help [TYPE]'
     echo
-    printf 'Usage: %q %s | tee install-script.sh && sh install-script.sh\n' "$(basename "$1")" "[--check|--dry-run] [-q|--quiet|--silence-no-definitions|-v|--verbose] [-f|--force] [-y|--yes|[-q|--quiet] --recall-current-only|--recall-only] [-b|--batch] [-s|--select DEFINITION [-s ...]] [--base-dir BASE-DIR] [--name NAME]${commandLineOptionExtensions:+ }${commandLineOptionExtensions}${commandLineParameterExtensions:+ }${commandLineParameterExtensions} -a|--all|[-q|--quiet] --group-recall-only|GROUP-NAME|GROUP-FILESPEC [...]"
+    printf 'Usage: %q %s | tee install-script.sh && sh install-script.sh\n' "$(basename "$1")" "[--check|--dry-run] [-q|--quiet|--silence-no-definitions|-v|--verbose] [-f|--force] [-y|--yes|[-q|--quiet] --recall-current-only|--recall-only] [-b|--batch] [-s|--select DEFINITION [-s ...]] [--base-dir BASE-DIR] [--name NAME]${commandLineOptionExtensions:+ }${commandLineOptionExtensions}${commandLineParameterExtensions:+ }${commandLineParameterExtensions} -a|--all|[-q|--quiet] --group-recall-current-only|--group-recall-only|GROUP-NAME|GROUP-FILESPEC [...]"
     echo
     printf 'Usage: %q %s\n' "$(basename "$1")" '--print-types|-P|--print-definitions|-p|--print|-e|--execute [...]'
     echo
@@ -132,10 +132,19 @@ HELPDESCRIPTION
     --name NAME		Use NAME for storing the user's choices.
     --all|-a		Consider definitions from all existing definition
 			groups.
-    --group-recall-only	Only reconsider those definition groups that had been
-			persistently accepted when executed with --all.
+    --group-recall-current-only
+			Only reconsider those definition groups that had been
+			persistently accepted and are still within the validity
+			period of the made decision (i.e. ${SETUPSOFTWARE_DEFINITION_VALID_TIMESPAN} when executed
+			with --all.
 			Useful to rerun a setup to catch those definitions that
 			failed to install the first time.
+    --group-recall-only	Only reconsider those definition groups that had (at any
+			previous time) been persistently accepted beforehand
+			(even if that validity period has passed) when executed
+			with --all.
+			Used by update-software to check for updates to those
+			definition groups that had been selected before.
     --clear-group-recall
 			Forget any persisted definition group choices made in
 			previous invocations, and re-query all existing groups
@@ -319,26 +328,31 @@ selectedDefinitionDatabase()
 {
     keyDatabase "${setupName}${setupAppendix:+-}${setupAppendix}" "$@"
 }
+selectedDefinitionGroupDatabase()
+{
+    keyDatabase "${setupName}${setupAppendix:+-}${setupAppendix}-groups" "$@"
+}
 
 storeSelectedDefinition()
 {
     local subject="${1:?}"; shift
     selectedDefinitionDatabase --add "$subject"
 }
+storeSelectedDefinitionGroup()
+{
+    local subject="${1:?}"; shift
+    selectedDefinitionGroupDatabase --add "$subject"
+}
 
 hasDefinitionBeenSelected()
 {
-    local subject=
-    while [ $# -ne 0 ]
-    do
-	case "$1" in
-	    --subject)	shift; subject="$1"; shift;;
-	    --)		shift; break;;
-	    *)		shift;;
-	esac
-    done
-
-    selectedDefinitionDatabase --query "${subject:?}"
+    local subject="${1:?}"; shift
+    selectedDefinitionDatabase --query "$subject"
+}
+hasDefinitionGroupBeenSelected()
+{
+    local subject="${1:?}"; shift
+    selectedDefinitionGroupDatabase --query "$subject"
 }
 
 
@@ -489,7 +503,7 @@ addAllAcceptedGroups()
 
 		    # Ignore a group directory that has only one group in it; the query for the group itself will suffice.
 		    withHeaderFirstArg=()
-		    askGroup --subject "$groupSubject" --verb "directory (with $groupDirectoryGroupCount groups) is not" --state 'chosen' --action 'consider it'
+		    askGroup "$groupSubject" --verb "directory (with $groupDirectoryGroupCount groups) is not" --state 'chosen' --action 'consider it'
 		fi \
 		|| readarray -O ${#filteredGroups[@]} -t filteredGroups < <(filterGlob "${group}/*" "${groups[@]}")
 	    continue
@@ -503,7 +517,7 @@ addAllAcceptedGroups()
 		    >&2
 
 	withHeaderFirstArg=()
-	askGroup --subject "$groupSubject" --verb 'is not' --state 'chosen' --action 'consider it' \
+	askGroup "$groupSubject" --verb 'is not' --state 'chosen' --action 'consider it' \
 	    && acceptedGroups+=("$group")
     done
 }
@@ -788,9 +802,8 @@ parseDefinitionGroups()
 		itemAuxVerb=be
 	    fi
 
-	    if askTo --subject "$subject" --verb "$itemVerb not yet${itemAuxVerb:+ }$itemAuxVerb" --state "installed${what:+ (}${what}${what:+)}" --action 'install it'; then
+	    if askTo "$subject" --verb "$itemVerb not yet${itemAuxVerb:+ }$itemAuxVerb" --state "installed${what:+ (}${what}${what:+)}" --action 'install it'; then
 		let addedDefinitionCount+=1
-		storeSelectedDefinition "$subject"
 		# Add the configurations first, so that they are available to the
 		# add*() function for the real item already.
 		addItems "${missingItemConfigurations[@]}" "${missingItems[@]}" \
@@ -1116,23 +1129,34 @@ memoizeAndCacheDecision()
 
 askGroup()
 {
-    $obtainGroups --memoize-group "${setupName}${setupAppendix:+-}${setupAppendix}-groups" --timespan "$SETUPSOFTWARE_GROUP_VALID_TIMESPAN" "$@"
+    local groupSubject="${1:?}"	# Don't shift off
+    if $obtainPastGroupSelection "$groupSubject"; then
+	# The stored selected definition overrules any memoized decision (that depends
+	# on the validity period). Invoke [silent]RecallDecision to just render the
+	# decision.
+	$obtainGroups --print-result 0 --memoize-group "${setupName}${setupAppendix:+-}${setupAppendix}-groups" --subject "$@" || :
+    else
+	$obtainGroups --timespan "$SETUPSOFTWARE_GROUP_VALID_TIMESPAN" --memoize-group "${setupName}${setupAppendix:+-}${setupAppendix}-groups" --subject "$@" \
+	    && storeSelectedDefinitionGroup "$groupSubject"
+    fi
 }
 
 askTo()
 {
-    if $obtainPastSelection "$@"; then
+    local subject="${1:?}"  # Don't shift off
+    if $obtainPastSelection "$subject"; then
 	# The stored selected definition overrules any memoized decision (that depends
 	# on the validity period). Invoke [silent]RecallDecision to just render the
 	# decision.
-	$obtainSelection --print-result 0 --memoize-group "${setupName}${setupAppendix:+-}${setupAppendix}" "$@" || :
+	$obtainSelection --print-result 0 --memoize-group "${setupName}${setupAppendix:+-}${setupAppendix}" --subject "$@" || :
     else
-	$obtainSelection --timespan "$SETUPSOFTWARE_DEFINITION_VALID_TIMESPAN" --memoize-group "${setupName}${setupAppendix:+-}${setupAppendix}" "$@"
+	$obtainSelection --timespan "$SETUPSOFTWARE_DEFINITION_VALID_TIMESPAN" --memoize-group "${setupName}${setupAppendix:+-}${setupAppendix}" --subject "$@" \
+	    && storeSelectedDefinition "$subject"
     fi
 }
 askToInstall()
 {
-    askTo --subject "${1:?}" --verb 'is not yet' --state installed --action 'install it'
+    askTo "${1:?}" --verb 'is not yet' --state installed --action 'install it'
 }
 
 isAvailableNative()
@@ -1492,6 +1516,7 @@ setupAppendix=
 obtainPastSelection=false
 obtainSelection=memoizeAndCacheDecision
 isAddAll=
+obtainPastGroupSelection=false
 obtainGroups=memoizeDecision
 isPrintGroups=t
 typeset -a selections=()
@@ -1550,6 +1575,8 @@ do
 	--select|-s)	shift; selections+=("$1"); shift;;
 	--all|-a)	shift; isAddAll=t;;
 	--group-recall-only)
+			obtainPastGroupSelection=hasDefinitionGroupBeenSelected;& # Fall through
+	--group-recall-current-only)
 			shift
 			if [ "$isQuiet" ]; then
 			    obtainGroups=silentRecallDecision
