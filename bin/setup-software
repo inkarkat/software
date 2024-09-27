@@ -25,7 +25,7 @@ printShortUsage()
     # skim the long one.
     printf 'Usage: %q %s\n' "$(basename "$1")" '--clear-group-recall|--clear-definition-recall | -?|-h|--help | -H|--config-help [TYPE]'
     echo
-    printf 'Usage: %q %s | tee install-script.sh && sh install-script.sh\n' "$(basename "$1")" "[--check|--dry-run] [-q|--quiet|--silence-no-definitions|-v|--verbose] [-f|--force] [-y|--yes|[-q|--quiet] --recall-only] [-b|--batch] [-s|--select DEFINITION [-s ...]] [--base-dir BASE-DIR] [--name NAME]${commandLineOptionExtensions:+ }${commandLineOptionExtensions}${commandLineParameterExtensions:+ }${commandLineParameterExtensions} -a|--all|[-q|--quiet] --group-recall-only|GROUP-NAME|GROUP-FILESPEC [...]"
+    printf 'Usage: %q %s | tee install-script.sh && sh install-script.sh\n' "$(basename "$1")" "[--check|--dry-run] [-q|--quiet|--silence-no-definitions|-v|--verbose] [-f|--force] [-y|--yes|[-q|--quiet] --recall-current-only|--recall-only] [-b|--batch] [-s|--select DEFINITION [-s ...]] [--base-dir BASE-DIR] [--name NAME]${commandLineOptionExtensions:+ }${commandLineOptionExtensions}${commandLineParameterExtensions:+ }${commandLineParameterExtensions} -a|--all|[-q|--quiet] --group-recall-only|GROUP-NAME|GROUP-FILESPEC [...]"
     echo
     printf 'Usage: %q %s\n' "$(basename "$1")" '--print-types|-P|--print-definitions|-p|--print|-e|--execute [...]'
     echo
@@ -101,10 +101,19 @@ HELPDESCRIPTION
 			--select.
     --yes|-y		Accept all definitions (that are not yet installed and
 			have been chosen) without the usual interactive query.
-    --recall-only	Only reconsider those definitions that are not yet
-			installed but had been persistently accepted beforehand.
+    --recall-current-only
+			Only reconsider those definitions that are not yet
+			installed but had been persistently accepted beforehand,
+			and are still within the validity period of the made
+			decision (i.e. ${SETUPSOFTWARE_DEFINITION_VALID_TIMESPAN}.
 			Useful to rerun a setup to catch those definitions that
 			failed to install the first time.
+    --recall-only	Only reconsider those definitions that are not yet
+			installed but had (at any previous time) been
+			persistently accepted beforehand (even if that validity
+			period has passed).
+			Used by update-software to check for updates to those
+			definitions that had been selected before.
     --batch|-b		Skip any interactive user confirmation for installation
 			commands (e.g. by the package manager).
     --select|-s	DEFINITION
@@ -304,6 +313,34 @@ silentRecallDecision()
 {
     recallDecision >/dev/null 2>&1 "$@"
 }
+
+
+selectedDefinitionDatabase()
+{
+    keyDatabase "${setupName}${setupAppendix:+-}${setupAppendix}" "$@"
+}
+
+storeSelectedDefinition()
+{
+    local subject="${1:?}"; shift
+    selectedDefinitionDatabase --add "$subject"
+}
+
+hasDefinitionBeenSelected()
+{
+    local subject=
+    while [ $# -ne 0 ]
+    do
+	case "$1" in
+	    --subject)	shift; subject="$1"; shift;;
+	    --)		shift; break;;
+	    *)		shift;;
+	esac
+    done
+
+    selectedDefinitionDatabase --query "${subject:?}"
+}
+
 
 getSubjectFromItems()
 {
@@ -753,6 +790,7 @@ parseDefinitionGroups()
 
 	    if askTo --subject "$subject" --verb "$itemVerb not yet${itemAuxVerb:+ }$itemAuxVerb" --state "installed${what:+ (}${what}${what:+)}" --action 'install it'; then
 		let addedDefinitionCount+=1
+		storeSelectedDefinition "$subject"
 		# Add the configurations first, so that they are available to the
 		# add*() function for the real item already.
 		addItems "${missingItemConfigurations[@]}" "${missingItems[@]}" \
@@ -1078,7 +1116,14 @@ memoizeAndCacheDecision()
 
 askTo()
 {
-    $obtainSelection --timespan "$SETUPSOFTWARE_DEFINITION_VALID_TIMESPAN" --memoize-group "${setupName}${setupAppendix:+-}${setupAppendix}" "$@"
+    if $obtainPastSelection "$@"; then
+	# The stored selected definition overrules any memoized decision (that depends
+	# on the validity period). Invoke [silent]RecallDecision to just render the
+	# decision.
+	$obtainSelection --print-result 0 --memoize-group "${setupName}${setupAppendix:+-}${setupAppendix}" "$@" || :
+    else
+	$obtainSelection --timespan "$SETUPSOFTWARE_DEFINITION_VALID_TIMESPAN" --memoize-group "${setupName}${setupAppendix:+-}${setupAppendix}" "$@"
+    fi
 }
 askToInstall()
 {
@@ -1439,6 +1484,7 @@ noopExitStatus=4
 action=generateAndPrintInstallCommands
 setupName=
 setupAppendix=
+obtainPastSelection=false
 obtainSelection=memoizeAndCacheDecision
 isAddAll=
 obtainGroups=memoizeDecision
@@ -1486,7 +1532,9 @@ do
 	--verbose|-v)	recursiveArgs+=("$1"); setupSoftwareBehaviorArgs+=("$1"); shift; isVerbose=t;;
 	--force|-f)	recursiveArgs+=("$1"); setupSoftwareBehaviorArgs+=("$1"); shift; isForce=t;;
 	--yes|-y)	shift; obtainSelection=true;;
-	--recall-only)	shift
+	--recall-only)	obtainPastSelection=hasDefinitionBeenSelected;&	# Fall through
+	--recall-current-only)
+			shift
 			if [ "$isQuiet" ]; then
 			    obtainSelection=silentRecallDecision
 			else
