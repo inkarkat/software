@@ -1137,7 +1137,13 @@ askGroup()
 	$obtainGroups --print-result 0 --memoize-group "${setupName}${setupAppendix:+-}${setupAppendix}-groups" --subject "$@" || :
     else
 	$obtainGroups --timespan "$SETUPSOFTWARE_GROUP_VALID_TIMESPAN" --memoize-group "${setupName}${setupAppendix:+-}${setupAppendix}-groups" --subject "$@" \
-	    && storeSelectedDefinitionGroup "$groupSubject"
+	    || return $?
+
+	# Store the group selection, but only if the user actually made a permanent
+	# decision (now or recalled).
+	if memoizeDecision --get-decision --memoize-group "${setupName}${setupAppendix:+-}${setupAppendix}-groups" --subject "$@" >/dev/null 2>&1; then
+	    storeSelectedDefinitionGroup "$groupSubject"
+	fi
     fi
 }
 
@@ -1151,7 +1157,16 @@ askTo()
 	$obtainSelection --print-result 0 --memoize-group "${setupName}${setupAppendix:+-}${setupAppendix}" --subject "$@" || :
     else
 	$obtainSelection --timespan "$SETUPSOFTWARE_DEFINITION_VALID_TIMESPAN" --memoize-group "${setupName}${setupAppendix:+-}${setupAppendix}" --subject "$@" \
-	    && storeSelectedDefinition "$subject"
+	    || return $?
+
+	# Store the selection, but only if the user actually made a permanent decision
+	# (now or recalled), or chose to indiscriminately accept all definitions via
+	# --yes.
+	if [ "$obtainSelection" = 'true' ] \
+	    || memoizeDecision --get-decision --memoize-group "${setupName}${setupAppendix:+-}${setupAppendix}" --subject "$@" >/dev/null 2>&1
+	then
+	    storeSelectedDefinition "$subject"
+	fi
     fi
 }
 askToInstall()
