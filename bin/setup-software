@@ -489,7 +489,7 @@ addAllAcceptedGroups()
 
 		    # Ignore a group directory that has only one group in it; the query for the group itself will suffice.
 		    withHeaderFirstArg=()
-		    $obtainGroups --memoize-group "${setupName}${setupAppendix:+-}${setupAppendix}-groups" --timespan "$SETUPSOFTWARE_GROUP_VALID_TIMESPAN" --subject "$groupSubject" --verb "directory (with $groupDirectoryGroupCount groups) is not" --state 'chosen' --action 'consider it'
+		    askGroup --subject "$groupSubject" --verb "directory (with $groupDirectoryGroupCount groups) is not" --state 'chosen' --action 'consider it'
 		fi \
 		|| readarray -O ${#filteredGroups[@]} -t filteredGroups < <(filterGlob "${group}/*" "${groups[@]}")
 	    continue
@@ -503,7 +503,7 @@ addAllAcceptedGroups()
 		    >&2
 
 	withHeaderFirstArg=()
-	$obtainGroups --memoize-group "${setupName}${setupAppendix:+-}${setupAppendix}-groups" --timespan "$SETUPSOFTWARE_GROUP_VALID_TIMESPAN" --subject "$groupSubject" --verb 'is not' --state 'chosen' --action 'consider it' \
+	askGroup --subject "$groupSubject" --verb 'is not' --state 'chosen' --action 'consider it' \
 	    && acceptedGroups+=("$group")
     done
 }
@@ -1112,6 +1112,11 @@ memoizeAndCacheDecision()
     memoizeDecision "${memoizeDecisionArgs[@]}" "$@"; local status=$?
     cachedDecisions["$subject"]=$status
     return $status
+}
+
+askGroup()
+{
+    $obtainGroups --memoize-group "${setupName}${setupAppendix:+-}${setupAppendix}-groups" --timespan "$SETUPSOFTWARE_GROUP_VALID_TIMESPAN" "$@"
 }
 
 askTo()
