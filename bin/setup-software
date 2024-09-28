@@ -1661,7 +1661,7 @@ do
 	*)		break;;
     esac
 done
-if [ -t 1 ] && [ ! "$isExecute" ] && [ ! "$isPrint" ] && [ ! "$isPrintDefinitions" ]; then
+if [ -t 1 ] && [ ! "$isExecute" ] && [ ! "$isPrint" ] && [ ! "$isPrintDefinitions" ] && [ ${#specialHandlingCommands[@]} -eq 0 ]; then
     echo >&2 'ERROR: Will not output installation commands to the terminal without -p|--print; either redirect output or directly execute via -e|--execute, or just print defintitions with -P|--print-definitions.'
     echo >&2
     printUsage "$0" >&2
