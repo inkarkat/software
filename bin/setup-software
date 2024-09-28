@@ -326,11 +326,11 @@ silentRecallDecision()
 
 selectedDefinitionDatabase()
 {
-    keyDatabase "${setupName}${setupAppendix:+-}${setupAppendix}" "$@"
+    keyDatabase "selectedDefinitions${setupAppendix:+-}${setupAppendix}" --namespace "$setupName" "$@"
 }
 selectedDefinitionGroupDatabase()
 {
-    keyDatabase "${setupName}${setupAppendix:+-}${setupAppendix}-groups" "$@"
+    keyDatabase "selectedDefinitionGroups${setupAppendix:+-}${setupAppendix}" --namespace "$setupName" "$@"
 }
 
 storeSelectedDefinition()
