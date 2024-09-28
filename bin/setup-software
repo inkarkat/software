@@ -23,11 +23,11 @@ printShortUsage()
 
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s\n' "$(basename "$1")" '--clear-group-recall|--clear-definition-recall | -?|-h|--help | -H|--config-help [TYPE]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '--clear-group-recall|--clear-definition-recall|--clear-selection-store [...] -?|-h|--help | -H|--config-help [TYPE]'
     echo
-    printf 'Usage: %q %s | tee install-script.sh && sh install-script.sh\n' "$(basename "$1")" "[--check|--dry-run] [-q|--quiet|--silence-no-definitions|-v|--verbose] [-f|--force] [-y|--yes|[-q|--quiet] --recall-current-only|--recall-only] [-b|--batch] [-s|--select DEFINITION [-s ...]] [--base-dir BASE-DIR] [--name NAME]${commandLineOptionExtensions:+ }${commandLineOptionExtensions}${commandLineParameterExtensions:+ }${commandLineParameterExtensions} -a|--all|[-q|--quiet] --group-recall-current-only|--group-recall-only|GROUP-NAME|GROUP-FILESPEC [...]"
+    printf 'Usage: %q %s | tee install-script.sh && sh install-script.sh\n' "$(basename "$1")" "[--check|--dry-run] [-q|--quiet|--silence-no-definitions|-v|--verbose] [-f|--force] [-y|--yes|[-q|--quiet] --recall-current-only|--recall-only] [-b|--batch] [-s|--select DEFINITION [-s ...]] [--base-dir BASE-DIR] [--name NAME]${commandLineOptionExtensions:+ }${commandLineOptionExtensions}${commandLineParameterExtensions:+ }${commandLineParameterExtensions} -a|--all|[-q|--quiet] --group-recall-current-only|--group-recall-only|GROUP-NAME|GROUP-FILESPEC ..."
     echo
-    printf 'Usage: %q %s\n' "$(basename "$1")" '--print-types|-P|--print-definitions|-p|--print|-e|--execute [...]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '... --print-types|-P|--print-definitions|-p|--print|-e|--execute|--rebuild-selection-store'
     echo
     echo 'Suggestions for automation in a script:'
     echo
@@ -152,6 +152,15 @@ HELPDESCRIPTION
     --clear-definition-recall
 			Forget any persisted definition choices made in previous
 			invocations, and re-query all definitions again.
+    --clear-selection-store
+			Forget any persisted definition [group] selections. For
+			updates to selections to work, the selection store then
+			has to be rebuilt via --rebuild-selection-store.
+    --rebuild-selection-store
+			Record any already (fully) installed definition as
+			selected, so that any updates to it will be considered
+			by update-software. (Selected definition groups will be
+			automatically updated on the next setup-software run.)
     GROUP-NAME		Consider definitions from GROUP-NAME, as stored inside
 			this project / BASE-DIR.
     GROUP-FILESPEC	Consider definitions from GROUP-FILESPEC, which can
@@ -784,6 +793,7 @@ parseDefinitionGroups()
 	done
 
 	if [ ${#missingItems[@]} -eq 0 ]; then
+	    [ "$isRebuildSelectionStore" ] && storeSelectedDefinition "$subject"
 	    [ "$isVerbose" ] && messagePrintf '%s\n' "$noMissingItemMessage"
 	else
 	    let missingDefinitionCount+=1
@@ -1545,6 +1555,7 @@ isQuiet=
 isSilenceNoDefinitions=
 isVerbose=
 isForce=
+isRebuildSelectionStore=
 typeset -a recursiveArgs=()
 typeset -a setupSoftwareBehaviorArgs=()
 typeset -a additionalBaseDirs=()
@@ -1608,6 +1619,13 @@ do
 			shift
 			specialHandlingCommands+=('memoizeDecision --memoize-group "${setupName}${setupAppendix:+-}${setupAppendix}" --delete-all-decisions')
 			;;
+	--clear-selection-store)
+			shift
+			specialHandlingCommands+=('selectedDefinitionDatabase --truncate')
+			specialHandlingCommands+=('selectedDefinitionGroupDatabase --truncate')
+			;;
+	--rebuild-selection-store)
+			recursiveArgs+=("$1"); setupSoftwareBehaviorArgs+=("$1"); shift; isRebuildSelectionStore=t;;
 	--name)		shift; setupName="${1:?}"; shift;;
 	--key-database)	shift; keyDatabase "$@"; exit $?;;
 	--key-value-database)
@@ -1661,7 +1679,7 @@ do
 	*)		break;;
     esac
 done
-if [ -t 1 ] && [ ! "$isExecute" ] && [ ! "$isPrint" ] && [ ! "$isPrintDefinitions" ] && [ ${#specialHandlingCommands[@]} -eq 0 ]; then
+if [ -t 1 ] && [ ! "$isExecute" ] && [ ! "$isPrint" ] && [ ! "$isPrintDefinitions" ] && [ ${#specialHandlingCommands[@]} -eq 0 ] && [ ! "$isRebuildSelectionStore" ]; then
     echo >&2 'ERROR: Will not output installation commands to the terminal without -p|--print; either redirect output or directly execute via -e|--execute, or just print defintitions with -P|--print-definitions.'
     echo >&2
     printUsage "$0" >&2
