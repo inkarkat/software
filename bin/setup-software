@@ -25,8 +25,10 @@ printShortUsage()
     # skim the long one.
     printf 'Usage: %q %s\n' "$(basename "$1")" '--clear-group-recall|--clear-definition-recall|--clear-selection-store [...] -?|-h|--help | -H|--config-help [TYPE]'
     echo
-    printf 'Usage: %q %s | tee install-script.sh && sh install-script.sh\n' "$(basename "$1")" "[--check|--dry-run] [-q|--quiet|--silence-no-definitions|-v|--verbose] [-f|--force] [-y|--yes|([-q|--quiet] --recall-current-only|--recall-only)] [-b|--batch] [-s|--select DEFINITION [-s ...]] [--base-dir BASE-DIR] [--name NAME]${commandLineOptionExtensions:+ }${commandLineOptionExtensions}${commandLineParameterExtensions:+ }${commandLineParameterExtensions} -a|--all|([-q|--quiet] --group-recall-current-only|--group-recall-only)|GROUP-NAME|GROUP-FILESPEC ..."
+    printf 'Usage: %q %s\n' "$(basename "$1")" "[--check|--dry-run] [-q|--quiet|--silence-no-definitions|-v|--verbose] [-f|--force] [-y|--yes|([-q|--quiet] --recall-current-only|--recall-only)] [-b|--batch] [-s|--select DEFINITION [-s ...]] [--base-dir BASE-DIR] [--name NAME]${commandLineOptionExtensions:+ }${commandLineOptionExtensions}${commandLineParameterExtensions:+ }${commandLineParameterExtensions} -a|--all|([-q|--quiet] --group-recall-current-only|--group-recall-only)|GROUP-NAME|GROUP-FILESPEC ..."
     echo
+    echo
+    printf 'Usage: %q %s | tee install-script.sh && sh install-script.sh\n' "$(basename "$1")" "..."
     printf 'Usage: %q %s\n' "$(basename "$1")" '... --print-types|-P|--print-definitions|-p|--print|-e|--execute|--rebuild-selection-store'
     echo
     echo 'Suggestions for automation in a script:'
