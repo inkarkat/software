@@ -763,7 +763,7 @@ parseDefinitionGroups()
 		[ ! "$isForce" ] && hasItem "$item"
 		case $? in
 		    0)  lastMissingItem=;;
-		    98) # Just skip this item.
+		    98) # Just skip this item. This is useful for supplementary item types like Apt repos and keys (where the actual Apt package might still be installable).
 			noMissingItemMessage="Just skipped items in $subject"
 			continue
 			;;
