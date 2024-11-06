@@ -64,14 +64,14 @@ hasGitrepo()
     [ "${addedGitrepoLocations["${location:?}"]}" ] && return 0
 
     [ -d "$location" ] || return 1
-    exists git || return 1
-    exists git-iscontrolled || return 1
+    exists git || return 99
+    exists git-iscontrolled || return 99
     git-iscontrolled "$location" || return 1
 
     if [ -n "${maxAge?}" ] \
 	&& git-inside fetchdate --remote upstream --older "$maxAge" -- "$location"
     then
-	git-inside uptodate --quiet upstream -- "$location" || return 1
+	translateStatus 3+=99 git-inside uptodate --quiet upstream -- "$location" || return $?
     fi
 
     local quotedResultFile; printf -v quotedResultFile '%q' "$resultFile"
