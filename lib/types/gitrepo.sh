@@ -6,7 +6,7 @@ configUsageGitrepo()
 {
     cat <<HELPTEXT
 gitrepo: items consist of a
-    NAME[:MAX-AGE[SUFFIX]]:GIT-URL[:(BRANCH|TAG|TAG-GLOB|HASH)]:RESULT-FILE:(BUILD-EXPRESSION|BUILD-FILE)
+    NAME[:MAX-AGE[SUFFIX]]:GIT-URL[:(BRANCH|TAG|TAG-GLOB|HASH)][:RESULT-FILE:(BUILD-EXPRESSION|BUILD-FILE)]
 quadruplet / quintuplet / sextuplet.
 If no Git working copy exists yet at ${GITREPO_BASEDIR}/NAME (NAME can also be
 an absolute path), the Git repository at GIT-URL is cloned there [and BRANCH (or
@@ -41,16 +41,17 @@ parseGitrepo()
 	maxAge="${BASH_REMATCH[0]%:}"
 	remainder="${remainder#"${BASH_REMATCH[0]}"}"
     fi
-    if [[ ! "$remainder" =~ ^((/|[^:[:space:]]+://|[^:[:space:]]+@[^:[:space:]]+:)[^:[:space:]]+)(:([^:[:space:]]+))?:([^:[:space:]]+):(.+)$ ]]; then
+    if [[ ! "$remainder" =~ ^((/|[^:[:space:]]+://|[^:[:space:]]+@[^:[:space:]]+:)[^:[:space:]]+)(:([^:[:space:]]+))?(:([^:[:space:]]+):(.+))?$ ]]; then
 	printf >&2 'ERROR: Invalid gitrepo item: "gitrepo:%s"\n' "$gitrepoRecord"
 	return 3
     fi
     local gitUrl="${BASH_REMATCH[1]}"
     local branch="${BASH_REMATCH[4]}"
-    local resultFile="${BASH_REMATCH[5]}"
+    local resultFile="${BASH_REMATCH[6]}"
 
-    local buildCommand="${BASH_REMATCH[6]}"
-    local buildFilespec; buildFilespec="$(getAbsoluteOrFilesFilespec "$buildCommand")" \
+    local buildCommand="${BASH_REMATCH[7]}"
+    local buildFilespec; [ -n "$buildCommand" ] \
+	&& buildFilespec="$(getAbsoluteOrFilesFilespec "$buildCommand")" \
 	&& buildCommand="$buildFilespec"
 
     printf 'local %s=%q\n' location "$location" maxAge "$maxAge" gitUrl "$gitUrl" branch "$branch" resultFile "$resultFile" buildCommand "$buildCommand"
@@ -74,6 +75,7 @@ hasGitrepo()
     then
 	translateStatus 3+=99 git-inside uptodate --quiet upstream -- "$location" || return $?
     fi
+    [ -n "$resultFile" ] || return 0
 
     local quotedResultFile; printf -v quotedResultFile '%q' "$resultFile"
     git-inside --command "test -e $quotedResultFile" -- "$location"
@@ -105,7 +107,7 @@ installGitrepo()
 	local parse; parse="$(parseGitrepo "$gitrepoRecord")" || exit 3; eval "$parse"
 	local quotedGitrepoInstallCommand; printf -v quotedGitrepoInstallCommand '%q ' \
 	    "${projectDir}/lib/gitrepoInstall.sh" \
-	    "${location:?}" "${gitUrl:?}" "${branch?}" "${resultFile:?}" "${buildCommand:?}"
+	    "${location:?}" "${gitUrl:?}" "${branch?}" "${resultFile?}" "${buildCommand?}"
 	submitInstallCommand "${quotedGitrepoInstallCommand% }" "${decoration["gitrepo:${gitrepoRecord}"]}"
     done
 }

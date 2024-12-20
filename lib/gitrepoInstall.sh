@@ -16,8 +16,8 @@ esac
 location="${1:?}"; shift
 gitUrl="${1:?}"; shift
 branch="${1?}"; shift
-resultFile="${1:?}"; shift
-buildCommand="${1:?}"; shift
+resultFile="${1?}"; shift
+buildCommand="${1?}"; shift
 if [ $# -ne 0 ]; then
     printUsage "$0" >&2
     exit 2
@@ -42,7 +42,10 @@ if git-iscontrolled .; then
 
     updatedRev="$(git rev-parse HEAD)"
     if [ "$updatedRev" = "$originalRev" ]; then
-	if [ -e "$resultFile" ]; then
+	if [ -z "$resultFile" ]; then
+	    printf >&2 'No updates.'
+	    exit 99
+	elif [ -e "$resultFile" ]; then
 	    printf >&2 'No updates, and %s already exists.' "$resultFile"
 	    exit 99
 	else
