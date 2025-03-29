@@ -12,8 +12,6 @@ You can use %ARCH% to refer to the machine architecture${aptRepoArch:+ (}${aptRe
 to refer to the current release's codename${aptRepoCodename:+ (}${aptRepoCodename}${aptRepoCodename:+)}.
 You can also specify a fallback as %CODENAME(fallback)%; that one will be tried
 if the codename is not available.
-Note: As this is only used for installing, it's recommended to use this with a
-preinstall: prefix.
 HELPTEXT
 }
 

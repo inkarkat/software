@@ -5,12 +5,15 @@ configUsageAptKey()
     : ${INSTALL_REPO:=~/install}
     cat <<HELPTEXT
 apt-key: items consist of a
-    [MAX-AGE[SUFFIX]]:[[SUBDIR/]NAME/]KEY-GLOB:[URL]
+    [MAX-AGE[SUFFIX]]:[[SUBDIR/]NAME/]KEY-GLOB-OR-NAME:[URL]
 triplet.
-If ${INSTALL_REPO}/(SUBDIR|*)/(NAME|*)/KEY-GLOB already exists
+If ${INSTALL_REPO}/(SUBDIR|*)/(NAME|*)/KEY-GLOB-OR-NAME already exists
 [and if it is younger than MAX-AGE[SUFFIX]], it will be used; else, the APT key
 from URL will be downloaded (and put into ${INSTALL_REPO}/*
 if it exists).
+The API key will be installed as KEY-NAME (or the name provided by the server in
+case of a KEY-GLOB). Use this for the apt-repo: DEB-LINE:
+    apt-repo:NAME:'deb [signed-by=/etc/apt/keyrings/KEY-NAME.gpg] ...'
 If no URL is given and the key does not exist, the installation will fail.
 Note: As there's no checking whether the key has already been installed, it is
 recommended to be used with a preinstall: prefix, so it is only offered before
