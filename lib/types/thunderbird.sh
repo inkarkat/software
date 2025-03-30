@@ -12,12 +12,13 @@ for (manual) installation of the add-on.
 HELPTEXT
 }
 
-readonly THUNDERBIRD_PROFILES_DIRSPEC=~/.thunderbird
-
 typeRegistry+=([thunderbird:]=ThunderbirdAddon)
 typeInstallOrder+=([810]=ThunderbirdAddon)
 
-if ! exists thunderbird || ! hasNative thunderbird; then
+if ! exists thunderbird \
+    || ! THUNDERBIRD_PROFILES_DIRSPEC="$("${projectDir}/lib/getThunderbirdProfileDirspec.sh" 2>/dev/null)" \
+    || [ ! -d "$THUNDERBIRD_PROFILES_DIRSPEC" ]
+then
     hasThunderbirdAddon() { return 98; }
     installThunderbirdAddon() { :; }
     isAvailableThunderbirdAddon() { return 98; }

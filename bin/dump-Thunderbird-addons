@@ -6,7 +6,7 @@ scriptDir="$([ "${BASH_SOURCE[0]}" ] && dirname -- "${BASH_SOURCE[0]}" || exit 3
 projectDir="${scriptDir}/.."
 
 DUMPMOZILLAADDONS_SUBJECT=Thunderbird
-DUMPMOZILLAADDONS_PROFILES_DIRSPEC=~/.thunderbird
+DUMPMOZILLAADDONS_PROFILES_DIRSPEC="$("${projectDir}/lib/getThunderbirdProfileDirspec.sh")" || exit $?
 DUMPMOZILLAADDONS_SUBJECT_PACKAGE_NAME=thunderbird
 
 source "${projectDir}/lib/dumpMozillaAddons"
