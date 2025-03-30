@@ -1,0 +1,5 @@
+<big>Configure Wine</big>
+<tt>
+$ winecfg
+/Graphics\\ > Screen resolution: 192 dpi
+</tt>
