@@ -687,26 +687,26 @@ parseDefinitionGroups()
 		    [ ! "$isForce" ] && hasItem "$lastRealItem"
 		    case $? in
 			0)	rest="${name#*:}"
-			    id="${name%"$rest"}"
-			    if [ -n "$id" ] && [ -n "${typeRegistry["$id"]}" ]; then
-				# Don't take an existing type prefix as the optional ID.
-				id="$name"; rest="$name"
-			    else
-				id="${id%:}"
-			    fi
-			    id="${id:-$rest}"
-			    escapedId="${id//	/ }"
-			    onceMarker --query "$escapedId"
-			    case $? in
-				0)	;;  # The item already is installed, and the check has been run already.
-				1|4)
-				    # The item already is installed, but the check did not run yet.
-				    addPostinstall "$rest"$'\n'"$lastRealItem" --post-or-once --id "$escapedId"
-				    noMissingItemMessage="Only postinstall required for $subject"
-				    ;;
-				*)	exit 3;;
-			    esac
-			    ;;
+				id="${name%"$rest"}"
+				if [ -n "$id" ] && [ -n "${typeRegistry["$id"]}" ]; then
+				    # Don't take an existing type prefix as the optional ID.
+				    id="$name"; rest="$name"
+				else
+				    id="${id%:}"
+				fi
+				id="${id:-$rest}"
+				escapedId="${id//	/ }"
+				onceMarker --query "$escapedId"
+				case $? in
+				    0)	;;  # The item already is installed, and the check has been run already.
+				    1|4)
+					# The item already is installed, but the check did not run yet.
+					addPostinstall "$rest"$'\n'"$lastRealItem" --post-or-once --id "$escapedId"
+					noMissingItemMessage="Only postinstall required for $subject"
+					;;
+				    *)	exit 3;;
+				esac
+				;;
 			98)	;;
 			99)	;;
 			*)	if [ -n "$lastMissingItem" ]; then
