@@ -39,9 +39,9 @@ addPipxInject()
     local mainPackageName dependencyPackageSpec
     IFS=' ' read -r mainPackageName dependencyPackageSpec <<<"$record"
 
-    preinstallHook "$record"
+    preinstallHook PipxInject "$record"
     addedPipxInjectPackages["$mainPackageName"]+=$'\n'"$dependencyPackageSpec"   # Allow duplicates for now.
-    postinstallHook "$record"
+    postinstallHook PipxInject "$record"
 }
 
 isAvailablePipxInject()

@@ -52,10 +52,10 @@ addYumUrl()
     local packageName="${yumKeyRecord%%:*}"
     local yumUrl="${yumKeyRecord#"${packageName}:"}"
 
-    preinstallHook "$packageName"
+    preinstallHook YumUrl "$packageName"
     addedYumUrls["$packageName"]="$(expandYumUrl "$yumUrl")"
     externallyAddedYumPackages["$packageName"]=t
-    postinstallHook "$packageName"
+    postinstallHook YumUrl "$packageName"
 }
 
 installYumUrl()

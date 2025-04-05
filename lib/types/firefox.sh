@@ -95,9 +95,9 @@ addFirefoxAddon()
     local addonId="${firefoxAddonRecord#*:}"; addonId="${addonId%%:*}"
     exists firefox || return $?
 
-    preinstallHook "$addonId"
+    preinstallHook FirefoxAddon "$addonId"
     addedFirefoxAddons["$firefoxAddonRecord"]=t
-    postinstallHook "$addonId"
+    postinstallHook FirefoxAddon "$addonId"
 }
 
 isAvailableFirefoxAddon()

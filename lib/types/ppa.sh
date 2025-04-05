@@ -53,9 +53,9 @@ addPpa()
     local ppaRepoName="${arg% \(*\)}"
     isAvailableOrUserAcceptsNative --preinstall apt-add-repository software-properties-common 'apt repository abstraction' || return $?
 
-    preinstallHook "$ppaRepoName"
+    preinstallHook Ppa "$ppaRepoName"
     addedPpaRepositories["$arg"]=t
-    postinstallHook "$ppaRepoName"
+    postinstallHook Ppa "$ppaRepoName"
 }
 
 isAvailablePpa()

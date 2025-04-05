@@ -69,9 +69,9 @@ hasYumGroup()
 addYumGroup()
 {
     local groupName="${1:?}"; shift
-    preinstallHook "$groupName"
+    preinstallHook YumGroup "$groupName"
     addedYumGroups["$groupName"]=t
-    postinstallHook "$groupName"
+    postinstallHook YumGroup "$groupName"
 }
 
 isAvailableYumGroup()

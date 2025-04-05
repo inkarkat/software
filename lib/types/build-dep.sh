@@ -59,9 +59,9 @@ addDebBuild()
     local debBuildName="${1:?}"; shift
     hasDebSrc || return $?
 
-    preinstallHook "$debBuildName"
+    preinstallHook DebBuild "$debBuildName"
     addedDebBuildDependencies["$debBuildName"]=t
-    postinstallHook "$debBuildName"
+    postinstallHook DebBuild "$debBuildName"
 }
 
 isAvailableDebBuild()

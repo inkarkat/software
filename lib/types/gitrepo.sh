@@ -89,10 +89,10 @@ addGitrepo()
 
     isAvailableOrUserAcceptsNative git || return $?
 
-    preinstallHook "$name"
+    preinstallHook Gitrepo "$name"
     addedGitrepoLocations["$location"]=t
     addedGitrepoRecords+=("$gitrepoRecord")
-    postinstallHook "$name"
+    postinstallHook Gitrepo "$name"
 }
 
 isAvailableGitrepo()

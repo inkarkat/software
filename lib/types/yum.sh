@@ -84,9 +84,9 @@ hasYum()
 addYum()
 {
     local packageName="${1:?}"; shift
-    preinstallHook "$packageName"
+    preinstallHook Yum "$packageName"
     addedYumPackages["$packageName"]=t
-    postinstallHook "$packageName"
+    postinstallHook Yum "$packageName"
 }
 
 isAvailableYum()

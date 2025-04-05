@@ -58,13 +58,13 @@ addSnap()
     CLASSIC=
     eval "${configuration["snap:$snapPackageName"]}"
 
-    preinstallHook "$snapPackageName"
+    preinstallHook Snap "$snapPackageName"
     if [ "$CLASSIC" = true ]; then
 	addedSnapClassicPackages["$snapPackageName"]=t
     else
 	addedSnapPackages["$snapPackageName"]=t
     fi
-    postinstallHook "$snapPackageName"
+    postinstallHook Snap "$snapPackageName"
 }
 
 isAvailableSnap()

@@ -49,9 +49,9 @@ hasApt()
 addApt()
 {
     local packageName="${1:?}"; shift
-    preinstallHook "$packageName"
+    preinstallHook Apt "$packageName"
     addedAptPackages["$packageName"]=t
-    postinstallHook "$packageName"
+    postinstallHook Apt "$packageName"
 }
 
 isAvailableApt()

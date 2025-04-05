@@ -46,9 +46,9 @@ addAmazonExtras()
 {
     local amazonExtrasPackageName="${1:?}"; shift
 
-    preinstallHook "$amazonExtrasPackageName"
+    preinstallHook AmazonExtras "$amazonExtrasPackageName"
     addedAmazonExtrasPackages["$amazonExtrasPackageName"]=t
-    postinstallHook "$amazonExtrasPackageName"
+    postinstallHook AmazonExtras "$amazonExtrasPackageName"
 }
 
 isAvailableAmazonExtras()

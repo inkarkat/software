@@ -1051,6 +1051,7 @@ addPreinstall()
 }
 preinstallHook()
 {
+    local typeName="${1:?}"; shift
     set +o noglob
 	local name="${1:?}"; shift
 	local actionScript
@@ -1082,6 +1083,7 @@ addPostinstallContextCommand()
 }
 postinstallHook()
 {
+    local typeName="${1:?}"; shift
     set +o noglob
 	local name="${1:?}"; shift
 	local actionScript
@@ -1249,7 +1251,7 @@ isDependencyAvailableOrUserAcceptsNative()
 	    preInstall --execute
 	fi
 
-	postinstallHook "$dependencyPackageName"
+	postinstallHook Native "$dependencyPackageName"
 	postInstall --execute
     fi
     exists "$dependencyExecutable"
