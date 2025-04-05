@@ -302,7 +302,6 @@ HELPTEXT
 # Make this available already before sourcing the type libraries so that types
 # can use it for a guard whether the base application is installed
 # (e.g. if ! exists firefox || ! hasNative firefox; then ...)
-# Native type libraries start with 00*.sh so that they are loaded first.
 
 typeset -a commandLineHelpExtensions=()
 typeset -A commandLineOptions=()
