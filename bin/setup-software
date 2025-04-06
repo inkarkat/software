@@ -315,11 +315,11 @@ typeset -A definitionGroupFilterTypeRegistry=()
 
 hasNative()
 {
-    [ ${#nativeRegistry[@]} -gt 0 ] && has${nativeRegistry[0]} "$@"
+    [ ${#nativeRegistry[@]} -gt 0 ] && has${nativePackageManager:?} "$@"
 }
 addNative()
 {
-    add$nativePackageManager "$@"
+    add${nativePackageManager:?} "$@"
 }
 
 messagePrintf()
@@ -1191,7 +1191,7 @@ askToInstall()
 
 isAvailableNative()
 {
-    isAvailable$nativePackageManager "$@"
+    isAvailable${nativePackageManager:?} "$@"
 }
 isAvailableOrUserAcceptsNative()
 {
