@@ -13,7 +13,7 @@ HELPTEXT
 typeRegistry+=([ppa:]=Ppa)
 typeInstallOrder+=([11]=Ppa)
 
-if ! exists apt-add-repository; then
+if ! exists apt; then
     hasPpa() { return 98; }
     installPpa() { :; }
     isAvailablePpa() { return 98; }
