@@ -1028,23 +1028,23 @@ submitInstallCommand()
     toBeInstalledCommands+=("$(decorateCommand "$@")")
 }
 
-typeset -a addedPreinstallArgs=()
 addPreinstallArgs()
 {
     local item="${1:?}"; shift
     local action="${1:?}"; shift
-    addedPreinstallArgs+=(--pre "$item" --action "$action")
+    local name="${item#*:}"
+    local prefix="${item%"$name"}"
+    eval "addedPreinstallArgs${typeRegistry["${prefix:-native:}"]}"+='(--pre "$item" --action "$action")'
 }
 addPreinstall()
 {
     local valueAndItem="${1:?}"; shift
     if [ "${addedItems["${valueAndItem#*$'\n'}"]}" ]; then
-	# Convert the "ACTION\nITEM" to --pre "$ITEM" --action
-	# "$ACTION" and do a recursive invocation now, in order to print the
-	# preinstallation commands before anything else. This cannot be done
-	# within this script's scope, as preinstall items that reference another
-	# ITEM will populate all the addedITEM* arrays, and everything will be
-	# intermingled and later printed type by type in the static order, but
+	# Convert the "ACTION\nITEM" to --pre ITEM --action ACTION and do a recursive
+	# invocation now, in order to print the preinstallation commands before anything
+	# else. This cannot be done within this script's scope, as preinstall items that
+	# reference another ITEM will populate all the addedITEM* arrays, and everything
+	# will be intermingled and later printed type by type in the static order, but
 	# the purpose of preinstall is to execute stuff before anything else.
 	addPreinstallArgs "${valueAndItem#*$'\n'}" "${valueAndItem%%$'\n'*}"
     fi
@@ -1059,27 +1059,29 @@ preinstallHook()
 	do
 	    for actionScript in "${dirspec}/${name}"/*
 	    do
-		[ -x "$actionScript" ] && addedPreinstallArgs+=(--pre "$name" --action "${actionScript#"${dirspec}/"}")
+		[ -x "$actionScript" ] && eval "addedPreinstallArgs${typeName}"+='(--pre "$name" --action "${actionScript#"${dirspec}/"}")'
 	    done
 	done
     set -o noglob
 }
-typeset -a addedPostinstallArgs=()
 addPostinstall()
 {
     local valueAndItem="${1:?}"; shift
     local recursiveCallArg="$1"; shift
 
-    # Convert the "ACTION\nITEM" to
-    # --post "$ITEM" --action "$ACTION".
-    addedPostinstallArgs+=("${recursiveCallArg:---post}" "${valueAndItem#*$'\n'}" --action "${valueAndItem%%$'\n'*}" "$@")
+    # Convert the "ACTION\nITEM" to --post ITEM --action ACTION.
+    local item="${valueAndItem#*$'\n'}"
+    local action="${valueAndItem%%$'\n'*}"
+    local name="${item#*:}"
+    local prefix="${item%"$name"}"
+    eval "addedPostinstallArgs${typeRegistry["${prefix:-native:}"]}"+='("${recursiveCallArg:---post}" "$item" --action "$action" "$@")'
 }
-typeset -a addedPostinstallContextArgs=()
 addPostinstallContextCommand()
 {
+    local typeName="${1:?}"; shift
     [ $# -gt 0 ] || exit 3
     printf -v quotedContextCommand '%q ' "$@"; quotedContextCommand="${quotedContextCommand% }"
-    addedPostinstallContextArgs+=(--post-context "$quotedContextCommand")
+    eval "addedPostinstallContextArgs${typeName}"+='(--post-context "$quotedContextCommand")'
 }
 postinstallHook()
 {
@@ -1091,7 +1093,7 @@ postinstallHook()
 	do
 	    for actionScript in "${dirspec}/${name}"/*
 	    do
-		[ -x "$actionScript" ] && addedPostinstallArgs+=(--post "$name" --action "${actionScript#"${dirspec}/"}")
+		[ -x "$actionScript" ] && eval "addedPostinstallArgs${typeName}"+='(--post "$name" --action "${actionScript#"${dirspec}/"}")'
 	    done
 	done
     set -o noglob
@@ -1242,17 +1244,17 @@ isDependencyAvailableOrUserAcceptsNative()
 	askToInstall "$dependencySubject" || return 1
 
 	preinstallHook "$dependencyPackageName"
-	preInstall --execute
+	preInstall Native --execute
 
 	if [ -n "$dependencyInstallCommand" ]; then
 	    eval "$dependencyInstallCommand"
 	else
 	    addPreinstallArgs dummy "native:${dependencyPackageName}"	# dummy ITEM is ignored for preinstall actions, anyway.
-	    preInstall --execute
+	    preInstall Native --execute
 	fi
 
 	postinstallHook Native "$dependencyPackageName"
-	postInstall --execute
+	postInstall Native --execute
     fi
     exists "$dependencyExecutable"
 }
@@ -1321,6 +1323,8 @@ installNative()
 
 preInstall()
 {
+    local typeName="${1:?}"; shift
+    eval "typeset -a addedPreinstallArgs=(\"\${addedPreinstallArgs${typeName}[@]}\")"
     [ ${#addedPreinstallArgs[@]} -gt 0 ] || return
 
     # When the preinstall actions are directly executed, but not the install
@@ -1382,14 +1386,17 @@ runPreInstallCheck()
 
 postInstall()
 {
+    local typeName="${1:?}"; shift
+    eval "typeset -a addedPostinstallArgs=(\"\${addedPostinstallArgs${typeName}[@]}\")"
+    eval "typeset -a addedPostinstallContextArgs=(\"\${addedPostinstallContextArgs${typeName}[@]}\")"
     [ ${#addedPostinstallArgs[@]} -gt 0 ] || return
 
     typeset -a executeArg=(); [ "$isExecute" ] || executeArg=(--execute)    # Directly execute any postinstall commands; these already were authorized by the user when they executed the recursive script invocation. It's cumbersome when the execution just prints yet another command-line to be captured and executed, and especially when an automatic capture and execution is used (redirection into a file, into the bag, etc.), this printing then happens outside of the capture.
     local quotedPostInstallCommand
     printf -v quotedPostInstallCommand '%q ' "${scriptDir}/${scriptName}" "$@" "${executeArg[@]}" "${recursiveArgs[@]}" "${addedPostinstallContextArgs[@]}" "${addedPostinstallArgs[@]}"
     if addUniqueToBeInstalledCommand "${quotedPostInstallCommand% }"; then
-	addedPostinstallArgs=()
-	addedPostinstallContextArgs=()
+	eval "addedPostinstallArgs${typeName}=()"
+	eval "addedPostinstallContextArgs${typeName}=()"
     fi
 }
 getPostinstallFilespec()
@@ -1457,18 +1464,16 @@ addUniqueToBeInstalledCommand()
 }
 generateInstallCommands()
 {
-    preInstall
+    typeset -a typeOrdering=("${!typeInstallOrder[@]}")
+    readarray -t typeOrdering < <(printf '%s\n' "${typeOrdering[@]}" | sort -n)
 
-	typeset -a typeOrdering=("${!typeInstallOrder[@]}")
-	readarray -t typeOrdering < <(printf '%s\n' "${typeOrdering[@]}" | sort -n)
-
-	local order; for order in "${typeOrdering[@]}"
-	do
-	    local typeFunction="${typeInstallOrder["$order"]}"
+    local order; for order in "${typeOrdering[@]}"
+    do
+	local typeFunction="${typeInstallOrder["$order"]}"
+	preInstall "$typeFunction"
 	    "install${typeFunction}"
-	done
-
-    postInstall
+	postInstall "$typeFunction"
+    done
 }
 printInstallCommands()
 {

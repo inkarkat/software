@@ -140,7 +140,7 @@ setInstalledDummyPackages()
 installDummy()
 {
     [ ${#addedDummyPackages[@]} -eq 0 ] && return
-    addPostinstallContextCommand setInstalledDummyPackages "${!addedDummyPackages[@]}"
+    addPostinstallContextCommand Dummy setInstalledDummyPackages "${!addedDummyPackages[@]}"
 }
 
 typeRegistry+=([dummy:]=Dummy)
