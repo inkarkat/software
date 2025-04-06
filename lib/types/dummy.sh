@@ -26,8 +26,8 @@ hasDummy()
     local dummyPackageName="${1:?}"; shift
     local name="${dummyPackageName#*:}"
     local prefix="${dummyPackageName%"$name"}"
-    if [ -n "$prefix" ] && local typeFunction="${typeRegistry["$prefix"]}" && [ -n "$typeFunction" ]; then
-	local availabilityFunctionName="isAvailable${typeFunction}"
+    if [ -n "$prefix" ] && local typeName="${typeRegistry["$prefix"]}" && [ -n "$typeName" ]; then
+	local availabilityFunctionName="isAvailable${typeName}"
 	if type -t "$availabilityFunctionName" >/dev/null; then
 	    "$availabilityFunctionName" "$name"
 	    return $?
@@ -40,9 +40,9 @@ hasDummy()
 	local dummyName="${prefix%:}"
 	local itemName="${potentialItem#*:}"
 	prefix="${potentialItem%"$itemName"}"
-	local typeFunction
-	if [ -n "$prefix" ] && typeFunction="${typeRegistry["$prefix"]}" && [ -n "$typeFunction" ]; then
-	    local availabilityFunctionName="isAvailable${typeFunction}"
+	local typeName
+	if [ -n "$prefix" ] && typeName="${typeRegistry["$prefix"]}" && [ -n "$typeName" ]; then
+	    local availabilityFunctionName="isAvailable${typeName}"
 	    if type -t "$availabilityFunctionName" >/dev/null; then
 		if "$availabilityFunctionName" "$itemName"; then
 		    addedDummyPackages["$dummyName"]=t
@@ -58,8 +58,8 @@ hasDummy()
 		printf >&2 'ERROR: Type %s cannot be used as a dummy item; it does not report availability.\n' "$prefix"
 		exit 3
 	    fi
-	elif [[ "$prefix" =~ ^! ]] && typeFunction="${typeRegistry["${prefix#!}"]}" && [ -n "$typeFunction" ]; then
-	    local availabilityFunctionName="isAvailable${typeFunction}"
+	elif [[ "$prefix" =~ ^! ]] && typeName="${typeRegistry["${prefix#!}"]}" && [ -n "$typeName" ]; then
+	    local availabilityFunctionName="isAvailable${typeName}"
 	    if type -t "$availabilityFunctionName" >/dev/null; then
 		# For the inverted dummy, it doesn't matter here whether the
 		# ITEM is installed or not, as it might still be selected.
@@ -83,10 +83,10 @@ addDummy()
     local dummyPackageName="${1:?}"; shift
     local name="${dummyPackageName#*:}"
     local prefix="${dummyPackageName%"$name"}"
-    local typeFunction=; [ -n "$prefix" ] && typeFunction="${typeRegistry["$prefix"]}"
-    if [ -n "$typeFunction" ]; then
-	eval "case \" \${!externallyAdded${typeFunction}Packages*} \" in
-	    *\" externallyAdded${typeFunction}Packages \"*) externallyAdded${typeFunction}Packages[\"\$name\"]=t;;
+    local typeName=; [ -n "$prefix" ] && typeName="${typeRegistry["$prefix"]}"
+    if [ -n "$typeName" ]; then
+	eval "case \" \${!externallyAdded${typeName}Packages*} \" in
+	    *\" externallyAdded${typeName}Packages \"*) externallyAdded${typeName}Packages[\"\$name\"]=t;;
 	    *) printf >&2 'ERROR: Type %s cannot be used as a dummy item; it has no dictionary for externally added packages.\\n' \"\$prefix\"
 		exit 3;;
 	esac"
@@ -103,15 +103,15 @@ addDummy()
 	# dummy item), but as we cannot be sure of that, better check it.
 	local itemName="${item#*:}"
 	prefix="${item%"$itemName"}"; [ -n "$prefix" ] || exit 3
-	local typeFunction
-	if typeFunction="${typeRegistry["$prefix"]}" && [ -n "$typeFunction" ]; then
-	    local availabilityFunctionName="isAvailable${typeFunction}"; type -t "$availabilityFunctionName" >/dev/null || exit 3
+	local typeName
+	if typeName="${typeRegistry["$prefix"]}" && [ -n "$typeName" ]; then
+	    local availabilityFunctionName="isAvailable${typeName}"; type -t "$availabilityFunctionName" >/dev/null || exit 3
 	    if "$availabilityFunctionName" "$itemName"; then
 		# ITEM indeed got added; add dummy package, too.
 		addedDummyPackages["$dummyName"]=t
 	    fi
-	elif [[ "$prefix" =~ ^! ]] && typeFunction="${typeRegistry["${prefix#!}"]}" && [ -n "$typeFunction" ]; then
-	    local availabilityFunctionName="isAvailable${typeFunction}"; type -t "$availabilityFunctionName" >/dev/null || exit 3
+	elif [[ "$prefix" =~ ^! ]] && typeName="${typeRegistry["${prefix#!}"]}" && [ -n "$typeName" ]; then
+	    local availabilityFunctionName="isAvailable${typeName}"; type -t "$availabilityFunctionName" >/dev/null || exit 3
 	    if ! "$availabilityFunctionName" "$itemName"; then
 		# ITEM hasn't been installed and also hasn't been added; add the dummy package due to the inversion.
 		addedDummyPackages["$dummyName"]=t

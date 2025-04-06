@@ -189,11 +189,11 @@ addCustomAtOrder()
 	# INSTALL-EXPRESSION, as they have no prefix, so use a special
 	# "native:" prefix.
 	if [ -n "$prefix" ]; then
-	    local typeFunction="${typeRegistry["${prefix}"]}"
-	    if [ -n "$typeFunction" ]; then
+	    local typeName="${typeRegistry["${prefix}"]}"
+	    if [ -n "$typeName" ]; then
 		local -n itemActions=itemCustom${order^}Actions
 		itemActions["$customAction"]=t
-		"add${typeFunction}" "$name"
+		"add${typeName}" "$name"
 
 		if [ "$customCheck" = 'once' ]; then
 		    # Synthesize a postinstall: command for ITEM actions that
