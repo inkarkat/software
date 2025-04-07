@@ -10,13 +10,20 @@ _setup_software_complete()
 
     readarray -O ${#COMPREPLY[@]} -t COMPREPLY < <(compgen -W "${opts// /$'\n'}" -- "$cur")
 
-    readarray -O ${#COMPREPLY[@]} -t COMPREPLY < <(
-	cd "$softwareDefinitionsDirspec" \
-	    && readarray -t files < <(find . -type f -name .groupdir-description -prune -o -name .groupdir-filter -prune -o -printf '%P\n') \
-	    && compgen -W "${files[*]}" -- "$cur"
-    )
+    [ "$softwareDefinitionsDirspec" = /dev/null ] \
+	|| readarray -O ${#COMPREPLY[@]} -t COMPREPLY < <(
+	    cd "$softwareDefinitionsDirspec" \
+		&& readarray -t files < <(find . -type f -name .groupdir-description -prune -o -name .groupdir-filter -prune -o -printf '%P\n') \
+		&& compgen -W "${files[*]}" -- "$cur"
+	)
     [ ${#COMPREPLY[@]} -gt 0 ] && readarray -t COMPREPLY < <(printf "%q\n" "${COMPREPLY[@]}")
 }
+
+_setup_software_itself_complete()
+{
+    _setup_software_complete /dev/null "$@"
+}
+complete -F _setup_software_itself_complete setup-software
 
 # Usage:
 #_setup_TODO_software_complete()
