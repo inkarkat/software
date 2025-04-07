@@ -6,8 +6,11 @@ _setup_software_complete()
     local IFS=$'\n'
     COMPREPLY=()
     local cur="${COMP_WORDS[COMP_CWORD]}"
+    local opts='--help -h -? --config-help -H --check --dry-run --print-types --print-definitions -P --print -p --execute -e --quiet -q --silence-no-definitions --verbose -v --force -f --yes -y --recall-current-only --recall-only --batch -b --select -s --base-dir --add-base-dir --name --all -a --group-recall-current-only --group-recall-only --clear-group-recall --clear-definition-recall --clear-selection-store --rebuild-selection-store'
 
-    readarray -t COMPREPLY < <(
+    readarray -O ${#COMPREPLY[@]} -t COMPREPLY < <(compgen -W "${opts// /$'\n'}" -- "$cur")
+
+    readarray -O ${#COMPREPLY[@]} -t COMPREPLY < <(
 	cd "$softwareDefinitionsDirspec" \
 	    && readarray -t files < <(find . -type f -name .groupdir-description -prune -o -name .groupdir-filter -prune -o -printf '%P\n') \
 	    && compgen -W "${files[*]}" -- "$cur"
