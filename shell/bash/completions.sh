@@ -9,7 +9,7 @@ _setup_software_complete()
 
     readarray -t COMPREPLY < <(
 	cd "$softwareDefinitionsDirspec" \
-	    && readarray -t files < <(find . -type f -printf '%P\n') \
+	    && readarray -t files < <(find . -type f -name .groupdir-description -prune -o -name .groupdir-filter -prune -o -printf '%P\n') \
 	    && compgen -W "${files[*]}" -- "$cur"
     )
     [ ${#COMPREPLY[@]} -gt 0 ] && readarray -t COMPREPLY < <(printf "%q\n" "${COMPREPLY[@]}")
