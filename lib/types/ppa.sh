@@ -13,7 +13,7 @@ HELPTEXT
 typeRegistry+=([ppa:]=Ppa)
 typeInstallOrder+=([11]=Ppa)
 
-if ! exists apt-add-repository; then
+if ! exists apt; then
     hasPpa() { return 98; }
     installPpa() { :; }
     isAvailablePpa() { return 98; }
@@ -51,11 +51,11 @@ addPpa()
 {
     local arg="${1:?}"; shift
     local ppaRepoName="${arg% \(*\)}"
-    isAvailableOrUserAcceptsNative --preinstall apt-add-repository software-properties-common 'apt repository abstraction' || return $?
+    isAvailableOrUserAcceptsNative --before-type Ppa apt-add-repository software-properties-common 'apt repository abstraction' || return $?
 
-    preinstallHook "$ppaRepoName"
+    preinstallHook Ppa "$ppaRepoName"
     addedPpaRepositories["$arg"]=t
-    postinstallHook "$ppaRepoName"
+    postinstallHook Ppa "$ppaRepoName"
 }
 
 isAvailablePpa()

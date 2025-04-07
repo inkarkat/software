@@ -210,12 +210,12 @@ printConfigUsageForTypes()
     local padding=
     local prefix; for prefix
     do
-	local typeFunction="${typeRegistry["${prefix:-native}:"]}"
+	local typeName="${typeRegistry["${prefix:-native}:"]}"
 	local definitionFilterFunction="${definitionFilterTypeRegistry["${prefix}:"]}"
 	local definitionGroupFilterFunction="${definitionGroupFilterTypeRegistry["${prefix}:"]}"
-	if [ -n "$typeFunction" ]; then
+	if [ -n "$typeName" ]; then
 	    printf "$padding"
-	    "configUsage${typeFunction}" | highlightPrefix
+	    "configUsage${typeName}" | highlightPrefix
 	elif [ -n "$definitionFilterFunction" ]; then
 	    printf "$padding"
 	    "configUsage${definitionFilterFunction}" | highlightPrefix
@@ -302,25 +302,23 @@ HELPTEXT
 # Make this available already before sourcing the type libraries so that types
 # can use it for a guard whether the base application is installed
 # (e.g. if ! exists firefox || ! hasNative firefox; then ...)
-# Native type libraries start with 00*.sh so that they are loaded first.
 
 typeset -a commandLineHelpExtensions=()
 typeset -A commandLineOptions=()
 typeset -A commandLineParameters=()
 
 typeset -a nativeRegistry=()
-typeset -A typeRegistry=([native:]=Native)
-typeset -A typeInstallOrder=([100]=Native)
+typeset -A typeRegistry=()
 typeset -A definitionFilterTypeRegistry=()
 typeset -A definitionGroupFilterTypeRegistry=()
 
 hasNative()
 {
-    [ ${#nativeRegistry[@]} -gt 0 ] && has${nativeRegistry[0]} "$@"
+    [ ${#nativeRegistry[@]} -gt 0 ] && has${nativePackageManager:?} "$@"
 }
 addNative()
 {
-    add$nativePackageManager "$@"
+    add${nativePackageManager:?} "$@"
 }
 
 messagePrintf()
@@ -687,26 +685,26 @@ parseDefinitionGroups()
 		    [ ! "$isForce" ] && hasItem "$lastRealItem"
 		    case $? in
 			0)	rest="${name#*:}"
-			    id="${name%"$rest"}"
-			    if [ -n "$id" ] && [ -n "${typeRegistry["$id"]}" ]; then
-				# Don't take an existing type prefix as the optional ID.
-				id="$name"; rest="$name"
-			    else
-				id="${id%:}"
-			    fi
-			    id="${id:-$rest}"
-			    escapedId="${id//	/ }"
-			    onceMarker --query "$escapedId"
-			    case $? in
-				0)	;;  # The item already is installed, and the check has been run already.
-				1|4)
-				    # The item already is installed, but the check did not run yet.
-				    addPostinstall "$rest"$'\n'"$lastRealItem" --post-or-once --id "$escapedId"
-				    noMissingItemMessage="Only postinstall required for $subject"
-				    ;;
-				*)	exit 3;;
-			    esac
-			    ;;
+				id="${name%"$rest"}"
+				if [ -n "$id" ] && [ -n "${typeRegistry["$id"]}" ]; then
+				    # Don't take an existing type prefix as the optional ID.
+				    id="$name"; rest="$name"
+				else
+				    id="${id%:}"
+				fi
+				id="${id:-$rest}"
+				escapedId="${id//	/ }"
+				onceMarker --query "$escapedId"
+				case $? in
+				    0)	;;  # The item already is installed, and the check has been run already.
+				    1|4)
+					# The item already is installed, but the check did not run yet.
+					addPostinstall "$rest"$'\n'"$lastRealItem" --post-or-once --id "$escapedId"
+					noMissingItemMessage="Only postinstall required for $subject"
+					;;
+				    *)	exit 3;;
+				esac
+				;;
 			98)	;;
 			99)	;;
 			*)	if [ -n "$lastMissingItem" ]; then
@@ -918,9 +916,9 @@ preinstall: items consist of an ACTION that is one of the following:
   distribution's package manager, use the special "native:" prefix here
 - a PREINSTALL-EXPRESSION (whitespace must be escaped or the entire expression
   quoted!) that is eval'd (prepend $SUDO if it needs to be invoked as root)
-A preinstall item runs (before other installation actions) if the non-meta
-non-pre/postinstall item preceding it in the current definition is missing, but
-has now been selected.
+A preinstall item runs (just before the item type's installation actions) if the
+non-meta non-pre/postinstall item preceding it in the current definition is
+missing, but has now been selected.
 HELPTEXT
 }
 configUsagePostinstall()
@@ -938,9 +936,9 @@ postinstall: items consist of an ACTION that is one of the following:
   distribution's package manager, use the special "native:" prefix here
 - a POSTINSTALL-EXPRESSION (whitespace must be escaped or the entire expression
   quoted!) that is eval'd (prepend $SUDO if it needs to be invoked as root)
-A postinstall item runs if the non-meta non-pre/postinstall item preceding it in
-the current definition was missing, but has been successfully installed by the
-installation commands.
+A postinstall item runs (just after the item type's installation actions) if the
+non-meta non-pre/postinstall item preceding it in the current definition was
+missing, but has been successfully installed by the installation commands.
 HELPTEXT
 }
 configUsagePostinstallOrOnce()
@@ -974,7 +972,7 @@ hasConfig()
     local valueAndItem="${1:?}"; shift
     local item="${valueAndItem#*$'\n'}"
     # Convert the "VALUE\nITEM" to hasConfiguration[ITEM]=VALUE.
-    # This can be queried by the has${typeFunction}() function to affect the
+    # This can be queried by the has${typeName}() function to affect the
     # check command already. This is a separate dict to avoid interference with
     # added items.
     local newValue="${valueAndItem%%$'\n'*}"
@@ -987,7 +985,7 @@ addConfig()
     local valueAndItem="${1:?}"; shift
     local item="${valueAndItem#*$'\n'}"
     # Convert the "VALUE\nITEM" to configuration[ITEM]=VALUE.
-    # This can be queried by add${typeFunction}() and install${typeFunction}(),
+    # This can be queried by add${typeName}() and install${typeName}(),
     # and usually affects the rendering of the install command.
     local newValue="${valueAndItem%%$'\n'*}"
     local existingValue="${configuration["$item"]}"
@@ -1000,7 +998,7 @@ addDecorate()
     local valueAndItem="${1:?}"; shift
     local item="${valueAndItem#*$'\n'}"
     # Convert the "VALUE\nITEM" to decoration[ITEM]=VALUE.
-    # This can be queried by install${typeFunction}() and considered when
+    # This can be queried by install${typeName}() and considered when
     # rendering the install command.
     local newValue="${valueAndItem%%$'\n'*}"
     local existingValue="${decoration["$item"]}"
@@ -1029,29 +1027,27 @@ submitInstallCommand()
     toBeInstalledCommands+=("$(decorateCommand "$@")")
 }
 
-typeset -a addedPreinstallArgs=()
-addPreinstallArgs()
+addPreOrPostinstall()
 {
-    local item="${1:?}"; shift
-    local action="${1:?}"; shift
-    addedPreinstallArgs+=(--pre "$item" --action "$action")
+    local when="${1:?}"; shift
+    local valueAndItem="${1:?}"; shift
+    local recursiveCallArg="$1"; shift
+
+    # Convert the "ACTION\nITEM" to --post ITEM --action ACTION.
+    local item="${valueAndItem#*$'\n'}"
+    local action="${valueAndItem%%$'\n'*}"
+    local name="${item#*:}"
+    local prefix="${item%"$name"}"
+    eval "added${when^}installArgs${typeRegistry["${prefix:-native:}"]}+=(\"\${recursiveCallArg:---${when}}\" \"\$item\" --action \"\$action\" \"\$@\")"
 }
+
 addPreinstall()
 {
-    local valueAndItem="${1:?}"; shift
-    if [ "${addedItems["${valueAndItem#*$'\n'}"]}" ]; then
-	# Convert the "ACTION\nITEM" to --pre "$ITEM" --action
-	# "$ACTION" and do a recursive invocation now, in order to print the
-	# preinstallation commands before anything else. This cannot be done
-	# within this script's scope, as preinstall items that reference another
-	# ITEM will populate all the addedITEM* arrays, and everything will be
-	# intermingled and later printed type by type in the static order, but
-	# the purpose of preinstall is to execute stuff before anything else.
-	addPreinstallArgs "${valueAndItem#*$'\n'}" "${valueAndItem%%$'\n'*}"
-    fi
+    addPreOrPostinstall pre "$@"
 }
 preinstallHook()
 {
+    local typeName="${1:?}"; shift
     set +o noglob
 	local name="${1:?}"; shift
 	local actionScript
@@ -1059,30 +1055,25 @@ preinstallHook()
 	do
 	    for actionScript in "${dirspec}/${name}"/*
 	    do
-		[ -x "$actionScript" ] && addedPreinstallArgs+=(--pre "$name" --action "${actionScript#"${dirspec}/"}")
+		[ -x "$actionScript" ] && eval "addedPreinstallArgs${typeName}"+='(--pre "$name" --action "${actionScript#"${dirspec}/"}")'
 	    done
 	done
     set -o noglob
 }
-typeset -a addedPostinstallArgs=()
 addPostinstall()
 {
-    local valueAndItem="${1:?}"; shift
-    local recursiveCallArg="$1"; shift
-
-    # Convert the "ACTION\nITEM" to
-    # --post "$ITEM" --action "$ACTION".
-    addedPostinstallArgs+=("${recursiveCallArg:---post}" "${valueAndItem#*$'\n'}" --action "${valueAndItem%%$'\n'*}" "$@")
+    addPreOrPostinstall post "$@"
 }
-typeset -a addedPostinstallContextArgs=()
 addPostinstallContextCommand()
 {
+    local typeName="${1:?}"; shift
     [ $# -gt 0 ] || exit 3
     printf -v quotedContextCommand '%q ' "$@"; quotedContextCommand="${quotedContextCommand% }"
-    addedPostinstallContextArgs+=(--post-context "$quotedContextCommand")
+    eval "addedPostinstallContextArgs${typeName}"+='(--post-context "$quotedContextCommand")'
 }
 postinstallHook()
 {
+    local typeName="${1:?}"; shift
     set +o noglob
 	local name="${1:?}"; shift
 	local actionScript
@@ -1090,7 +1081,7 @@ postinstallHook()
 	do
 	    for actionScript in "${dirspec}/${name}"/*
 	    do
-		[ -x "$actionScript" ] && addedPostinstallArgs+=(--post "$name" --action "${actionScript#"${dirspec}/"}")
+		[ -x "$actionScript" ] && eval "addedPostinstallArgs${typeName}"+='(--post "$name" --action "${actionScript#"${dirspec}/"}")'
 	    done
 	done
     set -o noglob
@@ -1107,9 +1098,9 @@ hasItem()
     local name="${item#*:}"
     local prefix="${item%"$name"}"
 
-    local typeFunction="${typeRegistry["${prefix:-native:}"]}"
-    if [ -n "$typeFunction" ]; then
-	"has${typeFunction}" "$name"
+    local typeName="${typeRegistry["${prefix:-native:}"]}"
+    if [ -n "$typeName" ]; then
+	"has${typeName}" "$name"
     else
 	printf >&2 'ERROR: Invalid type: %s\n' "$prefix"
 	exit 3
@@ -1188,11 +1179,11 @@ askToInstall()
 
 isAvailableNative()
 {
-    isAvailable$nativePackageManager "$@"
+    isAvailable${nativePackageManager:?} "$@"
 }
 isAvailableOrUserAcceptsNative()
 {
-    local isPreinstall; if [ "$1" = --preinstall ]; then shift; isPreinstall=t; fi
+    local beforeTypeName; if [ "$1" = --before-type ]; then shift; beforeTypeName="${1:?}"; shift; fi
     local packageManagerExecutable="${1:?}"; shift
     local packageManagerPackageName="${1:-$packageManagerExecutable}"; shift
     local packageManagerSubject="${1:-$packageManagerPackageName}"; shift
@@ -1202,8 +1193,9 @@ isAvailableOrUserAcceptsNative()
     fi
 
     if askToInstall "$packageManagerSubject"; then
-	if [ "$isPreinstall" ]; then
-	    addPreinstallArgs dummy "native:${packageManagerPackageName}"   # dummy ITEM is ignored for preinstall actions, anyway.
+	if [ -n "$beforeTypeName" ]; then
+	    # Execute as a preinstall before the type's installation (e.g. the native installation of the software-properties-common package before any ppa: type is executed. The dummy ITEM is just a placeholder; it's ignored for preinstall actions.
+	    eval "addedPreinstallArgs${beforeTypeName}"+='(--pre "dummy:${packageManagerPackageName}" --action "native:${packageManagerPackageName}")'
 	else
 	    addNative "$packageManagerPackageName"
 	fi
@@ -1240,19 +1232,40 @@ isDependencyAvailableOrUserAcceptsNative()
 	dependency["$dependencyExecutable"]=t
 	askToInstall "$dependencySubject" || return 1
 
-	preinstallHook "$dependencyPackageName"
-	preInstall --execute
+	# The preinstall cannot be directly reused any longer, because its commands are
+	# now also collected and then printed / executed. (Previously, they were
+	# directly executed.) For a type's dependency, we need direct execution, though.
+	# We can achieve that via a special typeName "Dependency" that's not in the
+	# typeRegistry to build the addedPreinstallArgsDependency, and then use a
+	# special preInstall flag to directly eval() instead of just submitting the
+	# commands.
+	{
+	    preinstallHook Dependency "$dependencyPackageName"
 
-	if [ -n "$dependencyInstallCommand" ]; then
-	    eval "$dependencyInstallCommand"
-	else
-	    addPreinstallArgs dummy "native:${dependencyPackageName}"	# dummy ITEM is ignored for preinstall actions, anyway.
-	    preInstall --execute
-	fi
+	    if [ -n "$dependencyInstallCommand" ]; then
+		# Execute any preinstall commands from the hook first.
+		preOrPostinstallCommand=eval preInstall Dependency --execute
 
-	postinstallHook "$dependencyPackageName"
-	postInstall --execute
+		eval "$dependencyInstallCommand"
+	    else
+		# We achieve this by a recursive invocation of the readily prepared preinstall
+		# action.
+		# Note: Cannot use addPreinstall() because the "Dependency" typeName is not in
+		# the typeRegistry. Instead, directly manipulate the array.
+		addedPreinstallArgsDependency+=(--pre "dummy:${dependencyPackageName}" --action "native:${dependencyPackageName}")
+
+		preOrPostinstallCommand=eval preInstall Dependency --execute
+	    fi
+
+	    postinstallHook Dependency "$dependencyPackageName"
+	    preOrPostinstallCommand=eval postInstall Dependency --execute
+	} >&2
+	# When the immediate dependency action is directly executed, but not the install
+	# command we're generating, this action must not produce anything on stdout, as
+	# that might get captured by a client and then attempted to be executed as
+	# install commands. So redirect any stdout to stderr.
     fi
+
     exists "$dependencyExecutable"
 }
 
@@ -1263,9 +1276,9 @@ addItems()
     do
 	local name="${item#*:}"
 	local prefix="${item%"$name"}"
-	local typeFunction="${typeRegistry["${prefix:-native:}"]}"
-	if [ -n "$typeFunction" ]; then
-	    "add${typeFunction}" "$name"
+	local typeName="${typeRegistry["${prefix:-native:}"]}"
+	if [ -n "$typeName" ]; then
+	    "add${typeName}" "$name"
 	elif [ "$prefix" = config: ]; then
 	    addConfig "$name"
 	elif [ "$prefix" = decorate: ]; then
@@ -1318,18 +1331,25 @@ installNative()
     :
 }
 
+preOrPostInstall()
+{
+    local when="${1:?}"; shift
+    local typeName="${1:?}"; shift
+    eval "typeset -a addedPreOrPostinstallArgs=(\"\${added${when^}installArgs${typeName}[@]}\")"
+    eval "typeset -a addedPreOrPostinstallContextArgs=(\"\${added${when^}installContextArgs${typeName}[@]}\")"
+    [ ${#addedPreOrPostinstallArgs[@]} -gt 0 ] || return
+
+    typeset -a executeArg=(); [ "$isExecute" ] || executeArg=(--execute)    # Directly execute any pre/post-install commands; these already were authorized by the user when they executed the recursive script invocation. It's cumbersome when the execution just prints yet another command-line to be captured and executed, and especially when an automatic capture and execution is used (redirection into a file, into the bag, etc.), this printing then happens outside of the capture.
+    local quotedPreOrPostInstallCommand
+    printf -v quotedPreOrPostInstallCommand '%q ' "${scriptDir}/${scriptName}" "$@" "${executeArg[@]}" "${recursiveArgs[@]}" "${addedPreOrPostinstallContextArgs[@]}" "${addedPreOrPostinstallArgs[@]}"
+    ${preOrPostinstallCommand:-addUniqueToBeInstalledCommand} "${quotedPreOrPostInstallCommand% }"
+    eval "added${when^}installArgs${typeName}=()"
+    eval "added${when^}installContextArgs${typeName}=()"
+}
+
 preInstall()
 {
-    [ ${#addedPreinstallArgs[@]} -gt 0 ] || return
-
-    # When the preinstall actions are directly executed, but not the install
-    # command we're generating, those actions must not produce anything on
-    # stdout, as that might get captured by a client and then attempted to be
-    # executed as install commands.
-    local redirectStdoutToStderr; [ ! "$isExecute" ] && containsGlob '--execute|-e' "$@" && redirectStdoutToStderr='>&2'
-
-    eval "\"\${scriptDir}/\${scriptName}\" \"\$@\" \"\${recursiveArgs[@]}\" \"\${addedPreinstallArgs[@]}\"${redirectStdoutToStderr:+ }${redirectStdoutToStderr}" && \
-	addedPreinstallArgs=()
+    preOrPostInstall pre "$@"
 }
 getPreinstallFilespec()
 {
@@ -1381,15 +1401,7 @@ runPreInstallCheck()
 
 postInstall()
 {
-    [ ${#addedPostinstallArgs[@]} -gt 0 ] || return
-
-    typeset -a executeArg=(); [ "$isExecute" ] || executeArg=(--execute)    # Directly execute any postinstall commands; these already were authorized by the user when they executed the recursive script invocation. It's cumbersome when the execution just prints yet another command-line to be captured and executed, and especially when an automatic capture and execution is used (redirection into a file, into the bag, etc.), this printing then happens outside of the capture.
-    local quotedPostInstallCommand
-    printf -v quotedPostInstallCommand '%q ' "${scriptDir}/${scriptName}" "$@" "${executeArg[@]}" "${recursiveArgs[@]}" "${addedPostinstallContextArgs[@]}" "${addedPostinstallArgs[@]}"
-    if addUniqueToBeInstalledCommand "${quotedPostInstallCommand% }"; then
-	addedPostinstallArgs=()
-	addedPostinstallContextArgs=()
-    fi
+    preOrPostInstall post "$@"
 }
 getPostinstallFilespec()
 {
@@ -1456,18 +1468,16 @@ addUniqueToBeInstalledCommand()
 }
 generateInstallCommands()
 {
-    preInstall
+    typeset -a typeOrdering=("${!typeInstallOrder[@]}")
+    readarray -t typeOrdering < <(printf '%s\n' "${typeOrdering[@]}" | sort -n)
 
-	typeset -a typeOrdering=("${!typeInstallOrder[@]}")
-	readarray -t typeOrdering < <(printf '%s\n' "${typeOrdering[@]}" | sort -n)
-
-	local order; for order in "${typeOrdering[@]}"
-	do
-	    local typeFunction="${typeInstallOrder["$order"]}"
-	    "install${typeFunction}"
-	done
-
-    postInstall
+    local order; for order in "${typeOrdering[@]}"
+    do
+	local typeName="${typeInstallOrder["$order"]}"
+	preInstall "$typeName"
+	    "install${typeName}"
+	postInstall "$typeName"
+    done
 }
 printInstallCommands()
 {
@@ -1524,7 +1534,9 @@ do
 done
 case ${#nativeRegistry[@]} in
     0)	echo >&2 'ERROR: No native package management found.'; exit 3;;
-    1)	readonly nativePackageManager="${nativeRegistry[0]}";;
+    1)	readonly nativePackageManager="${nativeRegistry[0]}"
+	typeRegistry[native:]="$nativePackageManager"
+	;;
     *)	printf >&2 'ERROR: Multiple native package managers found: %s\n' "$(joinBy ', ' "${nativeRegistry[@]}")"; exit 3;;
 esac
 for typeLib in "${typeDir}"/*.sh

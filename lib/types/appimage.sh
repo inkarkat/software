@@ -85,9 +85,9 @@ addAppImageUrl()
     local destination="${parse#*$'\n'}"
     local destinationName="$(basename -- "$destination")"
 
-    preinstallHook "$destinationName"
+    preinstallHook AppImageUrl "$destinationName"
     addedAppImageUrlActions["$fileDownloadInstallerCommand"]="$appimageUrlRecord"
-    postinstallHook "$destinationName"
+    postinstallHook AppImageUrl "$destinationName"
 
     addedAppImageUrlActionList+=("$fileDownloadInstallerCommand")
 }

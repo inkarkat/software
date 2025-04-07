@@ -85,9 +85,9 @@ addThunderbirdAddon()
     local addonId="${thunderbirdAddonRecord#*:}"; addonId="${addonId%%:*}"
     exists thunderbird || return $?
 
-    preinstallHook "$addonId"
+    preinstallHook ThunderbirdAddon "$addonId"
     addedThunderbirdAddons["$thunderbirdAddonRecord"]=t
-    postinstallHook "$addonId"
+    postinstallHook ThunderbirdAddon "$addonId"
 }
 
 isAvailableThunderbirdAddon()

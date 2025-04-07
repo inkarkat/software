@@ -35,7 +35,7 @@ hasSpecialInstall()
 {
     local prefix="${1:?}"; shift
     local specialInstallerCommand="${1:?}"; shift
-    local specialInstallEntriesDictName="${1:?}"; shift
+    local specialInstallEntriesDictName="added${1:?}Entries"; shift
     local specialInstallRecord="${1:?}"; shift
 
     local -n specialInstallEntries=$specialInstallEntriesDictName
@@ -54,41 +54,41 @@ hasSpecialInstall()
 }
 hasStartmenu()
 {
-    hasSpecialInstall startmenu 'addToStartMenu --system-wide' addedStartmenuEntries "$@"
+    hasSpecialInstall startmenu 'addToStartMenu --system-wide' Startmenu "$@"
 }
 hasUserStartmenu()
 {
-    hasSpecialInstall userstartmenu addToStartMenu addedUserStartmenuEntries "$@"
+    hasSpecialInstall userstartmenu addToStartMenu UserStartmenu "$@"
 }
 hasAutostart()
 {
-    hasSpecialInstall autostart addToAutostart addedAutostartEntries "$@"
+    hasSpecialInstall autostart addToAutostart Autostart "$@"
 }
 
 addSpecialInstall()
 {
-    local specialInstallEntriesDictName="${1:?}"; shift
+    local typeName="${1:?}"; shift; local specialInstallEntriesDictName="added${typeName}Entries"
     local specialInstallRecord="${1:?}"; shift
 
     eval "set -- $specialInstallRecord"
     local specialName="${!#}"
 
-    preinstallHook "$specialName"
+    preinstallHook "$typeName" "$specialName"
     local -n specialInstallEntries=$specialInstallEntriesDictName
     specialInstallEntries["$specialInstallRecord"]=t
-    postinstallHook "$specialName"
+    postinstallHook "$typeName" "$specialName"
 }
 addStartmenu()
 {
-    addSpecialInstall addedStartmenuEntries "$@"
+    addSpecialInstall Startmenu "$@"
 }
 addUserStartmenu()
 {
-    addSpecialInstall addedUserStartmenuEntries "$@"
+    addSpecialInstall UserStartmenu "$@"
 }
 addAutostart()
 {
-    addSpecialInstall addedAutostartEntries "$@"
+    addSpecialInstall Autostart "$@"
 }
 
 installSpecialInstall()
@@ -96,7 +96,7 @@ installSpecialInstall()
     local prefix="${1:?}"; shift
     local specialCreatorCommand="${1:?}"; shift
     local specialInstallerCommand="${1:?}"; shift
-    local specialInstallEntriesDictName="${1:?}"; shift
+    local specialInstallEntriesDictName="added${1:?}Entries"; shift
     local -n specialInstallEntries=$specialInstallEntriesDictName
     [ ${#specialInstallEntries[@]} -gt 0 ] || return
     local specialInstallRecord; for specialInstallRecord in "${!specialInstallEntries[@]}"
@@ -117,15 +117,15 @@ installSpecialInstall()
 }
 installStartmenu()
 {
-    installSpecialInstall startmenu 'createDesktopEntry --system-wide' 'addToStartMenu --system-wide' addedStartmenuEntries "$@"
+    installSpecialInstall startmenu 'createDesktopEntry --system-wide' 'addToStartMenu --system-wide' Startmenu "$@"
 }
 installUserStartmenu()
 {
-    installSpecialInstall userstartmenu createDesktopEntry addToStartMenu addedUserStartmenuEntries "$@"
+    installSpecialInstall userstartmenu createDesktopEntry addToStartMenu UserStartmenu "$@"
 }
 installAutostart()
 {
-    installSpecialInstall autostart 'createDesktopEntry --autostart' addToAutostart addedAutostartEntries "$@"
+    installSpecialInstall autostart 'createDesktopEntry --autostart' addToAutostart Autostart "$@"
 }
 
 typeRegistry+=([startmenu:]=Startmenu)

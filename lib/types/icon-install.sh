@@ -26,7 +26,7 @@ hasSpecialIcon()
 {
     local prefix="${1:?}"; shift
     local specialIconInstallerCommand="${1:?}"; shift
-    local iconFilespecsDictName="${1:?}"; shift
+    local iconFilespecsDictName="added${1:?}Filespecs"; shift
     eval "set -- ${1:?}"
 
     local icon; for icon
@@ -47,16 +47,16 @@ hasSpecialIcon()
 }
 hasSystemIcon()
 {
-    hasSpecialIcon icon 'addIcon --system-wide' addedSystemIconFilespecs "$@"
+    hasSpecialIcon icon 'addIcon --system-wide' SystemIcon "$@"
 }
 hasUserIcon()
 {
-    hasSpecialIcon usericon addIcon addedUserIconFilespecs "$@"
+    hasSpecialIcon usericon addIcon UserIcon "$@"
 }
 
 addSpecialIcon()
 {
-    local iconFilespecsDictName="${1:?}"; shift
+    local typeName="${1:?}"; shift; local iconFilespecsDictName="added${typeName}Filespecs"
     eval "set -- ${1:?}"
 
     local icon; for icon
@@ -65,26 +65,26 @@ addSpecialIcon()
 	    printf >&2 'ASSERT: SOURCE-FILE suddenly missing: "%s".\n' "$icon"
 	    exit 3
 	fi
-	preinstallHook "$iconFilespec"
+	preinstallHook "$typeName" "$iconFilespec"
 	local -n iconFilespecs=$iconFilespecsDictName
 	iconFilespecs["$iconFilespec"]=t
-	postinstallHook "$iconFilespec"
+	postinstallHook "$typeName" "$iconFilespec"
     done
 }
 addSystemIcon()
 {
-    addSpecialIcon addedSystemIconFilespecs "$@"
+    addSpecialIcon SystemIcon "$@"
 }
 addUserIcon()
 {
-    addSpecialIcon addedUserIconFilespecs "$@"
+    addSpecialIcon UserIcon "$@"
 }
 
 installSpecialIcon()
 {
     local prefix="${1:?}"; shift
     local specialIconInstallerCommand="${1:?}"; shift
-    local iconFilespecsDictName="${1:?}"; shift
+    local iconFilespecsDictName="added${1:?}Filespecs"; shift
     local -n iconFilespecs=$iconFilespecsDictName
     [ ${#iconFilespecs[@]} -gt 0 ] || return
 
@@ -95,11 +95,11 @@ installSpecialIcon()
 }
 installSystemIcon()
 {
-    installSpecialIcon icon 'addIcon --system-wide' addedSystemIconFilespecs "$@"
+    installSpecialIcon icon 'addIcon --system-wide' SystemIcon "$@"
 }
 installUserIcon()
 {
-    installSpecialIcon usericon addIcon addedUserIconFilespecs "$@"
+    installSpecialIcon usericon addIcon UserIcon "$@"
 }
 
 typeRegistry+=([icon:]=SystemIcon)

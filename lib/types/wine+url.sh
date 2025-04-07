@@ -73,9 +73,9 @@ addWine()
     applicationName="${applicationName%/}"
     appliationOnlyName="${applicationName##*/}"
 
-    [ -z "$appliationOnlyName" ] || preinstallHook "$appliationOnlyName"
+    [ -z "$appliationOnlyName" ] || preinstallHook Wine "$appliationOnlyName"
     addedWineUrlPackages["$wineUrlRecord"]=t
-    [ -z "$appliationOnlyName" ] || postinstallHook "$appliationOnlyName"
+    [ -z "$appliationOnlyName" ] || postinstallHook Wine "$appliationOnlyName"
 }
 
 isAvailableWine()

@@ -45,9 +45,9 @@ addNpm()
 {
     local npmPackageName="${1:?}"; shift
     isAvailableOrUserAcceptsGroup npm "${projectDir}/lib/definitions/nodejs" 'NPM Node.js package manager' || return $?
-    preinstallHook "$npmPackageName"
+    preinstallHook Npm "$npmPackageName"
     addedNpmPackages["$npmPackageName"]=t
-    postinstallHook "$npmPackageName"
+    postinstallHook Npm "$npmPackageName"
 }
 
 isAvailableNpm()

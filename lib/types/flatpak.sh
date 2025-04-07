@@ -57,10 +57,10 @@ addFlatpak()
 
     isAvailableOrUserAcceptsNative flatpak || return $?
 
-    preinstallHook "$flatpakPackageName"
+    preinstallHook Flatpak "$flatpakPackageName"
     addedFlatpakPackages["$flatpakPackageName"]=t
     addedFlatpakPackagesByRemote["$flatpakRemote"]="${addedFlatpakPackagesByRemote["$flatpakRemote"]}${addedFlatpakPackagesByRemote["$flatpakRemote"]:+ }$flatpakPackageName"
-    postinstallHook "$flatpakPackageName"
+    postinstallHook Flatpak "$flatpakPackageName"
 }
 
 isAvailableFlatpak()

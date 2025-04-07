@@ -72,9 +72,9 @@ isDefinitionAcceptedByRequire()
 
     local name="${requirement#*:}"
     local prefix="${requirement%"$name"}"
-    local typeFunction
-    if [ -n "$prefix" ] && typeFunction="${typeRegistry["$prefix"]}" && [ -n "$typeFunction" ]; then
-	local availabilityFunctionName="isAvailable${typeFunction}"
+    local typeName
+    if [ -n "$prefix" ] && typeName="${typeRegistry["$prefix"]}" && [ -n "$typeName" ]; then
+	local availabilityFunctionName="isAvailable${typeName}"
 	if type -t "$availabilityFunctionName" >/dev/null; then
 	    if ! "$availabilityFunctionName" "$name"; then
 		[ "$isVerbose" ] && messagePrintf 'Skipping because requirement %s is not passed: %s\n' "$requirement" "$definition"
@@ -84,8 +84,8 @@ isDefinitionAcceptedByRequire()
 	    printf >&2 'ERROR: Type %s cannot be used for requirements checking.\n' "$prefix"
 	    exit 3
 	fi
-    elif [[ "$prefix" =~ ^! ]] && typeFunction="${typeRegistry["${prefix#!}"]}" && [ -n "$typeFunction" ]; then
-	local availabilityFunctionName="isAvailable${typeFunction}"
+    elif [[ "$prefix" =~ ^! ]] && typeName="${typeRegistry["${prefix#!}"]}" && [ -n "$typeName" ]; then
+	local availabilityFunctionName="isAvailable${typeName}"
 	if type -t "$availabilityFunctionName" >/dev/null; then
 	    if "$availabilityFunctionName" "$name"; then
 		[ "$isVerbose" ] && messagePrintf 'Skipping because requirement %s is not passed: %s\n' "$requirement" "$definition"

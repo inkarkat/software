@@ -90,9 +90,9 @@ addPipx()
     local combinedPackageModules="$(mergeLists --field-separator , --sort --omit-empty -- "$packageModules" "${installedPipxPackageModules["$packageName"]}" "${addedPipxPackages["$packageName"]}" "${externallyAddedPipxPackages["$packageName"]}")"
     local combinedPackageSpec="${packageName}${combinedPackageModules:+[${combinedPackageModules}]}"
 
-    preinstallHook "$combinedPackageSpec"
+    preinstallHook Pipx "$combinedPackageSpec"
     addedPipxPackages["$packageName"]="$combinedPackageModules"
-    postinstallHook "$combinedPackageSpec"
+    postinstallHook Pipx "$combinedPackageSpec"
 }
 
 isAvailablePipx()

@@ -33,10 +33,10 @@ addPipxUrl()
 
     isAvailableOrUserAcceptsGroup pipx "${projectDir}/lib/definitions/pipx" 'pipx Python 3 package manager' || return $?
 
-    preinstallHook "$pipxPackageName"
+    preinstallHook PipxUrl "$pipxPackageName"
     addedPipxUrlRecords["$pipxUrlRecord"]=t
     externallyAddedPipxPackages["$pipxPackageName"]=t
-    postinstallHook "$pipxPackageName"
+    postinstallHook PipxUrl "$pipxPackageName"
 }
 
 isAvailablePipxUrl()

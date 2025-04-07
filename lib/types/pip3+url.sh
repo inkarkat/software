@@ -33,10 +33,10 @@ addPip3Url()
 
     isAvailableOrUserAcceptsNative pip3 python3-pip 'pip3 Python 3 package manager' || return $?
 
-    preinstallHook "$pip3PackageName"
+    preinstallHook Pip3Url "$pip3PackageName"
     addedPip3UrlRecords["$pip3UrlRecord"]=t
     externallyAddedPip3Packages["$pip3PackageName"]=t
-    postinstallHook "$pip3PackageName"
+    postinstallHook Pip3Url "$pip3PackageName"
 }
 
 isAvailablePip3Url()

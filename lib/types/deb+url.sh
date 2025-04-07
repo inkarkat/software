@@ -55,10 +55,10 @@ addDebUrl()
     local debUrlRecord="${1:?}"; shift
     local packageName="${debUrlRecord%%:*}"
 
-    preinstallHook "$packageName"
+    preinstallHook DebUrl "$packageName"
     addedDebUrlRecords["$debUrlRecord"]=t
     externallyAddedAptPackages["$packageName"]=t
-    postinstallHook "$packageName"
+    postinstallHook DebUrl "$packageName"
 }
 
 isAvailableDebUrl()

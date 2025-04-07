@@ -69,7 +69,7 @@ resolveArchiveDestinationFilespec()
 hasArchive()
 {
     local prefix="${1:?}"; shift
-    local archivePackagesDictName="${1:?}"; shift
+    local archivePackagesDictName="added${1:?}Packages"; shift
     local archiveRecord="${1:?}"
     local destinationFilespec; destinationFilespec="$(resolveArchiveDestinationFilespec "$prefix" "$archiveRecord")" || exit $?
     local -n archivePackages=$archivePackagesDictName
@@ -77,32 +77,32 @@ hasArchive()
 }
 hasTar()
 {
-    hasArchive tar addedTarPackages "$@"
+    hasArchive tar Tar "$@"
 }
 hasZip()
 {
-    hasArchive zip addedZipPackages "$@"
+    hasArchive zip Zip "$@"
 }
 
 addArchive()
 {
     local prefix="${1:?}"; shift
-    local archivePackagesDictName="${1:?}"; shift
+    local typeName="${1:?}"; shift; local archivePackagesDictName="added${typeName}Packages"
     local archiveRecord="${1:?}"; shift
     local sourceFilespec; sourceFilespec="$(resolveArchiveSourceFilespec "$prefix" "$archiveRecord")" || exit $?
 
-    preinstallHook "$sourceFilespec"
+    preinstallHook "$typeName" "$sourceFilespec"
     local -n archivePackages=$archivePackagesDictName
     archivePackages["$archiveRecord"]=t
-    postinstallHook "$sourceFilespec"
+    postinstallHook "$typeName" "$sourceFilespec"
 }
 addTar()
 {
-    addArchive tar addedTarPackages "$@"
+    addArchive tar Tar "$@"
 }
 addZip()
 {
-    addArchive zip addedZipPackages "$@"
+    addArchive zip Zip "$@"
 }
 
 installArchive()
@@ -110,7 +110,7 @@ installArchive()
     local prefix="${1:?}"; shift
     local unarchiveCommand="${1:?}"; shift
     local unarchiveDestinationDirArgName="${1:?}"; shift
-    local archivePackagesDictName="${1:?}"; shift
+    local archivePackagesDictName="added${1:?}Packages"; shift
     local -n archivePackages=$archivePackagesDictName
     [ ${#archivePackages[@]} -gt 0 ] || return
 
@@ -146,11 +146,11 @@ installArchive()
 }
 installTar()
 {
-    installArchive tar 'tar --no-same-owner -xf' '--directory' addedTarPackages "$@"
+    installArchive tar 'tar --no-same-owner -xf' '--directory' Tar "$@"
 }
 installZip()
 {
-    installArchive zip 'unzip' '-d' addedZipPackages "$@"
+    installArchive zip 'unzip' '-d' Zip "$@"
 }
 
 typeRegistry+=([tar:]=Tar)

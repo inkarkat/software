@@ -52,9 +52,9 @@ addPip3()
     local pip3PackageName="${1:?}"; shift
     isAvailableOrUserAcceptsNative pip3 python3-pip 'pip3 Python 3 package manager' || return $?
 
-    preinstallHook "$pip3PackageName"
+    preinstallHook Pip3 "$pip3PackageName"
     addedPip3Packages["$pip3PackageName"]=t
-    postinstallHook "$pip3PackageName"
+    postinstallHook Pip3 "$pip3PackageName"
 }
 
 isAvailablePip3()

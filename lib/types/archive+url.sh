@@ -60,45 +60,45 @@ resolveArchiveUrlDestinationFilespec()
 }
 hasArchiveUrl()
 {
-    local archiveUrlPackagesDictName="${1:?}"; shift
+    local archiveUrlPackagesDictName="added${1:?}Packages"; shift
     local archiveUrlRecord="${1:?}"; shift
     local destinationFilespec="$(resolveArchiveUrlDestinationFilespec "${archiveUrlRecord%%:*}")"
     [ -e "$destinationFilespec" ] || eval "[ \"\${${archiveUrlPackagesDictName}[\"\$archiveUrlRecord\"]}\" ]"
 }
 hasTarUrl()
 {
-    hasArchiveUrl addedTarUrlPackages "$@"
+    hasArchiveUrl TarUrl "$@"
 }
 hasZipUrl()
 {
-    hasArchiveUrl addedZipUrlPackages "$@"
+    hasArchiveUrl ZipUrl "$@"
 }
 
 addArchiveUrl()
 {
-    local archiveUrlPackagesDictName="${1:?}"; shift
+    local typeName="${1:?}"; shift; local archiveUrlPackagesDictName="added${typeName}Packages"
     local archiveUrlRecord="${1:?}"; shift
     local destinationFilespec="$(resolveArchiveUrlDestinationFilespec "${archiveUrlRecord%%:*}")"
     local packageName="$(basename -- "$destinationFilespec")"
 
-    preinstallHook "$packageName"
+    preinstallHook "$typeName" "$packageName"
     eval "${archiveUrlPackagesDictName}[\"\$archiveUrlRecord\"]=t"
-    postinstallHook "$packageName"
+    postinstallHook "$typeName" "$packageName"
 }
 addTarUrl()
 {
-    addArchiveUrl addedTarUrlPackages "$@"
+    addArchiveUrl TarUrl "$@"
 }
 addZipUrl()
 {
-    addArchiveUrl addedZipUrlPackages "$@"
+    addArchiveUrl ZipUrl "$@"
 }
 
 installArchiveUrl()
 {
     local prefix="${1:?}"; shift
     local archiveDownloadInstallerCommand="${1:?}"; shift
-    local archiveUrlPackagesDictName="${1:?}"; shift
+    local archiveUrlPackagesDictName="added${1:?}Packages"; shift
     eval "[ \${#${archiveUrlPackagesDictName}[@]} -gt 0 ]" || return
     eval "typeset -a addedArchiveUrlRecords=(\"\${!${archiveUrlPackagesDictName}[@]}\")"
     local archiveUrlRecord; for archiveUrlRecord in "${addedArchiveUrlRecords[@]}"
@@ -145,11 +145,11 @@ installArchiveUrl()
 }
 installTarUrl()
 {
-    installArchiveUrl tar+url 'tar-download-installer --no-same-owner' addedTarUrlPackages "$@"
+    installArchiveUrl tar+url 'tar-download-installer --no-same-owner' TarUrl "$@"
 }
 installZipUrl()
 {
-    installArchiveUrl zip+url zip-download-installer addedZipUrlPackages "$@"
+    installArchiveUrl zip+url zip-download-installer ZipUrl "$@"
 }
 
 typeRegistry+=([tar+url:]=TarUrl)
