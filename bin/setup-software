@@ -234,12 +234,21 @@ printConfigUsageForTypes()
 	elif [ "$prefix" = preinstall ]; then
 	    printf "$padding"
 	    configUsagePreinstall | highlightPrefix
+	elif [ "$prefix" = pre-all-install ]; then
+	    printf "$padding"
+	    configUsagePreAllInstall | highlightPrefix
 	elif [ "$prefix" = postinstall ]; then
 	    printf "$padding"
 	    configUsagePostinstall | highlightPrefix
+	elif [ "$prefix" = post-all-install ]; then
+	    printf "$padding"
+	    configUsagePostAllInstall | highlightPrefix
 	elif [ "$prefix" = postinstall-or-once ]; then
 	    printf "$padding"
 	    configUsagePostinstallOrOnce | highlightPrefix
+	elif [ "$prefix" = post-all-install-or-once ]; then
+	    printf "$padding"
+	    configUsagePostAllInstallOrOnce | highlightPrefix
 	else
 	    printf >&2 'ERROR: Invalid type: %s\n' "$prefix"
 	    exit 3
@@ -654,7 +663,7 @@ parseDefinitionGroups()
 	    elif contains "$prefix" "${!definitionGroupFilterTypeRegistry[@]}"; then
 		printf >&2 'ERROR: Definition group filter types (like %s) must only appear the beginning of a definition group: %s.\n' "$prefix" "$item"
 		exit 3
-	    elif contains "$prefix" preinstall: postinstall:; then
+	    elif contains "$prefix" preinstall: pre-all-install: postinstall: post-all-install:; then
 		if [ -z "$lastRealItem" ]; then
 		    printf >&2 'ERROR: No previous item before %s.\n' "$item"
 		    exit 3
@@ -678,7 +687,7 @@ parseDefinitionGroups()
 	    elif [ "$prefix" = decorate: ]; then
 		lastDecoration="$item"
 		continue
-	    elif [ "$prefix" = postinstall-or-once: ]; then
+	    elif [ "$prefix" = postinstall-or-once: ] || [ "$prefix" = post-all-install-or-once: ]; then
 		if [ -z "$lastRealItem" ]; then
 		    printf >&2 'ERROR: No previous item before %s.\n' "$item"
 		    exit 3
@@ -700,7 +709,13 @@ parseDefinitionGroups()
 				    0)	;;  # The item already is installed, and the check has been run already.
 				    1|4)
 					# The item already is installed, but the check did not run yet.
-					addPostinstall "$rest"$'\n'"$lastRealItem" --post-or-once --id "$escapedId"
+					if [ "$prefix" = postinstall-or-once: ]; then
+					    addPostinstall "$rest"$'\n'"$lastRealItem" --post-or-once --id "$escapedId"
+					elif [ "$prefix" = post-all-install-or-once: ]; then
+					    addPreOrPostinstall post-all "$rest"$'\n'"$lastRealItem" --post-or-once --id "$escapedId"
+					else
+					    printf >&2 'ASSERT: Unexpected prefix: %s\n' "$prefix"; exit 3
+					fi
 					noMissingItemMessage="Only postinstall required for $subject"
 					;;
 				    *)	exit 3;;
@@ -709,12 +724,12 @@ parseDefinitionGroups()
 			98)	;;
 			99)	;;
 			*)	if [ -n "$lastMissingItem" ]; then
-				# The postinstall action will run when the installation of the
-				# previous item was successful. To be able to check that, we
-				# need that item as well, so append it on a new line.
-				missingItems+=("postinstall:${name}"$'\n'"$lastMissingItem")
-			    fi
-			    ;;
+				    # The postinstall action will run when the installation of the
+				    # previous item was successful. To be able to check that, we
+				    # need that item as well, so append it on a new line.
+				    missingItems+=("${prefix%-or-once:}:${name}"$'\n'"$lastMissingItem")
+				fi
+				;;
 		    esac
 		fi
 	    elif [ "$prefix" = dummy: ]; then
@@ -934,6 +949,15 @@ non-meta non-pre/postinstall item preceding it in the current definition is
 missing, but has now been selected.
 HELPTEXT
 }
+configUsagePreAllInstall()
+{
+    configUsagePrePostInstall pre-all-install preinstall
+    cat <<'HELPTEXT'
+A pre-all-install item runs (before all installation actions) if the non-meta
+non-pre/postinstall item preceding it in the current definition is missing, but
+has now been selected.
+HELPTEXT
+}
 configUsagePostinstall()
 {
     configUsagePrePostInstall postinstall postinstall
@@ -943,11 +967,32 @@ non-meta non-pre/postinstall item preceding it in the current definition was
 missing, but has been successfully installed by the installation commands.
 HELPTEXT
 }
+configUsagePostAllInstall()
+{
+    configUsagePrePostInstall post-all-install postinstall
+    cat <<'HELPTEXT'
+A post-all-install item runs (after all installation actions) if the non-meta
+non-pre/postinstall item preceding it in the current definition was missing, but
+has been successfully installed by the installation commands.
+HELPTEXT
+}
 configUsagePostinstallOrOnce()
 {
     configUsagePrePostInstall postinstall-or-once postinstall
     cat <<'HELPTEXT'
 Like a postinstall item, a postinstall-or-once item runs if the
+non-meta non-pre/postinstall item preceding it in the current definition was
+missing, but has been successfully installed by the installation commands.
+Additionally, if the non-meta non-pre/postinstall item preceding it already
+existed (e.g. it comes preinstalled), it will also run once (until it succeeds);
+ID or ACTION itself is used for that uniqueness check.
+HELPTEXT
+}
+configUsagePostAllInstallOrOnce()
+{
+    configUsagePrePostInstall post-all-install-or-once postinstall
+    cat <<'HELPTEXT'
+Like a post-all-install item, a post-all-install-or-once item runs if the
 non-meta non-pre/postinstall item preceding it in the current definition was
 missing, but has been successfully installed by the installation commands.
 Additionally, if the non-meta non-pre/postinstall item preceding it already
@@ -1028,7 +1073,13 @@ addPreOrPostinstall()
     local action="${valueAndItem%%$'\n'*}"
     local name="${item#*:}"
     local prefix="${item%"$name"}"
-    eval "added${when^}installArgs${typeRegistry["${prefix:-native:}"]}+=(\"\${recursiveCallArg:---${when}}\" \"\$item\" --action \"\$action\" \"\$@\")"
+    if [[ "$when" = *-all ]]; then
+	when="${when%-all}"
+	local typeName=''
+    else
+	local typeName="${typeRegistry["${prefix:-native:}"]}"
+    fi
+    eval "added${when^}installArgs${typeName}+=(\"\${recursiveCallArg:---${when}}\" \"\$item\" --action \"\$action\" \"\$@\")"
 }
 
 addPreinstall()
@@ -1275,8 +1326,12 @@ addItems()
 	    addDecorate "$name"
 	elif [ "$prefix" = preinstall: ]; then
 	    addPreinstall "$name"
+	elif [ "$prefix" = pre-all-install: ]; then
+	    addPreOrPostinstall pre-all "$name"
 	elif [ "$prefix" = postinstall: ]; then
 	    addPostinstall "$name"
+	elif [ "$prefix" = post-all-install: ]; then
+	    addPreOrPostinstall post-all "$name"
 	else
 	    printf >&2 'ERROR: Invalid type: %s\n' "$prefix"
 	    exit 3
@@ -1291,8 +1346,8 @@ hasOrAddItems()
     do
 	local name="${item#*:}"
 	local prefix="${item%"$name"}"
-	if contains "$prefix" "${!definitionFilterTypeRegistry[@]}" "${!definitionGroupFilterTypeRegistry[@]}" config: decorate: preinstall: postinstall: postinstall-or-once:; then
-	    printf >&2 'ERROR: Cannot use a %s type within a config / decorate / preinstall / postinstall[-or-once] item.\n' "$prefix"
+	if contains "$prefix" "${!definitionFilterTypeRegistry[@]}" "${!definitionGroupFilterTypeRegistry[@]}" config: decorate: preinstall: pre-all-install: postinstall: post-all-install: postinstall-or-once: post-all-install-or-once:; then
+	    printf >&2 'ERROR: Cannot use a %s type within a config / decorate / pre[-all-]install / post[-all-]install[-or-once] item.\n' "$prefix"
 	    exit 3
 	fi
 
@@ -1324,7 +1379,7 @@ installNative()
 preOrPostInstall()
 {
     local when="${1:?}"; shift
-    local typeName="${1:?}"; shift
+    local typeName="${1?}"; shift
     eval "typeset -a addedPreOrPostinstallArgs=(\"\${added${when^}installArgs${typeName}[@]}\")"
     eval "typeset -a addedPreOrPostinstallContextArgs=(\"\${added${when^}installContextArgs${typeName}[@]}\")"
     [ ${#addedPreOrPostinstallArgs[@]} -gt 0 ] || return
@@ -1461,6 +1516,7 @@ generateInstallCommands()
     typeset -a typeOrdering=("${!typeInstallOrder[@]}")
     readarray -t typeOrdering < <(printf '%s\n' "${typeOrdering[@]}" | sort -n)
 
+    preInstall ''
     local order; for order in "${typeOrdering[@]}"
     do
 	local typeName="${typeInstallOrder["$order"]}"
@@ -1468,6 +1524,7 @@ generateInstallCommands()
 	    "install${typeName}"
 	postInstall "$typeName"
     done
+    postInstall ''
 }
 printInstallCommands()
 {
