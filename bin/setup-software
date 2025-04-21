@@ -902,21 +902,33 @@ decorations, or a single decoration that then applies to the whole set of items,
 or may split off decorated items into separate install commands.
 HELPTEXT
 }
-configUsagePreinstall()
+
+configUsagePrePostInstall()
 {
-    cat <<'HELPTEXT'
-preinstall: items consist of an ACTION that is one of the following:
+    local typeName="${1:?}"; shift
+    local what="${1:?}"; shift
+    [[ "$typeName" = *-or-once ]] \
+	&& local action='[ID:]ACTION where the latter' \
+	|| local action='an ACTION that'
+    cat <<HELPTEXT
+${typeName}: items consist of ${action} is one of the following:
 - an EXECUTABLE-COMMAND (potentially followed by command-line arguments) in the
-  ./etc/preinstall directory tree that is invoked (prepend $SUDO if it needs to
-  be invoked as root) and should then perform the preinstallation steps
-- a TEXT-FILE in the ./etc/preinstall directory tree whose file name (without
+  ./etc/${what} directory tree that is invoked (prepend \$SUDO if it needs to
+  be invoked as root) and should then perform the ${what}ation steps
+- a TEXT-FILE in the ./etc/${what} directory tree whose file name (without
   extension) is taken as a notification title and contents as notification to be
   displayed (presumably with instructions for manual pre-installation steps)
   immediately and on each login until the user acknowledges it
 - another ITEM (that is then executed as usual); for packages installed via the
   distribution's package manager, use the special "native:" prefix here
-- a PREINSTALL-EXPRESSION (whitespace must be escaped or the entire expression
-  quoted!) that is eval'd (prepend $SUDO if it needs to be invoked as root)
+- a ${what^^}-EXPRESSION (whitespace must be escaped or the entire expression
+  quoted!) that is eval'd (prepend \$SUDO if it needs to be invoked as root)
+HELPTEXT
+}
+configUsagePreinstall()
+{
+    configUsagePrePostInstall preinstall preinstall
+    cat <<'HELPTEXT'
 A preinstall item runs (just before the item type's installation actions) if the
 non-meta non-pre/postinstall item preceding it in the current definition is
 missing, but has now been selected.
@@ -924,19 +936,8 @@ HELPTEXT
 }
 configUsagePostinstall()
 {
+    configUsagePrePostInstall postinstall postinstall
     cat <<'HELPTEXT'
-postinstall: items consist of an ACTION that is one of the following:
-- an EXECUTABLE-COMMAND (potentially followed by command-line arguments) in the
-  ./etc/postinstall directory tree that is invoked (prepend $SUDO if it needs to
-  be invoked as root) and should then perform the postinstallation steps
-- a TEXT-FILE in the ./etc/postinstall directory tree whose file name (without
-  extension) is taken as a notification title and contents as notification to be
-  displayed (presumably with instructions for manual post-installation steps)
-  immediately and on each login until the user acknowledges it
-- another ITEM (that is then executed as usual); for packages installed via the
-  distribution's package manager, use the special "native:" prefix here
-- a POSTINSTALL-EXPRESSION (whitespace must be escaped or the entire expression
-  quoted!) that is eval'd (prepend $SUDO if it needs to be invoked as root)
 A postinstall item runs (just after the item type's installation actions) if the
 non-meta non-pre/postinstall item preceding it in the current definition was
 missing, but has been successfully installed by the installation commands.
@@ -944,20 +945,8 @@ HELPTEXT
 }
 configUsagePostinstallOrOnce()
 {
+    configUsagePrePostInstall postinstall-or-once postinstall
     cat <<'HELPTEXT'
-postinstall-or-once: items consist of [ID:]ACTION where the latter is one of the
-following:
-- an EXECUTABLE-COMMAND (potentially followed by command-line arguments) in the
-  ./etc/postinstall directory tree that is invoked (prepend $SUDO if it needs to
-  be invoked as root) and should then perform the postinstallation steps
-- a TEXT-FILE in the ./etc/postinstall directory tree whose file name (without
-  extension) is taken as a notification title and contents as notification to be
-  displayed (presumably with instructions for manual post-installation steps)
-  immediately and on each login until the user acknowledges it
-- another ITEM (that is then executed as usual); for packages installed via the
-  distribution's package manager, use the special "native:" prefix here
-- a POSTINSTALL-EXPRESSION (whitespace must be escaped or the entire expression
-  quoted!) that is eval'd (prepend $SUDO if it needs to be invoked as root)
 Like a postinstall item, a postinstall-or-once item runs if the
 non-meta non-pre/postinstall item preceding it in the current definition was
 missing, but has been successfully installed by the installation commands.
