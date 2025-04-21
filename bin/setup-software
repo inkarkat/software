@@ -1482,7 +1482,7 @@ generateInstallCommands()
 }
 printInstallCommands()
 {
-    [ ${#toBeInstalledCommands[@]} -eq 0 ] && return 1
+    [ ${#toBeInstalledCommands[@]} -eq 0 ] && return 99
 
     if [ "$isExecute" ]; then
 	local installCommandline="$(joinBy '; ' "${toBeInstalledCommands[@]}")"
@@ -1652,7 +1652,7 @@ do
 			shift; specialAction="$1"; shift
 			printf -v specialCommand 'runPreInstallCheck %q %q' "$item" "$specialAction"
 			specialHandlingCommands+=("$specialCommand")
-			specialHandlingFinalCommand='generateAndPrintInstallCommands'
+			specialHandlingFinalCommand='acceptStatus 0 99 generateAndPrintInstallCommands'
 			;;
 	--post-context)	shift; eval "$1"; shift;;
 	--post)		shift; item="$1"; shift
@@ -1662,7 +1662,7 @@ do
 			shift; specialAction="$1"; shift
 			printf -v specialCommand 'runPostInstallCheck %q %q' "$item" "$specialAction"
 			specialHandlingCommands+=("${specialCommand% }")
-			specialHandlingFinalCommand='generateAndPrintInstallCommands'
+			specialHandlingFinalCommand='acceptStatus 0 99 generateAndPrintInstallCommands'
 			;;
 	--post-or-once)	shift; item="$1"; shift
 			if [ "$1" != '--action' ]; then
@@ -1675,7 +1675,7 @@ do
 			shift; id="$1"; shift
 			printf -v specialCommand 'runPostInstallCheck %q %q && onceMarker --update %q' "$item" "$specialAction" "$id"
 			specialHandlingCommands+=("${specialCommand% }")
-			specialHandlingFinalCommand='generateAndPrintInstallCommands'
+			specialHandlingFinalCommand='acceptStatus 0 99 generateAndPrintInstallCommands'
 			;;
 	--)		shift; break;;
 	-*)		if [ -n "${commandLineOptions["$1"]}" ]; then
