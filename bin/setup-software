@@ -489,7 +489,7 @@ addAllAcceptedGroups()
     readarray -t groups < <(for dirspec in "${definitionDirspecs[@]}"
 	do
 	    cd "$dirspec" && find . -not -path '*/\.*' -printf '%P\n'
-	done | sort
+	done | sort --ignore-case
     )
     typeset -a filteredGroups=()
     typeset -a withHeaderFirstArg=(--first)
