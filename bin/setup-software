@@ -1532,8 +1532,9 @@ printInstallCommands()
 
     if [ "$isExecute" ]; then
 	local installCommandline="$(joinBy '; ' "${toBeInstalledCommands[@]}")"
-	set -e
-	eval "$installCommandline" || exit $?	# Exit the script now because else installation failure would be treated as if there were no installation commands.
+	set -e +o noglob; shopt -qu nullglob
+	    eval "$installCommandline" || exit $?	# Exit the script now because else installation failure would be treated as if there were no installation commands.
+	set +e -o noglob; shopt -qs nullglob
     elif [ ! "$isPrintDefinitions" ] || [ "$isPrint" ]; then
 	printf '%s\n' "${toBeInstalledCommands[@]}"
     fi
