@@ -647,6 +647,7 @@ parseDefinitionGroups()
 	let handledDefinitionCount+=1
 	typeset -a missingItems=()
 	typeset -a missingItemConfigurations=()
+	typeset -a missingItemDummies=()
 	local lastRealItem=
 	typeset -a lastConfigurations=()
 	local lastDecoration=
@@ -750,9 +751,9 @@ parseDefinitionGroups()
 			let handledDefinitionCount-=1
 			break
 			;;
-		    *)  # Add missing dummy items to missingItemConfigurations instead of missingItems, so that a definition with just missing dummy items does not query the user, but if there are other missing items, the dummy one will be included, too.
+		    *)  # Add missing dummy items to missingItemDummies instead of missingItems, so that a definition with just missing dummy items does not query the user, but if there are other missing items, the dummy one will be included, too.
 			#missingItems+=("$item")
-			missingItemConfigurations+=("$item")
+			missingItemDummies+=("$item")
 			lastMissingItem="$item"
 			let missingRealItemCnt+=1
 
@@ -832,7 +833,9 @@ parseDefinitionGroups()
 		let addedDefinitionCount+=1
 		# Add the configurations first, so that they are available to the
 		# add*() function for the real item already.
-		addItems "${missingItemConfigurations[@]}" "${missingItems[@]}" \
+		# Add the dummies last, as they may need to do a delayed check for the
+		# dummy:NAME:ITEM if ITEM now has been added or not.
+		addItems "${missingItemConfigurations[@]}" "${missingItems[@]}" "${missingItemDummies[@]}" \
 		    || messagePrintf 'ERROR: Failed to add missing items in %s.\n' "$subject"
 
 		[ ! "$isPrintDefinitions" ] || printf '%s\n' "$subject"
