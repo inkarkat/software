@@ -37,6 +37,12 @@ getInstalledPipxPackages()
 	# A missing pipx means that no Python CLI apps have been installed yet.
 	isInstalledPipxPackagesAvailable=t
 	return
+    elif ! exists pipx-list-packages; then
+	pathDiscover --quiet
+	if ! exists pipx-list-packages; then
+	    echo >&2 'ERROR: Cannot find my pipx extensions.'
+	    exit 3
+	fi
     fi
 
     local exitStatus packageName packageSpec remainder; while IFS=$'\t' read -r packageName packageSpec remainder || { exitStatus="$packageName"; break; }	# Exit status from the process substitution (<(pipx-list-packages)) is lost; return the actual exit status via an incomplete (i.e. missing the newline) last line.
