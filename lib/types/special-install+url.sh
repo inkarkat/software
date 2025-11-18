@@ -98,7 +98,7 @@ hasIconUrl()
 }
 hasUserIconUrl()
 {
-    hasSpecialInstallUrl usericon+url icon-download-installer addedIconUrlPackages "$@"
+    hasSpecialInstallUrl usericon+url icon-download-installer addedUserIconUrlPackages "$@"
 }
 hasStartmenuUrl()
 {
@@ -162,7 +162,7 @@ installIconUrl()
 }
 installUserIconUrl()
 {
-    installSpecialInstallUrl usericon+url icon-download-installer addedIconUrlPackages "$@"
+    installSpecialInstallUrl usericon+url icon-download-installer addedUserIconUrlPackages "$@"
 }
 installStartmenuUrl()
 {
