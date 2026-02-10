@@ -1,0 +1,4 @@
+# Homebrew custom installation; cp. https://brew.sh/ https://docs.brew.sh/Homebrew-on-Linux
+
+custompre:'& --check':brew/install-brew.sh    # Homebrew package manager
+custompre:"isBelongsToGroup --user ${USER:?} linuxbrew:\$SUDO adduser ${USER:?} linuxbrew"   # add me to linuxbrew group for access to system-wide Homebrew packages
