@@ -81,7 +81,7 @@ installBrew()
 {
     [ ${#addedBrewPackages[@]} -gt 0 ] || return
     local IFS=' '
-    submitInstallCommand "sudo --user linuxbrew --set-home --login ${isBatch:+ NONINTERACTIVE=1 }brew install ${!addedBrewPackages[*]}"
+    submitInstallCommand "${isBatch:+ NONINTERACTIVE=1 }brew install ${!addedBrewPackages[*]}"
 }
 
 typeRegistry+=([brew:]=Brew)
