@@ -83,4 +83,9 @@ hasBrew()
 if ! hasBrew; then
     [ "$isCheck" ] && exit 1
     sudo --user linuxbrew --set-home --login bash -c 'NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"' || exit $?
+
+    cat <<'EOF'
+✓ Homebrew installed. Access the 'brew' command via
+  $ sudo --user linuxbrew --set-home --login brew SUBCOMMAND ...
+EOF
 fi
