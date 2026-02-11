@@ -22,11 +22,12 @@ getInstalledBrewPackages()
 	# yet.
 	isInstalledBrewPackagesAvailable=t
 	return
-    elif sudo --user linuxbrew bash -c '[ -x /home/linuxbrew/.linuxbrew/bin/brew ]'; then
-	# Homebrew has already been installed, but our user doesn't (yet) have access to
-	# it. (A new login is required to apply the group membership in "linuxbrew", and
-	# the brew wrapper command is also only created on the next login.) Need to use
-	# the dedicated linuxbrew user to access it (so far).
+    elif getent passwd linuxbrew >/dev/null 2>&1 && sudo --user linuxbrew bash -c '[ -x /home/linuxbrew/.linuxbrew/bin/brew ]'; then
+	# Homebrew has already been installed under a special "linuxbrew" service
+	# account, but our user doesn't (yet) have access to it. (A new login is
+	# required to apply the group membership in "linuxbrew", and the brew wrapper
+	# command is also only created on the next login.)
+	# Need to use the dedicated linuxbrew user to access it (so far).
 	brewLauncher=(sudo --user linuxbrew --set-home --login)
     else
 	# A missing brew command (even though the home directory might already exist)
