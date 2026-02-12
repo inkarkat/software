@@ -40,6 +40,11 @@ then
     isNewBrewSystemAccount=t
 fi
 
+# For the cache, allow write access for the linuxbrew group and read access to
+# others. Homebrew stores downloaded packages and meta information there, and we
+# put the brew-version in there.
+addDir --sudo "${checkArg[@]}" --owner linuxbrew --group linuxbrew --mode 775 -- "${LINUXBREW_HOME}/.cache"
+
 # Allow read access to the system account's home directory itself; all Homebrew
 # files are in the ./.linuxbrew/ subdir, anyway. This simplifies the following
 # checks for .bash_login.
