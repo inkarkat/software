@@ -45,7 +45,7 @@ fi
 # checks for .bash_login.
 if ! hasFileAttributes --mode o+rx -- "$LINUXBREW_HOME"; then
     [ "$isCheck" ] && exit 1
-    $SUDO chmod o+rx -- "$LINUXBREW_HOME"
+    $SUDO chmod o+rx -- "$LINUXBREW_HOME" || exit $?
 fi
 
 checkedAddOrUpdate "${checkArg[@]}" \
@@ -64,7 +64,7 @@ checkedAddOrUpdate "${checkArg[@]}" \
 		--line "eval \"\$(${LINUXBREW_HOME}/.linuxbrew/bin/brew shellenv bash)\"" \
 		-- "$BASH_LOGIN_FILESPEC"
 
-[ "$isCheck" ] || $SUDO chown linuxbrew:linuxbrew -- "$BASH_LOGIN_FILESPEC"
+[ "$isCheck" ] || $SUDO chown linuxbrew:linuxbrew -- "$BASH_LOGIN_FILESPEC" || exit $?
 
 hasBrew()
 {
