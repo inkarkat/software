@@ -54,6 +54,9 @@ installPipxInject()
     [ ${#addedPipxInjectPackages[@]} -gt 0 ] || return
 
     local pipxCommand="${SUDO}${SUDO:+ }pipx"
+    [ -n "$SUDO" ] && type -t -- sudoWithUnixhome >/dev/null && type -t -- sudo-pipx >/dev/null \
+	&& pipxCommand="${SUDO/sudo/sudoWithUnixhome}${SUDO:+ }sudo-pipx"
+
     for mainPackageName in "${!addedPipxInjectPackages[@]}"
     do
 	typeset -a uniqueDependencyPackageSpecs=()
