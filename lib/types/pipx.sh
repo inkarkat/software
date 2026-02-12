@@ -109,6 +109,11 @@ isAvailablePipx()
 installPipx()
 {
     [ ${#addedPipxPackages[@]} -gt 0 ] || return
+
+    local pipxCommand="${SUDO}${SUDO:+ }pipx"
+    [ -n "$SUDO" ] && type -t -- sudoWithUnixhome >/dev/null && type -t -- sudo-pipx >/dev/null \
+	&& pipxCommand="${SUDO/sudo/sudoWithUnixhome}${SUDO:+ }sudo-pipx"
+
     local collectedQuotedPackageSpecs=
     for packageName in "${!addedPipxPackages[@]}"
     do
@@ -119,7 +124,7 @@ installPipx()
     done
 
     local IFS=' '
-    submitInstallCommand "${SUDO}${SUDO:+ }pipx install --global --force $collectedQuotedPackageSpecs"
+    submitInstallCommand "$pipxCommand install --global --force $collectedQuotedPackageSpecs"
     # Note: --force to update existing packages when modules have been (potentially) added.
 }
 
