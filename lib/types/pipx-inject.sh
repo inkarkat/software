@@ -52,12 +52,14 @@ isAvailablePipxInject()
 installPipxInject()
 {
     [ ${#addedPipxInjectPackages[@]} -gt 0 ] || return
+
+    local pipxCommand="${SUDO}${SUDO:+ }pipx"
     for mainPackageName in "${!addedPipxInjectPackages[@]}"
     do
 	typeset -a uniqueDependencyPackageSpecs=()
 	readarray -t uniqueDependencyPackageSpecs < <(printf '%s\n' "${addedPipxInjectPackages["$mainPackageName"]}" | sort --unique | grep -v '^$')
 	local quotedArgs; printf -v quotedArgs ' %q' "$mainPackageName" "${uniqueDependencyPackageSpecs[@]}"
-	submitInstallCommand "${SUDO}${SUDO:+ }pipx inject --global$quotedArgs"
+	submitInstallCommand "$pipxCommand inject --global$quotedArgs"
     done
 }
 

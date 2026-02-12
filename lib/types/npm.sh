@@ -58,8 +58,10 @@ isAvailableNpm()
 installNpm()
 {
     [ ${#addedNpmPackages[@]} -gt 0 ] || return
+
+    local npmCommand="${SUDO}${SUDO:+ }npm"
     local IFS=' '
-    submitInstallCommand "${SUDO}${SUDO:+ }npm install --global ${!addedNpmPackages[*]}"
+    submitInstallCommand "$npmCommand install --global ${!addedNpmPackages[*]}"
 }
 
 typeRegistry+=([npm:]=Npm)
