@@ -75,8 +75,13 @@ isAvailableBrew()
 installBrew()
 {
     [ ${#addedBrewPackages[@]} -gt 0 ] || return
+
+    local brewCommand="${isBatch:+NONINTERACTIVE=1 } brew"
+    [ -n "$SUDO" ] && type -t -- sudoWithUnixhome >/dev/null && type -t -- sudo-brew >/dev/null \
+	&& brewCommand="${SUDO/sudo/sudoWithUnixhome}${SUDO:+ }${isBatch:+NONINTERACTIVE=1 }sudo-brew"
+
     local IFS=' '
-    submitInstallCommand "${isBatch:+ NONINTERACTIVE=1 }brew install ${!addedBrewPackages[*]}"
+    submitInstallCommand "$brewCommand install ${!addedBrewPackages[*]}"
 }
 
 typeRegistry+=([brew:]=Brew)
