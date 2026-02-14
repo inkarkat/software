@@ -4,6 +4,7 @@
 case ",${DEBUG:-}," in *,sudo,*) SUDO="verbose $SUDO";; *,sudo\!,*) SUDO="echotrace $SUDO";; esac
 
 : ${LINUXBREW_HOME:=/home/linuxbrew}
+: ${LINUXBREW_PREFIX:=${LINUXBREW_HOME}/.linuxbrew}
 : ${BASH_LOGIN_FILESPEC:=${LINUXBREW_HOME}/.bash_login}
 
 printUsage()
@@ -66,15 +67,15 @@ checkedAddOrUpdate "${checkArg[@]}" \
 	--no-subsequent-backup \
 	addOrUpdateLine \
 		--create-nonexisting \
-		--line "eval \"\$(${LINUXBREW_HOME}/.linuxbrew/bin/brew shellenv bash)\"" \
+		--line "eval \"\$(${LINUXBREW_PREFIX}/bin/brew shellenv bash)\"" \
 		-- "$BASH_LOGIN_FILESPEC"
 
 [ "$isCheck" ] || $SUDO chown linuxbrew:linuxbrew -- "$BASH_LOGIN_FILESPEC" || exit $?
 
 hasBrew()
 {
-    [ -x "${LINUXBREW_HOME}/.linuxbrew/bin/brew" ] && return 0
-    [ -d "${LINUXBREW_HOME}/.linuxbrew" ] || return 1	# Our user is able to read the user's home directory, but not the contents of the .linuxbrew tree.
+    [ -x "${LINUXBREW_PREFIX}/bin/brew" ] && return 0
+    [ -d "$LINUXBREW_PREFIX" ] || return 1	# Our user is able to read the user's home directory, but not the contents of the .linuxbrew tree.
 
     # System account just got set up; can't be installed yet.
     [ "$isNewBrewSystemAccount" ] && return 1
@@ -82,7 +83,7 @@ hasBrew()
     # If the current user in the current session is not in the linuxbrew group, they
     # cannot check; need to use the linuxbrew user.
     isBelongsToGroup linuxbrew && return 1  # Our user was able to check, didn't find it.
-    sudo --user linuxbrew bash -c "[ -x '${LINUXBREW_HOME}/.linuxbrew/bin/brew' ]"
+    sudo --user linuxbrew bash -c "[ -x '${LINUXBREW_PREFIX}/bin/brew' ]"
 }
 
 if ! hasBrew; then
