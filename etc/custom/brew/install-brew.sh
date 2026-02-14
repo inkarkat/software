@@ -6,6 +6,7 @@ case ",${DEBUG:-}," in *,sudo,*) SUDO="verbose $SUDO";; *,sudo\!,*) SUDO="echotr
 : ${LINUXBREW_HOME:=/home/linuxbrew}
 : ${LINUXBREW_PREFIX:=${LINUXBREW_HOME}/.linuxbrew}
 : ${BASH_LOGIN_FILESPEC:=${LINUXBREW_HOME}/.bash_login}
+: ${BREW_ENV_FILESPEC:=${LINUXBREW_PREFIX}/etc/homebrew/brew.env}
 
 printUsage()
 {
@@ -95,3 +96,43 @@ if ! hasBrew; then
   $ sudo --user linuxbrew --set-home --login brew SUBCOMMAND ...
 EOF
 fi
+
+# Configure Homebrew via environment file under its prefix.
+addDir --sudo "${checkArg[@]}" --owner linuxbrew --group linuxbrew --mode 775 --dirname -- "$BREW_ENV_FILESPEC"
+
+# A daily update of formulae and casks is enough (and is usually triggered
+# automatically by the update check cron job); the default 450 seconds is too
+# low.
+checkedAddOrUpdate "${checkArg[@]}" \
+	--sudo-command sudoWithUnixhome \
+	--no-subsequent-backup \
+	addOrUpdateAssignment \
+		--create-nonexisting \
+		--lhs HOMEBREW_API_AUTO_UPDATE_SECS \
+		--rhs 86400 \
+		-- "$BREW_ENV_FILESPEC"
+
+# Reduce the default auto-update interval to half a day so that every daily
+# update check will do this, despite slight fluctuations in the exact cron job
+# start time.
+checkedAddOrUpdate "${checkArg[@]}" \
+	--sudo-command sudoWithUnixhome \
+	--no-subsequent-backup \
+	addOrUpdateAssignment \
+		--create-nonexisting \
+		--lhs HOMEBREW_AUTO_UPDATE_SECS \
+		--rhs 43200 \
+		-- "$BREW_ENV_FILESPEC"
+
+# Don't show hints about using environment variables to change Homebrew's
+# behavior.
+checkedAddOrUpdate "${checkArg[@]}" \
+	--sudo-command sudoWithUnixhome \
+	--no-subsequent-backup \
+	addOrUpdateAssignment \
+		--create-nonexisting \
+		--lhs HOMEBREW_NO_ENV_HINTS \
+		--rhs 1 \
+		-- "$BREW_ENV_FILESPEC"
+
+[ "$isCheck" ] || $SUDO chown linuxbrew:linuxbrew -- "$BREW_ENV_FILESPEC" || exit $?
