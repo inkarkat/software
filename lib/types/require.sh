@@ -92,7 +92,7 @@ isDefinitionAcceptedByRequire()
 		return 1
 	    fi
 	else
-	    printf >&2 'ERROR: Type %s cannot be used for requirements checking.\n' "$prefix"
+	    printf >&2 'ERROR: Type %s cannot be used for requirements checking.\n' "${prefix#!}"
 	    exit 3
 	fi
     elif [[ "$prefix" =~ ^[^[:space:]]+$ ]]; then
