@@ -213,6 +213,19 @@ addCustom()
     addCustomAtOrder '' "$@"
 }
 
+isAvailableCustomAtOrder()
+{
+    isQuiet=t hasCustomAtOrder "$@"
+}
+isAvailableCustomPre()
+{
+    isAvailableCustomAtOrder 'pre' "$@"
+}
+isAvailableCustom()
+{
+    isAvailableCustomAtOrder '' "$@"
+}
+
 installCustomAtOrder()
 {
     local order="${1?}"; shift
