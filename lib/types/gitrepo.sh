@@ -66,9 +66,13 @@ hasGitrepo()
     [ "${addedGitrepoLocations["${location:?}"]}" ] && return 0
 
     [ -d "$location" ] || return 1
-    exists git || return 99
-    exists git-iscontrolled || return 99
-    git-iscontrolled "$location" || return 1
+    exists git || return 1
+    if type -t -- git-iscontrolled >/dev/null git-iscontrolled; then
+	git-iscontrolled "$location"
+    else
+	[ -e "${location}/.git" ]
+    fi \
+	|| return 1
 
     if [ -n "${maxAge?}" ] \
 	&& git-inside fetchdate --remote upstream --older "$maxAge" -- "$location"
