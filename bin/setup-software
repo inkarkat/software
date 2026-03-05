@@ -157,7 +157,7 @@ HELPDESCRIPTION
     --clear-selection-store
 			Forget any persisted definition [group] selections. For
 			updates to selections to work, the selection store then
-			has to be rebuilt via --rebuild-selection-store.
+			has to be rebuilt via --rebuild-selection-store --all.
     --rebuild-selection-store
 			Record any already (fully) installed definition as
 			selected, so that any updates to it will be considered
