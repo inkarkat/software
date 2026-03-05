@@ -44,7 +44,7 @@ hasFlatpakRemote()
 
     if ! getInstalledFlatpakRemotes; then
 	messagePrintf >&2 'ERROR: Failed to obtain installed Flatpak remotes list; skipping %s.\n' "$flatpakRemoteName"
-	return 99
+	return 98   # If something's wrong with the package manager, the entire definition should be skipped, as we cannot ensure the correct installation.
     fi
     [ "${installedFlatpakRemotes["$flatpakRemoteName"]}" ] || \
 	[ "${addedFlatpakRemotes["$flatpakRemoteName"]}" ]

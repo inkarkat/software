@@ -19,9 +19,9 @@ if ! exists thunderbird \
     || ! THUNDERBIRD_PROFILES_DIRSPEC="$("${projectDir}/lib/getThunderbirdProfileDirspec.sh" 2>/dev/null)" \
     || [ ! -d "$THUNDERBIRD_PROFILES_DIRSPEC" ]
 then
-    hasThunderbirdAddon() { return 98; }
+    hasThunderbirdAddon() { return 99; }
     installThunderbirdAddon() { :; }
-    isAvailableThunderbirdAddon() { return 98; }
+    isAvailableThunderbirdAddon() { return 99; }
     return
 fi
 
@@ -66,7 +66,7 @@ hasThunderbirdAddon()
     [ "${_disabledNoGlob:-}" ] && set -f; unset _disabledNoGlob
 
     local configDirspec="${existingProfileDirspecs[0]}"
-    [ -d "$configDirspec" ] || return 99 # No such Thunderbird profile.
+    [ -d "$configDirspec" ] || return 98 # No such Thunderbird profile.
     if [ -z "$profileName" ]; then
 	profileName="${configDirspec##*.}"
 	thunderbirdDefaultProfileName="$profileName"
@@ -74,7 +74,7 @@ hasThunderbirdAddon()
 
     if ! getInstalledThunderbirdAddons "$profileName" "$configDirspec"; then
 	messagePrintf >&2 'ERROR: Failed to obtain Thunderbird installed add-on list for profile %s; skipping %s.\n' "$profileName" "$1"
-	return 99
+	return 98   # If something's wrong with the add-on manager, the entire definition should be skipped, as we cannot ensure the correct installation.
     fi
     [ "${installedThunderbirdProfileAddonIds["${profileName} ${addonId}"]}" ]
 }

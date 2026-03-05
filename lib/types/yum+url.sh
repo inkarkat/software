@@ -17,7 +17,7 @@ typeRegistry+=([yum+url:]=YumUrl)
 typeInstallOrder+=([132]=YumUrl)
 
 if ! exists yum; then
-    hasYumUrl() { return 98; }
+    hasYumUrl() { return 99; }
     installYumUrl() { :; }
     return
 fi

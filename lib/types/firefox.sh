@@ -22,9 +22,9 @@ if ! exists firefox || \
     ! FIREFOX_PROFILES_DIRSPEC="$("${projectDir}/lib/getFirefoxProfileDirspec.sh" 2>/dev/null)" || \
     [ ! -d "$FIREFOX_PROFILES_DIRSPEC" ]
 then
-    hasFirefoxAddon() { return 98; }
+    hasFirefoxAddon() { return 99; }
     installFirefoxAddon() { :; }
-    isAvailableFirefoxAddon() { return 98; }
+    isAvailableFirefoxAddon() { return 99; }
     return
 fi
 
@@ -76,7 +76,7 @@ hasFirefoxAddon()
     [ "${_disabledNoGlob:-}" ] && set -f; unset _disabledNoGlob
 
     local configDirspec="${existingProfileDirspecs[0]}"
-    [ -d "$configDirspec" ] || return 99 # No such Firefox profile.
+    [ -d "$configDirspec" ] || return 98 # No such Firefox profile.
     if [ -z "$profileName" ]; then
 	profileName="${configDirspec##*.}"
 	firefoxDefaultProfileName="$profileName"
@@ -84,7 +84,7 @@ hasFirefoxAddon()
 
     if ! getInstalledFirefoxAddons "$profileName" "$configDirspec"; then
 	messagePrintf >&2 'ERROR: Failed to obtain Firefox installed add-on list for profile %s; skipping %s.\n' "$profileName" "$1"
-	return 99
+	return 98   # If something's wrong with the add-on manager, the entire definition should be skipped, as we cannot ensure the correct installation.
     fi
     [ "${installedFirefoxProfileAddonIds["${profileName} ${addonId}"]}" ]
 }

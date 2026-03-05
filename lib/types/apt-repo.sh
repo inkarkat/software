@@ -19,7 +19,7 @@ typeRegistry+=([apt-repo:]=AptRepo)
 typeInstallOrder+=([81]=AptRepo)
 
 if ! exists apt; then
-    hasAptRepo() { return 98; }
+    hasAptRepo() { return 99; }
     installAptRepo() { :; }
     return
 fi
@@ -63,9 +63,9 @@ hasAptRepo()
     apt-add-debline --check --name "$name" -- "${expandedDebLines["$name"]}"; local status=$?
     if [ $status -eq 4 ]; then
 	# Try a fallback if the DEB-LINE does not point to an existing APT repository.
-	local fallbackDebLine; fallbackDebLine="$(expandDebLine "$debLine" t)" || return 99
+	local fallbackDebLine; fallbackDebLine="$(expandDebLine "$debLine" t)" || return 98
 	apt-add-debline --check --name "$name" -- "$fallbackDebLine"; status=$?
-	[ $status -eq 4 ] && return 99 # If the DEB-LINE does not point to an existing APT repository, the entire definition should be skipped, as we cannot ensure the correct installation.
+	[ $status -eq 4 ] && return 98 # If the DEB-LINE does not point to an existing APT repository, the entire definition should be skipped, as we cannot ensure the correct installation.
 	expandedDebLines["$name"]="$fallbackDebLine"
     fi
     return $status

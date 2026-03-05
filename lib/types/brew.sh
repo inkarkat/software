@@ -51,7 +51,7 @@ hasBrew()
     local brewPackageName="${1:?}"; shift
     if ! getInstalledBrewPackages; then
 	messagePrintf >&2 'ERROR: Failed to obtain installed Homebrew package list; skipping %s.\n' "$brewPackageName"
-	return 99
+	return 98   # If something's wrong with the package manager, the entire definition should be skipped, as we cannot ensure the correct installation.
     fi
 
     [ "${installedBrewPackages["$brewPackageName"]}" ] || [ "${addedBrewPackages["$brewPackageName"]}" ] || [ "${externallyAddedBrewPackages["$brewPackageName"]}" ]

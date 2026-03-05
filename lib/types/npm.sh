@@ -36,7 +36,7 @@ hasNpm()
     local npmPackageName="${1:?}"; shift
     if ! getInstalledNpmPackages; then
 	messagePrintf >&2 'ERROR: Failed to obtain installed Node.js package list; skipping %s.\n' "$npmPackageName"
-	return 99
+	return 98   # If something's wrong with the package manager, the entire definition should be skipped, as we cannot ensure the correct installation.
     fi
     [ "${installedNpmPackages["$npmPackageName"]}" ] || [ "${addedNpmPackages["$npmPackageName"]}" ] || [ "${externallyAddedNpmPackages["$npmPackageName"]}" ]
 }

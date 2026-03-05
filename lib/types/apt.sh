@@ -13,9 +13,9 @@ typeInstallOrder+=([101]=Apt)
 if exists apt; then
     nativeRegistry+=(Apt)
 else
-    hasApt() { return 98; }
+    hasApt() { return 99; }
     installApt() { :; }
-    isAvailableApt() { return 98; }
+    isAvailableApt() { return 99; }
     return
 fi
 
@@ -40,7 +40,7 @@ hasApt()
     local packageName="${1:?}"; shift
     if ! getInstalledAptPackages; then
 	messagePrintf >&2 'ERROR: Failed to obtain installed native package list; skipping %s.\n' "$packageName"
-	return 99
+	return 98   # If something's wrong with the package manager, the entire definition should be skipped, as we cannot ensure the correct installation.
     fi
 
     [ "${installedAptPackages["$packageName"]}" ] || [ "${addedAptPackages["$packageName"]}" ] || [ "${externallyAddedAptPackages["$packageName"]}" ]

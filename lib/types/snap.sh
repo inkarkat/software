@@ -42,7 +42,7 @@ hasSnap()
     local snapPackageName="${1:?}"; shift
     if ! getInstalledSnapPackages; then
 	messagePrintf >&2 'ERROR: Failed to obtain installed Snap store package list; skipping %s.\n' "$snapPackageName"
-	return 99
+	return 98   # If something's wrong with the package manager, the entire definition should be skipped, as we cannot ensure the correct installation.
     fi
     [ "${installedSnapPackages["$snapPackageName"]}" ] || \
 	[ "${addedSnapPackages["$snapPackageName"]}" ] || \

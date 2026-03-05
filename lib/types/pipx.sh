@@ -65,7 +65,7 @@ hasPipx()
     local packageSpec="${1:?}"; shift
     if ! getInstalledPipxPackages; then
 	messagePrintf >&2 'ERROR: Failed to obtain installed Python CLI app list; skipping %s.\n' "$packageSpec"
-	return 99
+	return 98   # If something's wrong with the package manager, the entire definition should be skipped, as we cannot ensure the correct installation.
     fi
 
     local packageName="${installedPipxPackageSpecToName["$packageSpec"]:-$(parsePipxPackageName "$packageSpec")}"   # For already installed apps, we can obtain the package name from the spec; for new apps, we need to parse it from the spec.

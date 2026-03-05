@@ -11,9 +11,9 @@ typeRegistry+=([amazon-extras:]=AmazonExtras)
 typeInstallOrder+=([210]=AmazonExtras)
 
 if ! exists amazon-linux-extras; then
-    hasAmazonExtras() { return 98; }
+    hasAmazonExtras() { return 99; }
     installAmazonExtras() { :; }
-    isAvailableAmazonExtras() { return 98; }
+    isAvailableAmazonExtras() { return 99; }
     return
 fi
 
@@ -37,7 +37,7 @@ hasAmazonExtras()
     local amazonExtrasPackageName="${1:?}"; shift
     if ! getInstalledAmazonExtrasPackages; then
 	messagePrintf >&2 'ERROR: Failed to obtain installed Python package list; skipping %s.\n' "$amazonExtrasPackageName"
-	return 99
+	return 98   # If something's wrong with the package manager, the entire definition should be skipped, as we cannot ensure the correct installation.
     fi
     [ "${installedAmazonExtrasPackages["$amazonExtrasPackageName"]}" ] || [ "${addedAmazonExtrasPackages["$amazonExtrasPackageName"]}" ] || [ "${externallyAddedAmazonExtrasPackages["$amazonExtrasPackageName"]}" ]
 }

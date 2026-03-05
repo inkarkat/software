@@ -22,7 +22,7 @@ typeRegistry+=([deb+url:]=DebUrl)
 typeInstallOrder+=([131]=DebUrl)
 
 if ! exists dpkg; then
-    hasDebUrl() { return 98; }
+    hasDebUrl() { return 99; }
     installDebUrl() { :; }
     return
 fi

@@ -33,15 +33,15 @@ typeInstallOrder+=([10]=AptReinstall)
 typeInstallOrder+=([199]=AptUpgrade)
 
 if ! exists apt; then
-    hasAptRemove() { return 98; }
-    hasAptReinstall() { return 98; }
-    hasAptUpgrade() { return 98; }
+    hasAptRemove() { return 99; }
+    hasAptReinstall() { return 99; }
+    hasAptUpgrade() { return 99; }
     installAptRemove() { :; }
     installAptReinstall() { :; }
     installAptUpgrade() { :; }
-    isAvailableAptRemove() { return 98; }
-    isAvailableAptReinstall() { return 98; }
-    isAvailableAptUpgrade() { return 98; }
+    isAvailableAptRemove() { return 99; }
+    isAvailableAptReinstall() { return 99; }
+    isAvailableAptUpgrade() { return 99; }
     return
 fi
 
@@ -52,7 +52,7 @@ hasAptRemove()
     local packageName="${1:?}"; shift
     if ! getInstalledAptPackages; then
 	messagePrintf >&2 'ERROR: Failed to obtain installed native package list; skipping %s.\n' "$packageName"
-	return 99
+	return 98   # If something's wrong with the package manager, the entire definition should be skipped, as we cannot ensure the correct installation.
     fi
 
     [ ! "${installedAptPackages["$packageName"]}" ] \
@@ -63,7 +63,7 @@ hasAptReinstall()
     local packageName="${1:?}"; shift
     if ! getInstalledAptPackages; then
 	messagePrintf >&2 'ERROR: Failed to obtain installed native package list; skipping %s.\n' "$packageName"
-	return 99
+	return 98   # If something's wrong with the package manager, the entire definition should be skipped, as we cannot ensure the correct installation.
     fi
 
     [ "${removedAptPackages["$packageName"]}" ] || [ "${externallyRemovedAptPackages["$packageName"]}" ]
@@ -73,7 +73,7 @@ hasAptUpgrade()
     local packageName="${1:?}"; shift
     if ! getInstalledAptPackages; then
 	messagePrintf >&2 'ERROR: Failed to obtain installed native package list; skipping %s.\n' "$packageName"
-	return 99
+	return 98   # If something's wrong with the package manager, the entire definition should be skipped, as we cannot ensure the correct installation.
     fi
 
     [ ! "${installedAptPackages["$packageName"]}" ] \

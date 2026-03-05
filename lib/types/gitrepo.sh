@@ -77,7 +77,7 @@ hasGitrepo()
     if [ -n "${maxAge?}" ] \
 	&& git-inside fetchdate --remote upstream --older "$maxAge" -- "$location"
     then
-	translateStatus 3+=99 git-inside uptodate --quiet upstream -- "$location" || return $?
+	translateStatus 3+=98 git-inside uptodate --quiet upstream -- "$location" || return $? # If something's wrong with the repository, the entire definition should be skipped, as we cannot ensure the correct installation.
     fi
     [ -n "$resultFile" ] || return 0
 

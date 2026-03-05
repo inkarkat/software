@@ -722,8 +722,8 @@ parseDefinitionGroups()
 				    *)	exit 3;;
 				esac
 				;;
-			98)	;;
 			99)	;;
+			98)	;;
 			*)	if [ -n "$lastMissingItem" ]; then
 				    # The postinstall action will run when the installation of the
 				    # previous item was successful. To be able to check that, we
@@ -742,11 +742,11 @@ parseDefinitionGroups()
 		[ ! "$isForce" ] && hasItem "$item"
 		case $? in
 		    0)  lastMissingItem=;;
-		    98) # Just skip this item.
+		    99) # Just skip this item.
 			noMissingItemMessage="Just skipped items in $subject"
 			continue
 			;;
-		    99) # If one item's state cannot not be determined, the entire definition should be skipped, as we cannot ensure the correct installation.
+		    98) # If one item's state cannot not be determined, the entire definition should be skipped, as we cannot ensure the correct installation.
 			noMissingItemMessage="Skipped: $subject"
 			let handledDefinitionCount-=1
 			break
@@ -778,11 +778,11 @@ parseDefinitionGroups()
 		[ ! "$isForce" ] && hasItem "$item"
 		case $? in
 		    0)  lastMissingItem=;;
-		    98) # Just skip this item. This is useful for supplementary item types like Apt repos and keys (where the actual Apt package might still be installable).
+		    99) # Just skip this item. This is useful for supplementary item types like Apt repos and keys (where the actual Apt package might still be installable).
 			noMissingItemMessage="Just skipped items in $subject"
 			continue
 			;;
-		    99) # If one item's state cannot not be determined, the entire definition should be skipped, as we cannot ensure the correct installation.
+		    98) # If one item's state cannot not be determined, the entire definition should be skipped, as we cannot ensure the correct installation.
 			noMissingItemMessage="Skipped: $subject"
 			let handledDefinitionCount-=1
 			break
@@ -1357,8 +1357,8 @@ hasOrAddItems()
 	[ ! "$isForce" ] && hasItem "$item"
 	case $? in
 	    0)	;;
-	    98)	;;
 	    99)	;;
+	    98)	;;
 	    *) missingItems+=("$item");;
 	esac
     done

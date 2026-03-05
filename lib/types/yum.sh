@@ -13,9 +13,9 @@ typeInstallOrder+=([102]=Yum)
 if exists yum; then
     nativeRegistry+=(Yum)
 else
-    hasYum() { return 98; }
+    hasYum() { return 99; }
     installYum() { :; }
-    isAvailableYum() { return 98; }
+    isAvailableYum() { return 99; }
     return
 fi
 
@@ -75,7 +75,7 @@ hasYum()
     local packageName="${1:?}"; shift
     if ! getInstalledYumPackages; then
 	messagePrintf >&2 'ERROR: Failed to obtain installed native package list; skipping %s.\n' "$packageName"
-	return 99
+	return 98   # If something's wrong with the package manager, the entire definition should be skipped, as we cannot ensure the correct installation.
     fi
 
     [ "${installedYumPackages["$packageName"]}" ] || [ "${addedYumPackages["$packageName"]}" ] || [ "${externallyAddedYumPackages["$packageName"]}" ]

@@ -19,7 +19,7 @@ printShortUsage()
     echo
     echo 'Update check (listing the definitions):'
     echo
-    printf 'Usage: SUDO=exit98 %q %s\n' "$(basename "$1")" '--check --print-definitions --quiet'
+    printf 'Usage: SUDO=exit99 %q %s\n' "$(basename "$1")" '--check --print-definitions --quiet'
 }
 printUsage()
 {

@@ -14,9 +14,9 @@ typeRegistry+=([ppa:]=Ppa)
 typeInstallOrder+=([11]=Ppa)
 
 if ! exists apt; then
-    hasPpa() { return 98; }
+    hasPpa() { return 99; }
     installPpa() { :; }
-    isAvailablePpa() { return 98; }
+    isAvailablePpa() { return 99; }
     return
 fi
 
@@ -42,7 +42,7 @@ hasPpa()
     local ppaRepoName="${arg% \(*\)}"
     if ! getInstalledPpaRepositories; then
 	messagePrintf >&2 'ERROR: Failed to obtain installed Ubuntu personal package archives list; skipping %s.\n' "$ppaRepoName"
-	return 99
+	return 98   # If something's wrong with the package manager, the entire definition should be skipped, as we cannot ensure the correct installation.
     fi
     [ "${installedPpaRepositories["$ppaRepoName"]}" ] || [ "${addedPpaRepositories["$ppaRepoName"]}" ] || [ "${externallyAddedPpaRepositories["$ppaRepoName"]}" ]
 }

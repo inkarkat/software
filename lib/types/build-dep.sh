@@ -12,9 +12,9 @@ typeRegistry+=([build-dep:]=DebBuild)
 typeInstallOrder+=([121]=DebBuild)
 
 if ! exists apt-get; then
-    hasDebBuild() { return 98; }
+    hasDebBuild() { return 99; }
     installDebBuild() { :; }
-    isAvailableDebBuild() { return 98; }
+    isAvailableDebBuild() { return 99; }
     return
 fi
 
@@ -37,7 +37,7 @@ hasDebBuild()
     local debBuildName="${1:?}"; shift
     if ! getInstalledDebBuildDependencies; then
 	messagePrintf >&2 'ERROR: Failed to obtain build dependencies list; skipping %s.\n' "$debBuildName"
-	return 99
+	return 98   # If something's wrong with the package manager, the entire definition should be skipped, as we cannot ensure the correct installation.
     fi
     [ "${installedDebBuildDependencies["$debBuildName"]}" ] || [ "${addedDebBuildDependencies["$debBuildName"]}" ]
 }

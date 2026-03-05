@@ -25,7 +25,7 @@ if ! "${projectDir:?}/etc/require/intel-architecture"; then
     hasWine()
     {
 	messagePrintf >&2 'Note: Wine is not available on non-Intel architectures; skipping %s.\n' "$1"
-	return 99
+	return 98   # If something's wrong with the package manager, the entire definition should be skipped, as we cannot ensure the correct installation.
     }
     installWine() { :; }
     return

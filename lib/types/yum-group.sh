@@ -11,9 +11,9 @@ typeRegistry+=([yum-group:]=YumGroup)
 typeInstallOrder+=([212]=YumGroup)
 
 if ! exists yum; then
-    hasYumGroup() { return 98; }
+    hasYumGroup() { return 99; }
     installYumGroup() { :; }
-    isAvailableYumGroup() { return 98; }
+    isAvailableYumGroup() { return 99; }
     return
 fi
 
@@ -60,7 +60,7 @@ hasYumGroup()
     local groupName="${1:?}"; shift
     if ! getInstalledYumGroups; then
 	messagePrintf >&2 'ERROR: Failed to obtain installed yum groups; skipping %s.\n' "$groupName"
-	return 99
+	return 98   # If something's wrong with the package manager, the entire definition should be skipped, as we cannot ensure the correct installation.
     fi
 
     [ "${installedYumGroups["$groupName"]}" ] || [ "${addedYumGroups["$groupName"]}" ] || [ "${externallyAddedYumGroups["$groupName"]}" ]

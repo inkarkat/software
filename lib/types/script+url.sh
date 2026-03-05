@@ -23,7 +23,7 @@ CHECK can be one of the following (in decreasing precedence):
   derived from the whole definition) user's answer
 - a TEST-EXPRESSION (whitespace must be escaped or the entire expression
   quoted!) that is eval'd and should succeed if the application already
-  exists, and fail if it is missing, fail with 98 if this item and with 99 if
+  exists, and fail if it is missing, fail with 99 if this item and with 98 if
   the entire definition should be skipped.
   Note: This cannot contain literal colons, as these would prematurely end the
   TEST-EXPRESSION; you can use $(echo -e \\x3a) instead of : as a workaround.
