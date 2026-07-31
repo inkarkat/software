@@ -39,7 +39,7 @@ getInstalledBrewPackages()
     local exitStatus packageName; while IFS=' ' read -r packageName || { exitStatus="$packageName"; break; }	# Exit status from the process substitution (<(brew)) is lost; return the actual exit status via an incomplete (i.e. missing the newline) last line.
     do
 	installedBrewPackages["$packageName"]=t
-	case ",${DEBUG:-}," in *,setup-software:brew,*) echo >&2 "${PS4}setup-software (brew): Found installed ${packageName}";; esac
+	${DEBUG:+debuglog --module brew "Found installed ${packageName}"}
     done < <("${brewLauncher[@]}" brew list -1 --quiet 2>/dev/null; printf %d "$?")
     [ $exitStatus -eq 0 ] && isInstalledBrewPackagesAvailable=t
 }

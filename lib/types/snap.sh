@@ -27,7 +27,7 @@ getInstalledSnapPackages()
 	case "$packageName" in
 	    Name)	    continue;;	# Skip single-line header
 	    *)		    installedSnapPackages["$packageName"]=t
-			    case ",${DEBUG:-}," in *,setup-software:snap,*) echo >&2 "${PS4}setup-software (snap): Found installed ${packageName}";; esac
+			    ${DEBUG:+debuglog --module snap "Found installed $packageName"}
 			    ;;
 	esac
     done < <(snap list --color=never --unicode=never 2>/dev/null; printf %d "$?")

@@ -25,7 +25,7 @@ getInstalledAmazonExtrasPackages()
     local exitStatus packageName remainder; while IFS='=' read -r packageName packageVersion || { exitStatus="$packageName"; break; }	# Exit status from the process substitution (<(amazon-linux-extras)) is lost; return the actual exit status via an incomplete (i.e. missing the newline) last line.
     do
 	installedAmazonExtrasPackages["$packageName"]=t
-	case ",${DEBUG:-}," in *,setup-software:amazon-extras,*) echo >&2 "${PS4}setup-software (amazon-extras): Found installed ${packageName}";; esac
+	${DEBUG:+debuglog --module amazon-extras "Found installed ${packageName}"}
     done < <(amazon-linux-extras list | joinLineContinuation | joinUntilClosingPair --pair '[]' | fieldGrep -e enabled 3 | field 2 2>/dev/null; printf %d "$?")
     [ $exitStatus -eq 0 ] && isInstalledAmazonExtrasPackagesAvailable=t
 }

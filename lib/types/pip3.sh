@@ -23,7 +23,7 @@ getInstalledPip3Packages()
 	case "$packageName" in
 	    Package|+(-))   continue;;	# Skip 2-line header
 	    *)		    installedPip3Packages["$packageName"]=t
-			    case ",${DEBUG:-}," in *,setup-software:pip3,*) echo >&2 "${PS4}setup-software (pip3): Found installed ${packageName}";; esac
+			    ${DEBUG:+debuglog --module pip3 "Found installed ${packageName}"}
 			    ;;
 	esac
     done < <(PIP_REQUIRE_VIRTUALENV=false pip3 list 2>/dev/null; printf %d "$?")

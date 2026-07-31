@@ -38,7 +38,7 @@ getInstalledThunderbirdAddons()
     local exitStatus id; while IFS=$'\n' read -r id || { exitStatus="$id"; break; }	# Exit status from the process substitution (<(jq)) is lost; return the actual exit status via an incomplete (i.e. missing the newline) last line.
     do
 	installedThunderbirdProfileAddonIds["$profileName $id"]=t
-	case ",${DEBUG:-}," in *,setup-software:thunderbird,*) echo >&2 "${PS4}setup-software (thunderbird): Found $id installed in profile $profileName";; esac
+	${DEBUG:+debuglog --module thunderbird "Found $id installed in profile $profileName"}
     done < <(jq --raw-output '.addons | .[] | .id' "$addonsConfigFilespec"; printf %d "$?")
     [ $exitStatus -eq 0 ] && isInstalledThunderbirdAddonsAvailable["$profileName"]=t
 }

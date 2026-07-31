@@ -29,7 +29,7 @@ getInstalledPpaRepositories()
     local exitStatus repo; while IFS=$'\n' read -r repo || { exitStatus="$repo"; break; }	# Exit status from the process substitution (<(apt-list-repositories)) is lost; return the actual exit status via an incomplete (i.e. missing the newline) last line.
     do
 	installedPpaRepositories["${repo#ppa:}"]=t
-	case ",${DEBUG:-}," in *,setup-software:ppa,*) echo >&2 "${PS4}setup-software (ppa): Found installed ppa:${repo}";; esac
+	${DEBUG:+debuglog --module ppa "Found installed ppa:${repo}"}
     done < <(apt-list-repositories --ppa-only; printf %d "$?")
     [ $exitStatus -eq 0 ] && isInstalledPpaRepositoriesAvailable=t
 }

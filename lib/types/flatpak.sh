@@ -24,7 +24,7 @@ getInstalledFlatpakPackages()
     local exitStatus packageName; while IFS=$'\n' read -r packageName || { exitStatus="$packageName"; break; }	# Exit status from the process substitution (<(flatpak)) is lost; return the actual exit status via an incomplete (i.e. missing the newline) last line.
     do
 	installedFlatpakPackages["$packageName"]=t
-	case ",${DEBUG:-}," in *,setup-software:flatpak,*) echo >&2 "${PS4}setup-software (flatpak): Found installed ${packageName}";; esac
+	${DEBUG:+debuglog --module flatpak "Found installed ${packageName}"}
     done < <(flatpak list --columns=application 2>/dev/null; printf %d "$?")
     [ $exitStatus -eq 0 ] && isInstalledFlatpakPackagesAvailable=t
 }

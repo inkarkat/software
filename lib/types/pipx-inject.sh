@@ -26,7 +26,7 @@ hasPipxInject()
 
     if [ -z "${installedPipxInjectPackages["$mainPackageName"]+t}" ]; then
 	installedPipxInjectPackages["$mainPackageName"]="$(pipx-list-injected --global --package-spec "$mainPackageName" 2>/dev/null)"
-	case ",${DEBUG:-}," in *,setup-software:pipx-inject,*) echo >&2 "${PS4}setup-software (pipx-inject): Found injected ${installedPipxInjectPackages["$mainPackageName"]//$'\n'/ } for ${mainPackageName}";; esac
+	${DEBUG:+debuglog --module pipx-inject "Found injected ${installedPipxInjectPackages["$mainPackageName"]//$'\n'/ } for ${mainPackageName}"}
     fi
     {
 	printf '%s\n' "${addedPipxInjectPackages["$mainPackageName"]}" "${externallyAddedPipxInjectPackages[@]}" "${installedPipxInjectPackages["$mainPackageName"]}"

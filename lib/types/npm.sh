@@ -23,7 +23,7 @@ getInstalledNpmPackages()
 	local packageName; packageName="${packageDirspec##*/}"
 	if [ -n "$packageName" ]; then
 	    installedNpmPackages["$packageName"]=t
-	    case ",${DEBUG:-}," in *,setup-software:npm,*) echo >&2 "${PS4}setup-software (npm): Found installed ${packageName}";; esac
+	    ${DEBUG:+debuglog --module npm "Found installed ${packageName}"}
 	fi
     done < <(npm ls --global --parseable --depth 0 2>/dev/null; printf %d "$?")
     [ $exitStatus -eq 0 ] && isInstalledNpmPackagesAvailable=t

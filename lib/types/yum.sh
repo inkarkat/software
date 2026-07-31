@@ -59,7 +59,7 @@ getInstalledYumPackages()
     local exitStatus package; while IFS=$'\n' read -r package || { exitStatus="$package"; break; }	# Exit status from the process substitution (<(repoquery)) is lost; return the actual exit status via an incomplete (i.e. missing the newline) last line.
     do
 	installedYumPackages["$package"]=t
-	case ",${DEBUG:-}," in *,setup-software:native,*) echo >&2 "${PS4}setup-software (native): Found $package";; esac
+	${DEBUG:+debuglog --module native "Found $package"}
     done < <("${repoqueryCommand[@]}" --qf '%{name}' --installed -a; printf %d "$?")
     if [ $exitStatus -eq 124 ]; then
 	echo >&2 'ERROR: Failed to obtain installed native package list due to another concurrent yum execution; aborting.'

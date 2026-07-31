@@ -27,7 +27,7 @@ getInstalledFlatpakRemotes()
     do
 	[ -n "$remoteName" ] || continue
 	installedFlatpakRemotes["$remoteName"]=t
-	case ",${DEBUG:-}," in *,setup-software:flatpak-remote,*) echo >&2 "${PS4}setup-software (flatpak-remote): Found installed ${remoteName}";; esac
+	${DEBUG:+debuglog --module flatpak-remote "Found installed ${remoteName}"}
     done < <(flatpak remote-list --columns=name 2>/dev/null; printf %d "$?")
     [ $exitStatus -eq 0 ] && isInstalledFlatpakRemoteAvailable=t
 }

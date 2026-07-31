@@ -40,7 +40,7 @@ getInstalledYumGroups()
 	    if [ "$isInInstalledSection" ]; then
 		local group="${line##+( )}"
 		installedYumGroups["$group"]=t
-		case ",${DEBUG:-}," in *,setup-software:yum-group,*) echo >&2 "${PS4}setup-software (yum-group): Found $group";; esac
+		${DEBUG:+debuglog --module yum-group "Found $group"}
 	    fi
 	else
 	    isInInstalledSection=

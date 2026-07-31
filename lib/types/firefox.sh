@@ -41,7 +41,7 @@ getInstalledFirefoxAddons()
     local exitStatus id; while IFS=$'\n' read -r id || { exitStatus="$id"; break; }	# Exit status from the process substitution (<(jq)) is lost; return the actual exit status via an incomplete (i.e. missing the newline) last line.
     do
 	installedFirefoxProfileAddonIds["$profileName $id"]=t
-	case ",${DEBUG:-}," in *,setup-software:firefox,*) echo >&2 "${PS4}setup-software (firefox): Found $id installed in profile $profileName";; esac
+	${DEBUG:+debuglog --module firefox "Found $id installed in profile $profileName"}
     done < <(jq --raw-output '.addons | .[] | .id' "$addonsConfigFilespec"; printf %d "$?")
     [ $exitStatus -eq 0 ] && isInstalledFirefoxAddonsAvailable["$profileName"]=t
 }

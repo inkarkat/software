@@ -1,7 +1,7 @@
 #!/bin/bash
 
 : ${SUDO:=sudo}; [ $EUID -eq 0 ] && SUDO=''
-case ",${DEBUG:-}," in *,sudo,*) SUDO="verbose $SUDO";; *,sudo\!,*) SUDO="echotrace $SUDO";; esac
+[ -n "$SUDO" -a -n "$DEBUG" ] && SUDO="debugcommand --for sudo -- $SUDO"
 
 : ${LINUXBREW_HOME:=/home/linuxbrew}
 : ${LINUXBREW_PREFIX:=${LINUXBREW_HOME}/.linuxbrew}
@@ -16,7 +16,7 @@ users have to be a member of the linuxbrew group to use its packages and use
 sudo to change packages.
 HELPTEXT
     echo
-    printf 'Usage: [DEBUG=sudo[!]] %q %s\n' "$(basename "$1")" '[--check] [-?|-h|--help]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[--check] [-?|-h|--help]'
 }
 
 ECHO=echo

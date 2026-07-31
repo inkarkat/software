@@ -26,8 +26,8 @@ getInstalledDebBuildDependencies()
 
     eval "$(keyDatabase debBuildDependencies --get-as-dictionary installedDebBuildDependencies --omit-declaration)" || return 1
 
-    [ ${#installedDebBuildDependencies[@]} -gt 0 ] &&
-	case ",${DEBUG:-}," in *,setup-software:deb-build,*) echo >&2 "${PS4}setup-software (deb-build): Found installed ${!installedDebBuildDependencies[*]}";; esac
+    [ ${#installedDebBuildDependencies[@]} -gt 0 ] \
+	&& ${DEBUG:+debuglog --module deb-build "Found installed ${!installedDebBuildDependencies[*]}"}
 
     isInstalledDebBuildDependenciesAvailable=t
 }

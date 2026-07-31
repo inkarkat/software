@@ -53,7 +53,7 @@ getInstalledPipxPackages()
 	# global app name.
 	local packageModules="$(parsePipxPackageModules "$packageSpec")"
 	installedPipxPackageModules["$packageName"]="$packageModules"
-	case ",${DEBUG:-}," in *,setup-software:pipx,*) echo >&2 "${PS4}setup-software (pipx): Found installed ${packageName} (${packageSpec})${packageModules:+ with dependencies }${packageModules}";; esac
+	${DEBUG:+debuglog --module pipx "Found installed ${packageName} (${packageSpec})${packageModules:+ with dependencies }${packageModules}"}
     done < <(pipx-list-packages --both-package-name-and-spec --global 2>/dev/null; printf %d "$?")
     [ $exitStatus -eq 0 ] && isInstalledPipxPackagesAvailable=t
 }

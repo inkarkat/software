@@ -21,6 +21,7 @@ The definitions and related data are stored in a separate directory tree, so dif
 ### Dependencies
 
 * Bash, several of my own Unixhome libraries
+* [inkarkat/shell-debugging](https://github.com/inkarkat/shell-debugging) for debugging (optional)
 
 ### Installation
 
