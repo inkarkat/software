@@ -1,5 +1,5 @@
 #!/bin/bash
-case ",${TRACE:-}," in *,${BASH_SOURCE[0]##*/},*) [ -z "$BATS_TEST_NAME" ] || BASH_XTRACEFD=3; set -x;; esac
+${DEBUG:+eval $(debugtrace -o $- -- "$@")}
 
 : ${UPDATESOFTWAREDONE_STAMP:=/var/lib/update-notifier/setup-software-updates-available}
 
