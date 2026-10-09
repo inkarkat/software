@@ -1,4 +1,5 @@
 #!/bin/bash
+shopt -qs extglob
 ${DEBUG:+eval $(debugtrace -o $- -- "$@")}
 
 : ${SUDO:=sudoWithUnixhome}; [ $EUID -eq 0 ] && SUDO=''
@@ -13,7 +14,7 @@ printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s | tee install-script.sh && sh install-script.sh\n' "$(basename "$1")" "[--check|--dry-run] [-q|--quiet|--silence-no-definitions|-v|--verbose] [-f|--force] [-y|--yes] [-b|--batch] [-s|--select DEFINITION [-s ...]] [--base-dir BASE-DIR] [--name NAME]"
+    printf 'Usage: %q %s | tee install-script.sh && sh install-script.sh\n' "$(basename "$1")" "[--check|--dry-run] [-q|--quiet|--no-quiet|--silence-no-definitions|-v|--verbose] [-f|--force] [-y|--yes] [-b|--batch] [-s|--select DEFINITION [-s ...]] [--base-dir BASE-DIR] [--name NAME]"
     echo
     printf 'Usage: %q %s\n' "$(basename "$1")" '-P|--print-definitions|-p|--print|-e|--execute [...]'
     echo
@@ -63,13 +64,13 @@ do
 			;;
 	--base-dir)	setupSoftwareArgs+=("$1" "$2"); shift; baseDir="${1:?}"; shift;;
 	--add-base-dir)	setupSoftwareArgs+=("$1" "$2"); shift; additionalBaseDirs=("${1:?}" "${additionalBaseDirs[@]}"); shift;;
-	--quiet)	quietArg+=("$1"); shift;;
+	--?(no-)quiet)	quietArg+=("$1"); shift;;
 	--name)		shift; setupName="${1:?}"; shift;;
 	--)		setupSoftwareArgs+=("$1"); shift; break;;
 	*)		setupSoftwareArgs+=("$1"); shift;;
     esac
 done
-# Note: --quiet needs to be passed before --[group-]recall-only.
+# Note: --quiet and --no-quiet need to be passed before --[group-]recall-only.
 setup-software "${quietArg[@]}" --group-recall-only --recall-only --all "${setupSoftwareArgs[@]}" "$@" || exit $?
 
 createSetupName()

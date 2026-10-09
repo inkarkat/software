@@ -25,7 +25,7 @@ printShortUsage()
     # skim the long one.
     printf 'Usage: %q %s\n' "$(basename "$1")" '--clear-group-recall|--clear-definition-recall|--clear-selection-store [...] -?|-h|--help | -H|--config-help [TYPE]'
     echo
-    printf 'Usage: %q %s\n' "$(basename "$1")" "[--check|--dry-run] [-q|--quiet|--silence-no-definitions|-v|--verbose] [-f|--force] [-y|--yes|([-q|--quiet] --recall-current-only|--recall-only)] [-b|--batch] [-s|--select DEFINITION [-s ...]] [--base-dir BASE-DIR] [--name NAME]${commandLineOptionExtensions:+ }${commandLineOptionExtensions}${commandLineParameterExtensions:+ }${commandLineParameterExtensions} -a|--all|([-q|--quiet] --group-recall-current-only|--group-recall-only)|GROUP-NAME|GROUP-FILESPEC ..."
+    printf 'Usage: %q %s\n' "$(basename "$1")" "[--check|--dry-run] [-q|--quiet|--no-quiet|--silence-no-definitions|-v|--verbose] [-f|--force] [-y|--yes|([-q|--quiet|--no-quiet] --recall-current-only|--recall-only)] [-b|--batch] [-s|--select DEFINITION [-s ...]] [--base-dir BASE-DIR] [--name NAME]${commandLineOptionExtensions:+ }${commandLineOptionExtensions}${commandLineParameterExtensions:+ }${commandLineParameterExtensions} -a|--all|([-q|--quiet|--no-quiet] --group-recall-current-only|--group-recall-only)|GROUP-NAME|GROUP-FILESPEC ..."
     echo
     echo
     printf 'Usage: %q %s | tee install-script.sh && sh install-script.sh\n' "$(basename "$1")" "..."
@@ -1654,7 +1654,8 @@ do
 			recursiveArgs+=("$1"); setupSoftwareBehaviorArgs+=("$1"); shift; isPrintDefinitions=t;;
 	--print|-p)	recursiveArgs+=("$1"); setupSoftwareBehaviorArgs+=("$1"); shift; isPrint=t;;
 	--execute|-e)	recursiveArgs+=("$1"); setupSoftwareBehaviorArgs+=("$1"); shift; isExecute=t;;
-	--quiet|-q)	recursiveArgs+=("$1"); setupSoftwareBehaviorArgs+=("$1"); shift; isQuiet=t; messagePrintf() { :; };;   # Optimization: Make messagePrintf() a no-op.
+	--quiet|-q)	recursiveArgs+=("$1"); setupSoftwareBehaviorArgs+=("$1"); shift; isQuiet=t;;
+	--no-quiet)	recursiveArgs+=("$1"); setupSoftwareBehaviorArgs+=("$1"); shift; isQuiet=;;
 	--silence-no-definitions)
 			shift; isSilenceNoDefinitions=t;;
 	--verbose|-v)	recursiveArgs+=("$1"); setupSoftwareBehaviorArgs+=("$1"); shift; isVerbose=t;;

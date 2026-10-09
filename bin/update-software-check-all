@@ -14,21 +14,18 @@ EXIT STATUS:
     99	No software updaters found.
 HELPTEXT
     echo
-    printf 'Usage: %q %s\n' "$(basename "$1")" '[-?|-h|--help]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[SETUP-SOFTWARE-ARGS ...] [-?|-h|--help]'
 }
+
 case "$1" in
     --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
 esac
-if [ $# -ne 0 ]; then
-    printUsage "$0" >&2
-    exit 2
-fi
 
 status=
 exec 3<&0
 while IFS=$'\n' read -r updateSoftwareCommand
 do
-    SUDO=exit99 "$updateSoftwareCommand" --check --print-definitions --quiet <&3 \
+    SUDO=exit99 "$updateSoftwareCommand" --check --print-definitions --quiet "$@" <&3 \
 	| prefix -- '- ' \
 	| outputAndPrintf '%s has updates:\n' "$(basename -- "$updateSoftwareCommand")" \
 	    && status=0 || : ${status:=$?}
